@@ -111,10 +111,10 @@ lemma HermitianMat.inner_le_trace_rpow_mul
       (fun i ↦ by simpa using hA.eigenvalues_nonneg i)
       (fun i ↦ by simpa using hB.eigenvalues_nonneg i)
       (by bound) ?_ ?_ p q hp hpq
-    · apply unitary_row_sum_norm_sq (A.H.eigenvectorUnitary.val.conjTranspose * B.H.eigenvectorUnitary.val)
+    · apply Matrix.unitary_row_sum_norm_sq (A.H.eigenvectorUnitary.val.conjTranspose * B.H.eigenvectorUnitary.val)
       simp [mul_assoc]
       simp [← mul_assoc, Matrix.IsHermitian.eigenvectorUnitary]
-    · apply unitary_col_sum_norm_sq (A.H.eigenvectorUnitary.val.conjTranspose * B.H.eigenvectorUnitary.val)
+    · apply Matrix.unitary_col_sum_norm_sq (A.H.eigenvectorUnitary.val.conjTranspose * B.H.eigenvectorUnitary.val)
       simp [mul_assoc]
       simp [← mul_assoc, Matrix.IsHermitian.eigenvectorUnitary]
   · rcases eq_or_ne q 0 with _ | _
