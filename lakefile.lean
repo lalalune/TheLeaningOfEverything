@@ -13,3 +13,22 @@ lean_lib QuantumInfo
 lean_lib ClassicalInfo
 
 lean_lib StatMech
+
+lean_lib Meta
+lean_lib Thermodynamics
+lean_lib Units
+lean_lib Mathematics
+lean_lib Mechanics
+lean_lib ClassicalMechanics
+lean_lib Electromagnetism
+lean_lib Optics
+lean_lib QuantumMechanics
+lean_lib Relativity
+lean_lib SpaceAndTime
+lean_lib Particles
+lean_lib QFT
+lean_lib QEC
+lean_lib CondensedMatter
+lean_lib Cosmology
+lean_lib StringTheory
+lean_lib Physics
