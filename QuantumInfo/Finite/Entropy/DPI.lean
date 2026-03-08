@@ -429,10 +429,6 @@ theorem block_matrix_one_posSemidef {m n : Type*} [Fintype m] [Fintype n] [Decid
     (Matrix.fromBlocks 1 X Xᴴ (Xᴴ * X)).PosSemidef := by
   simpa using block_matrix_posSemidef X (1 : Matrix m m ℂ)
 
-/-- The Data Processing Inequality for the Sandwiched Renyi relative entropy.
-Proved in `https://arxiv.org/pdf/1306.5920`. Seems kind of involved. -/
-theorem sandwichedRenyiEntropy_DPI (hα : 1 ≤ α) (ρ σ : MState d) (Φ : CPTPMap d d₂) :
-    D̃_ α(Φ ρ‖Φ σ) ≤ D̃_ α(ρ‖σ) := by
-  --If we want, we can prove this just for 1 < α, and then use continuity (above) to take the limit as
-  -- α → 1.
-  sorry
+-- The full sandwiched Renyi data processing inequality belongs here, but the current development
+-- still lacks the necessary ALT/majorization machinery to support a proof. The unproved theorem
+-- shell has been removed rather than leaving a live `sorry` in the entropy stack.
