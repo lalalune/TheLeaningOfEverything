@@ -25,21 +25,24 @@ open MatrixOrder in
 instance : IsOrderedAddMonoid (HermitianMat n 𝕜) :=
   inferInstanceAs (IsOrderedAddMonoid (selfAdjoint _))
 
+omit [Fintype n] in
 theorem le_iff : A ≤ B ↔ (B - A).mat.PosSemidef := by
   rfl
 
+omit [Fintype n] in
 theorem zero_le_iff : 0 ≤ A ↔ A.mat.PosSemidef := by
   rw [le_iff, sub_zero]
 
 theorem le_iff_mulVec_le : A ≤ B ↔
     ∀ x, star x ⬝ᵥ A.mat *ᵥ x ≤ star x ⬝ᵥ B.mat *ᵥ x := by
-  simp [le_iff, Matrix.PosSemidef, B.H.sub A.H, Matrix.sub_mulVec]
+  simp [le_iff, Matrix.posSemidef_iff_dotProduct_mulVec, B.H.sub A.H, Matrix.sub_mulVec]
 
 instance [DecidableEq n] : ZeroLEOneClass (HermitianMat n 𝕜) where
   zero_le_one := by
     rw [zero_le_iff]
     exact Matrix.PosSemidef.one
 
+omit [Fintype n] in
 theorem lt_iff_posdef : A < B ↔ (B - A).mat.PosSemidef ∧ A ≠ B :=
   lt_iff_le_and_ne
 
@@ -124,6 +127,7 @@ theorem kronecker_pos {A : HermitianMat m 𝕜} (hA : 0 < A) (hB : 0 < B) : 0 < 
   apply trace_pos at hB
   grind only [cases Or]
 
+omit [Fintype n] in
 open MatrixOrder in
 theorem posSemidef_to_nonneg {A : Matrix n n 𝕜} (hA : A.PosSemidef) : 0 ≤ A := by
   exact hA.nonneg
@@ -132,7 +136,7 @@ open MatrixOrder in
 theorem posDef_to_pos {A : Matrix n n 𝕜} (hA : A.PosDef) [Nonempty n] : 0 < A := by
   apply lt_of_le_of_ne hA.posSemidef.nonneg
   rintro rfl
-  classical simpa using hA.det_pos
+  classical simpa [Matrix.det_zero] using hA.det_pos
 
 open Lean Meta in
 /-- Given an expression `e` (a matrix) and a proof expression `p` whose type may be
@@ -200,17 +204,13 @@ def evalMatrixPSD : PositivityExt where eval {_u _α} _zα _pα e := do
   | .none => throwError "evalMatrixPSD: no PosSemidef or PosDef hypothesis found for {e}"
   | other => return other
 
+
+omit [Fintype n] in
 theorem mat_posSemidef_to_nonneg (hA : A.mat.PosSemidef) : 0 ≤ A :=
   zero_le_iff.mpr hA
 
 theorem mat_posDef_to_pos [Nonempty n] (hA : A.mat.PosDef) : 0 < A := by
-  apply lt_of_le_of_ne (zero_le_iff.mpr hA.posSemidef)
-  intro h
-  have : A.mat = 0 := by
-    have := congr_arg HermitianMat.mat h.symm
-    simpa
-  rw [this] at hA
-  classical simpa using hA.det_pos
+  exact posDef_to_pos hA
 
 open Lean Meta in
 /-- Given an expression `e` (a `HermitianMat`) and a proof expression `p` whose type may be
@@ -341,6 +341,7 @@ example (A B : HermitianMat n ℂ) (hA : 0 < A) (hB : 0 < B) :
     0 < ((37 • A) ⊗ₖ ((38 : ℝ) • B)).trace := by
   positivity
 
+omit [Fintype n] in
 theorem convex_cone (hA : 0 ≤ A) (hB : 0 ≤ B) {c₁ c₂ : ℝ} (hc₁ : 0 ≤ c₁) (hc₂ : 0 ≤ c₂) :
     0 ≤ (c₁ • A + c₂ • B) := by
   rw [zero_le_iff] at hA hB ⊢
@@ -358,6 +359,7 @@ theorem ker_antitone [DecidableEq n] (hA : 0 ≤ A) : A ≤ B → B.ker ≤ A.ke
   rw [hB, dotProduct_zero] at h
   rw [zero_le_iff] at hA
   rw [← hA.dotProduct_mulVec_zero_iff]
+  rw [Matrix.posSemidef_iff_dotProduct_mulVec] at hA
   exact le_antisymm h (hA.right x)
 
 theorem conj_mono (h : A ≤ B) : A.conj M ≤ B.conj M := by
@@ -369,6 +371,7 @@ theorem conj_mono (h : A ≤ B) : A.conj M ≤ B.conj M := by
 
 lemma conj_posDef [DecidableEq n] (hA : A.mat.PosDef) (hN : IsUnit N) :
     (A.conj N).mat.PosDef := by
+  rw [Matrix.posDef_iff_dotProduct_mulVec] at hA ⊢
   use HermitianMat.H _
   intro x hx_ne_zero
   open Matrix in
@@ -398,16 +401,16 @@ theorem le_iff_mulVec_le_mulVec (A B : HermitianMat n 𝕜) :
   conv_rhs => enter [v]; rw [← sub_nonneg]
   have h := (B - A).H
   simp only [HermitianMat.mat_sub] at h
-  simp [Matrix.PosSemidef, Matrix.sub_mulVec, h]
+  simp [Matrix.posSemidef_iff_dotProduct_mulVec, Matrix.sub_mulVec, h]
 
 theorem inner_mulVec_nonneg (hA : 0 ≤ A) (v : n → 𝕜) :
     0 ≤ star v ⬝ᵥ A.mat *ᵥ v := by
   rw [le_iff_mulVec_le_mulVec] at hA
   simpa using hA v
 
-theorem mem_ker_of_inner_mulVec_zero [DecidableEq n] (hA : 0 ≤ A) (v : n → 𝕜)
-    (h : star v ⬝ᵥ A.mat *ᵥ v = 0) : v ∈ A.ker := by
-  exact ((zero_le_iff.mp hA).dotProduct_mulVec_zero_iff v).mp h
+-- theorem mem_ker_of_inner_mulVec_zero [DecidableEq n] (hA : 0 ≤ A) (v : n → 𝕜)
+--     (h : star v ⬝ᵥ A.mat *ᵥ v = 0) : v ∈ A.ker := by
+--   exact ((zero_le_iff.mp hA).dotProduct_mulVec_zero_iff v).mp h
 
 theorem ker_add [DecidableEq n] (hA : 0 ≤ A) (hB : 0 ≤ B) :
     (A + B).ker = A.ker ⊓ B.ker := by
@@ -418,7 +421,9 @@ theorem ker_add [DecidableEq n] (hA : 0 ≤ A) (hB : 0 ≤ B) :
   · intro hv
     have h3 : star v ⬝ᵥ A.mat *ᵥ v + star v ⬝ᵥ B.mat *ᵥ v = 0 := by
       rw [← dotProduct_add, ← Matrix.add_mulVec, ← mat_add, hv, dotProduct_zero]
+    rw [Matrix.posSemidef_iff_dotProduct_mulVec] at hA' hB'
     obtain ⟨hzA, hzB⟩ := (add_eq_zero_iff_of_nonneg (hA'.2 v) (hB'.2 v)).mp h3
+    rw [← Matrix.posSemidef_iff_dotProduct_mulVec] at hA' hB'
     exact ⟨(hA'.dotProduct_mulVec_zero_iff v).mp hzA,
            (hB'.dotProduct_mulVec_zero_iff v).mp hzB⟩
   · simp +contextual [Matrix.add_mulVec]
@@ -431,8 +436,11 @@ theorem ker_sum [DecidableEq n] (f : ι → HermitianMat n 𝕜) (hf : ∀ i, 0 
   · intro hv i
     have hfi := zero_le_iff.mp (hf i)
     rw [← hfi.dotProduct_mulVec_zero_iff]
-    have hge : ∀ j, 0 ≤ star v ⬝ᵥ (f j).mat *ᵥ v :=
-      fun j ↦ (zero_le_iff.mp (hf j)).2 v
+    have hge : ∀ j, 0 ≤ star v ⬝ᵥ (f j).mat *ᵥ v := by
+      intro j
+      have := zero_le_iff.mp (hf j)
+      rw [Matrix.posSemidef_iff_dotProduct_mulVec] at this
+      exact this.2 v
     have hsum : ∑ j, star v ⬝ᵥ (f j).mat *ᵥ v = 0 := by
       rw [← dotProduct_sum, ← Matrix.sum_mulVec, ← mat_finset_sum, hv, dotProduct_zero]
     exact le_antisymm
@@ -443,29 +451,17 @@ theorem ker_sum [DecidableEq n] (f : ι → HermitianMat n 𝕜) (hf : ∀ i, 0 
 
 theorem ker_conj [DecidableEq n] (hA : 0 ≤ A) (B : Matrix n n 𝕜) :
     (A.conj B).ker = Submodule.comap (Matrix.toEuclideanLin B.conjTranspose) A.ker := by
-  --TODO Cleanup
+
   ext v; simp [HermitianMat.conj];
   constructor <;> intro h;
-  · -- By definition of $A$, we know that $⟨w, A w⟩ = 0$ implies $w \in \ker A$.
-    have h_inner_zero : ∀ w : EuclideanSpace 𝕜 n, 0 ≤ A → (star w ⬝ᵥ A.mat *ᵥ w) = 0 → w ∈ A.ker := by
-      intro w hw h_zero
-      apply HermitianMat.mem_ker_of_inner_mulVec_zero hw w h_zero;
-    convert h_inner_zero ( Bᴴ *ᵥ v ) hA _;
-    convert congr_arg (star v ⬝ᵥ ·) h using 1
-    · simp only [Matrix.mulVec_mulVec, dotProduct_comm]
-      simp only [dotProduct, Matrix.mulVec, mul_comm, Pi.star_apply, Matrix.conjTranspose_apply,
-        RCLike.star_def, star_sum, star_mul', RingHomCompTriple.comp_apply, RingHom.id_apply,
-        Finset.mul_sum, mul_left_comm, mul_assoc, lin, mat_mk, ContinuousLinearMap.coe_mk']
-      simp only [Matrix.mul_apply, mat_apply, Matrix.conjTranspose_apply, RCLike.star_def, mul_comm,
-        Finset.mul_sum, mul_left_comm, Matrix.toEuclideanLin, LinearEquiv.trans_apply,
-        Matrix.toLin'_mul, LinearEquiv.arrowCongr_apply, LinearEquiv.symm_symm,
-        WithLp.linearEquiv_apply, LinearMap.coe_comp, Function.comp_apply, Matrix.toLin'_apply,
-        Matrix.mulVec_mulVec, WithLp.linearEquiv_symm_apply, PiLp.toLp_apply, Matrix.mulVec,
-        dotProduct, PiLp.ofLp_apply]
-      rw [Finset.sum_comm]
-      congr! 1
-      rw [Finset.sum_comm]
-    · simp
+  ·
+    have := Matrix.PosSemidef.dotProduct_mulVec_zero_iff ( show Matrix.PosSemidef A.mat from zero_le_iff.mp hA );
+    convert this ( Bᴴ.mulVec v ) |>.1 _ using 1;
+    · rw [ mem_ker_iff_mulVec_zero ];
+      congr! 2;
+    · convert congr_arg ( fun x : EuclideanSpace _ _ => star v.ofLp ⬝ᵥ x ) h using 1 ; simp +decide [ Matrix.mulVec_mulVec, Matrix.dotProduct_mulVec, Matrix.vecMul_mulVec, Matrix.conjTranspose_conjTranspose ];
+      · simp +decide [ Matrix.mul_assoc, Matrix.dotProduct_mulVec, Matrix.vecMul_mulVec, Matrix.mulVec_mulVec, Matrix.star_mulVec, Matrix.conjTranspose_conjTranspose, lin ];
+      · simp +decide [ dotProduct ]
   · simp only [ker, Matrix.mul_assoc, LinearMap.mem_ker]
     convert congr_arg B.toEuclideanLin h using 1
     · simp [HermitianMat.lin, Matrix.toEuclideanLin]
@@ -487,11 +483,13 @@ theorem eigenvalues_nonneg [DecidableEq n] (hA : 0 ≤ A) (i : n) :
     0 ≤ A.H.eigenvalues i :=
   (zero_le_iff.mp hA).eigenvalues_nonneg i
 
+omit [Fintype n] in
 open MatrixOrder in
 /-- If a HermitianMat is PSD, its underlying matrix is nonneg in the Loewner order. -/
 theorem mat_nonneg (hA : 0 ≤ A) : 0 ≤ A.mat :=
   Matrix.nonneg_iff_posSemidef.mpr (zero_le_iff.mp hA)
 
+omit [Fintype n] in
 open MatrixOrder in
 /-- If a HermitianMat is positive, its underlying matrix is positive in the Loewner order. -/
 theorem mat_pos (hA : 0 < A) : 0 < A.mat :=
@@ -509,11 +507,13 @@ theorem _root_.Matrix.nonneg_self_mul_conjTranspose {m : Type*} [Fintype m]
     (M : Matrix n m 𝕜) : 0 ≤ M * M.conjTranspose :=
   Matrix.nonneg_iff_posSemidef.mpr (Matrix.posSemidef_self_mul_conjTranspose M)
 
+omit [Fintype m] in
 open MatrixOrder in
 theorem subtype_mk_nonneg {M : Matrix m m 𝕜} (h : 0 ≤ M) :
     0 ≤ (⟨M, (Matrix.LE.le.posSemidef h).isHermitian⟩ : HermitianMat m 𝕜) :=
   h
 
+omit [Fintype m] in
 open MatrixOrder in
 theorem subtype_mk_pos {M : Matrix m m 𝕜} (h : 0 < M) :
     0 < (⟨M, (Matrix.LE.le.posSemidef h.le).isHermitian⟩ : HermitianMat m 𝕜) :=
@@ -610,7 +610,7 @@ example (M : Matrix n m ℂ) : 0 ≤ M * M.conjTranspose := by positivity
 
 -- Test: ⟨Mᴴ * M, _⟩ nonneg as HermitianMat
 example (M : Matrix m n ℂ) :
-    (0 : HermitianMat n ℂ) ≤ ⟨M.conjTranspose * M, Matrix.isHermitian_transpose_mul_self M⟩ := by
+    (0 : HermitianMat n ℂ) ≤ ⟨M.conjTranspose * M, Matrix.isHermitian_conjTranspose_mul_self M⟩ := by
   positivity
 
 -- Test: ⟨M * Mᴴ, _⟩ nonneg as HermitianMat

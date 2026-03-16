@@ -60,7 +60,7 @@ lemma singularValuesSorted_nonneg (A : Matrix d d ℂ) (i : Fin (Fintype.card d)
   have h_sorted_nonneg : ∀ {l : List ℝ}, (∀ x ∈ l, 0 ≤ x) → ∀ i < l.length, 0 ≤ l[i]! := by
     aesop
   contrapose! h_sorted_nonneg
-  use Multiset.sort (· ≥ ·) (Finset.univ.val.map (singularValues A))
+  use Multiset.sort (Finset.univ.val.map (singularValues A)) (· ≥ ·)
   refine' ⟨_, i, _, _⟩
   · aesop
   · simp [Finset.card_univ]
@@ -72,7 +72,7 @@ lemma sum_singularValues_rpow_eq_sum_sorted (A : Matrix d d ℂ) (p : ℝ) :
     ∑ i : d, singularValues A i ^ p =
     ∑ i : Fin (Fintype.card d), singularValuesSorted A i ^ p := by
   have h_perm : Multiset.map (fun i => singularValues A i) Finset.univ.val = Multiset.map (fun i => singularValuesSorted A i) Finset.univ.val := by
-    have h_multiset : Multiset.map (fun i => singularValues A i) Finset.univ.val = Multiset.sort (fun i j => j ≤ i) (Multiset.map (fun i => singularValues A i) Finset.univ.val) := by
+    have h_multiset : Multiset.map (fun i => singularValues A i) Finset.univ.val = Multiset.sort (Multiset.map (fun i => singularValues A i) Finset.univ.val) (· ≥ ·) := by
       aesop
     convert h_multiset using 1
     refine' congr_arg _ (List.ext_get _ _) <;> simp [singularValuesSorted]
@@ -90,8 +90,8 @@ lemma sum_singularValues_rpow_eq_sum_sorted (A : Matrix d d ℂ) (p : ℝ) :
 lemma singularValuesSorted_antitone (A : Matrix d d ℂ) :
     Antitone (singularValuesSorted A) := by
   intro i j hij
-  have h_sorted : List.Sorted (· ≥ ·) (Finset.univ.val.map (singularValues A) |>.sort (· ≥ ·)) := by
-    exact Multiset.sort_sorted _ _
+  have h_sorted : List.Pairwise (· ≥ ·) (Finset.univ.val.map (singularValues A) |>.sort (· ≥ ·)) := by
+    exact Multiset.pairwise_sort _ _
   exact h_sorted.rel_get_of_le hij
 
 /-- The product of nonneg antitone sequences is antitone. -/
@@ -259,7 +259,8 @@ lemma compoundMatrix_diagonal (f : d → ℂ) (k : ℕ) :
       exact Subtype.ext (Finset.eq_of_subset_of_card_le h (by simp [S.2, T.2]))
     obtain ⟨j, hj⟩ : ∃ j : Fin k, (S.val.orderEmbOfFin S.2) j = i := by
       have h_row_zero : Finset.image (fun j : Fin k => S.val.orderEmbOfFin S.2 j) Finset.univ = S.val := by
-        refine' Finset.eq_of_subset_of_card_le (Finset.image_subset_iff.mpr fun j _ => Finset.orderEmbOfFin_mem _ _ _) _; simp [Finset.card_image_of_injective, Function.Injective, *]; aesop
+        refine' Finset.eq_of_subset_of_card_le (Finset.image_subset_iff.mpr fun j _ => Finset.orderEmbOfFin_mem _ _ _) _
+        simp [Finset.card_image_of_injective, Function.Injective, *]
       exact Exists.elim (Finset.mem_image.mp (h_row_zero.symm ▸ hiS)) fun j hj => ⟨j, hj.2⟩
     -- Since the row corresponding to $i$ in the submatrix is all zeros, the determinant of this submatrix is zero.
     have h_det_zero : Matrix.det (Matrix.of (fun i j => if (S.val.orderEmbOfFin S.2 i) = (T.val.orderEmbOfFin T.2 j) then f (T.val.orderEmbOfFin T.2 j) else 0) : Matrix (Fin k) (Fin k) ℂ) = 0 := by
@@ -272,8 +273,7 @@ of eigenvalues over k-subsets. More precisely, the singular values of
 `compoundMatrix M k` are the square roots of products of eigenvalues of M†M
 over k-subsets.
 -/
-lemma singularValues_compoundMatrix_eq (M : Matrix d d ℂ) (k : ℕ)
-    (hcard : 0 < Fintype.card {S : Finset d // S.card = k}) :
+lemma singularValues_compoundMatrix_eq (M : Matrix d d ℂ) (k : ℕ) :
     ∀ (S : {S : Finset d // S.card = k}),
     ∃ (j : {S : Finset d // S.card = k}),
     singularValues (compoundMatrix M k) j =
@@ -296,7 +296,7 @@ lemma singularValues_compoundMatrix_eq (M : Matrix d d ℂ) (k : ℕ)
             convert compoundMatrix_diagonal (fun _ => 1) k using 1; aesop
           grind
         have h_unitary' : compoundMatrix U k * (compoundMatrix U k).conjTranspose = 1 := by
-          rw [← Matrix.mul_eq_one_comm, h_unitary]
+          rw [← mul_eq_one_comm, h_unitary]
         exact ⟨by
         exact h_unitary, by
           exact h_unitary'⟩
@@ -357,7 +357,7 @@ lemma prod_le_prod_sorted {n : ℕ} {f : Fin n → ℝ}
   | zero => exact Nat.zero_le _
   | succ m ih =>
     have ihm := ih (by omega)
-    have := hg'_mono (show (⟨m, by omega⟩ : Fin k) < ⟨m + 1, hm⟩ by simp [Fin.lt_iff_val_lt_val])
+    have := hg'_mono (show (⟨m, by omega⟩ : Fin k) < ⟨m + 1, hm⟩ by simp [Fin.lt_def])
     omega
 
 /-- The 0th sorted singular value is the maximum of the singular values. -/
@@ -368,7 +368,7 @@ lemma singularValuesSorted_zero_eq_sup {e : Type*} [Fintype e] [DecidableEq e]
       (singularValues A) := by
   refine' le_antisymm _ _
   · -- Since the list is sorted in decreasing order, every element in the list is less than or equal to the supremum of the original set.
-    have h_le_sup : ∀ x ∈ Multiset.sort (· ≥ ·) (Multiset.map (singularValues A) Finset.univ.val), x ≤ Finset.sup' Finset.univ (Finset.univ_nonempty_iff.mpr ⟨Classical.choose (Finset.card_pos.mp h)⟩) (singularValues A) := by
+    have h_le_sup : ∀ x ∈ Multiset.sort (Multiset.map (singularValues A) Finset.univ.val) (· ≥ ·), x ≤ Finset.sup' Finset.univ (Finset.univ_nonempty_iff.mpr ⟨Classical.choose (Finset.card_pos.mp h)⟩) (singularValues A) := by
       aesop
     exact h_le_sup _ (by simp [singularValuesSorted])
   · have h_max_le_ge : ∀ i, singularValues A i ≤ singularValuesSorted A ⟨0, h⟩ := by
@@ -377,7 +377,7 @@ lemma singularValuesSorted_zero_eq_sup {e : Type*} [Fintype e] [DecidableEq e]
         exact fun j => singularValuesSorted_antitone A (Nat.zero_le _)
       exact (by
       have h_max_le_ge : ∃ j, singularValues A i = singularValuesSorted A j := by
-        have h_exists_j : singularValues A i ∈ Multiset.sort (· ≥ ·) (Finset.univ.val.map (singularValues A)) := by
+        have h_exists_j : singularValues A i ∈ Multiset.sort (Finset.univ.val.map (singularValues A)) (· ≥ ·) := by
           simp [Multiset.mem_sort]
         obtain ⟨j, hj⟩ := List.mem_iff_get.mp h_exists_j
         exact ⟨⟨j, by simpa using j.2⟩, hj.symm⟩
@@ -388,7 +388,7 @@ lemma singularValuesSorted_zero_eq_sup {e : Type*} [Fintype e] [DecidableEq e]
 lemma singularValues_mem_sorted {e : Type*} [Fintype e] [DecidableEq e]
     (A : Matrix e e ℂ) (i : e) :
     ∃ j : Fin (Fintype.card e), singularValues A i = singularValuesSorted A j := by
-  have h_mem : singularValues A i ∈ Multiset.sort (· ≥ ·) (Finset.univ.val.map (singularValues A)) := by
+  have h_mem : singularValues A i ∈ Multiset.sort (Finset.univ.val.map (singularValues A)) (· ≥ ·) := by
     simp [Multiset.mem_sort]
   obtain ⟨j, hj⟩ := List.mem_iff_get.mp h_mem
   exact ⟨⟨j, by simpa using j.2⟩, hj.symm⟩
@@ -397,17 +397,15 @@ lemma singularValues_mem_sorted {e : Type*} [Fintype e] [DecidableEq e]
 lemma singularValuesSorted_mem_values {e : Type*} [Fintype e] [DecidableEq e]
     (A : Matrix e e ℂ) (j : Fin (Fintype.card e)) :
     ∃ i : e, singularValuesSorted A j = singularValues A i := by
-  have h_mem : singularValuesSorted A j ∈ Multiset.sort (· ≥ ·) (Finset.univ.val.map (singularValues A)) := by
+  have h_mem : singularValuesSorted A j ∈ Multiset.sort (Finset.univ.val.map (singularValues A)) (· ≥ ·) := by
     simp [singularValuesSorted]
   rw [Multiset.mem_sort] at h_mem
   simp at h_mem
   obtain ⟨i, hi⟩ := h_mem
   exact ⟨i, hi.symm⟩
 
-set_option maxHeartbeats 400000 in
 /-- Stronger version of `singularValues_compoundMatrix_eq` that exposes the permutation. -/
-lemma singularValues_compoundMatrix_perm (M : Matrix d d ℂ) (k : ℕ)
-    (hcard : 0 < Fintype.card {S : Finset d // S.card = k}) :
+lemma singularValues_compoundMatrix_perm (M : Matrix d d ℂ) (k : ℕ) :
     ∃ σ : {S : Finset d // S.card = k} ≃ {S : Finset d // S.card = k},
     ∀ S, singularValues (compoundMatrix M k) (σ S) =
     ∏ i : Fin k, singularValues M (S.1.orderEmbOfFin S.2 i) := by
@@ -427,7 +425,7 @@ lemma singularValues_compoundMatrix_perm (M : Matrix d d ℂ) (k : ℕ)
             convert compoundMatrix_diagonal (fun _ => 1) k using 1; aesop
           grind
         have h_unitary' : compoundMatrix U k * (compoundMatrix U k).conjTranspose = 1 := by
-          rw [← Matrix.mul_eq_one_comm, h_unitary]
+          rw [← mul_eq_one_comm, h_unitary]
         exact ⟨by exact h_unitary, by exact h_unitary'⟩
       exact h_unitary _ (by simp [unitaryGroup])
     · have h_compoundMatrix_mul : compoundMatrix (M.conjTranspose * M) k = compoundMatrix M.conjTranspose k * compoundMatrix M k := by
@@ -453,12 +451,11 @@ lemma singularValues_compoundMatrix_perm (M : Matrix d d ℂ) (k : ℕ)
 /-- Converse of `singularValues_compoundMatrix_eq`: every singular value of the
     compound matrix is a product of singular values of M over some k-subset. -/
 lemma singularValues_compoundMatrix_rev (M : Matrix d d ℂ) (k : ℕ)
-    (hcard : 0 < Fintype.card {S : Finset d // S.card = k})
     (j : {S : Finset d // S.card = k}) :
     ∃ (S : {S : Finset d // S.card = k}),
     singularValues (compoundMatrix M k) j =
     ∏ i : Fin k, singularValues M (S.1.orderEmbOfFin S.2 i) := by
-  obtain ⟨σ, hσ⟩ := singularValues_compoundMatrix_perm M k hcard
+  obtain ⟨σ, hσ⟩ := singularValues_compoundMatrix_perm M k
   exact ⟨σ.symm j, by rw [← hσ]; simp⟩
 
 /-- There exists a bijection `σ : Fin (card d) ≃ d` such that
@@ -475,7 +472,7 @@ lemma exists_sorting_equiv (M : Matrix d d ℂ) :
         rw [h_multiset, Multiset.map_map]
         aesop
       have h_multiset_sorted : Multiset.ofList (List.ofFn (singularValuesSorted M)) = Multiset.map (singularValues M) Finset.univ.val := by
-        have h_multiset_sorted_eq : List.ofFn (singularValuesSorted M) = Multiset.sort (· ≥ ·) (Multiset.map (singularValues M) Finset.univ.val) := by
+        have h_multiset_sorted_eq : List.ofFn (singularValuesSorted M) = Multiset.sort (Multiset.map (singularValues M) Finset.univ.val) (· ≥ ·) := by
           refine' List.ext_get _ _ <;> simp [List.ofFn_eq_map] at *; aesop (simp_config := { singlePass := true })
         exact h_multiset_sorted_eq ▸ by simp
       rw [h_multiset, h_multiset_sorted]
@@ -544,7 +541,7 @@ lemma exists_subset_prod_eq_sorted_prod (M : Matrix d d ℂ) (k : ℕ)
   obtain ⟨σ, hσ⟩ : ∃ σ : Fin (Fintype.card d) ≃ d, ∀ i : Fin (Fintype.card d), singularValues M (σ i) = singularValuesSorted M i := by
     have h_perm : Multiset.ofList (List.ofFn (singularValuesSorted M)) = Multiset.ofList (List.ofFn (singularValues M ∘ (Fintype.equivFin d).symm)) := by
       have h_perm : Multiset.ofList (List.ofFn (singularValuesSorted M)) = Multiset.ofList (List.ofFn (singularValues M ∘ (Fintype.equivFin d).symm)) := by
-        have h_sorted : List.ofFn (singularValuesSorted M) = Multiset.sort (· ≥ ·) (Multiset.map (singularValues M) Finset.univ.val) := by
+        have h_sorted : List.ofFn (singularValuesSorted M) = Multiset.sort (Multiset.map (singularValues M) Finset.univ.val) (· ≥ ·) := by
           refine' List.ext_get _ _ <;> simp
           exact fun n h₁ h₂ => rfl
         simp [h_sorted, List.ofFn_eq_map]
@@ -582,7 +579,7 @@ lemma exists_subset_prod_eq_sorted_prod (M : Matrix d d ℂ) (k : ℕ)
           · rcases i with ⟨_ | i, hi⟩
             · exact ⟨⟨0, by simp⟩, rfl⟩
             · exact ⟨Fin.succ (σ.symm ⟨i, by simpa using hi⟩), by simp⟩
-        · use Equiv.swap ⟨0, by simp⟩ ⟨1, by simp⟩; simp [List.finRange_succ_eq_map]
+        · use Equiv.swap ⟨0, by simp⟩ ⟨1, by simp⟩; simp [List.finRange_succ]
           refine' List.ext_get _ _ <;> simp [Function.comp]
           intro n hn hn'; rcases n with (_ | _ | n) <;> trivial
         · rename_i h₁ h₂ h₃ h₄
@@ -601,7 +598,7 @@ lemma exists_subset_prod_eq_sorted_prod (M : Matrix d d ℂ) (k : ℕ)
       exact ⟨σ.symm (Fintype.equivFin d i), by simp⟩;⟩
     intro i
     replace hσ := congr_arg (fun l => l[i]!) hσ
-    simp_all [List.get!]
+    simp_all
   refine' h_contra ⟨⟨Finset.image σ (Finset.univ.filter fun i => i.val < k), _⟩, _⟩ <;> simp_all
   rw [Finset.card_image_of_injective _ σ.injective, Finset.card_eq_of_bijective]
   use fun i hi => ⟨i, by linarith⟩
@@ -632,13 +629,13 @@ lemma prod_singularValuesSorted_eq_compoundSV (M : Matrix d d ℂ) (k : ℕ)
     simp [Fintype.card_subtype]; exact Nat.choose_pos hk
   apply le_antisymm
   · obtain ⟨S₀, hS₀⟩ := exists_subset_prod_eq_sorted_prod M k hk
-    obtain ⟨j₀, hj₀⟩ := singularValues_compoundMatrix_eq M k hcard S₀
+    obtain ⟨j₀, hj₀⟩ := singularValues_compoundMatrix_eq M k S₀
     obtain ⟨idx, hidx⟩ := singularValues_mem_sorted (compoundMatrix M k) j₀
     rw [← hS₀, ← hj₀, hidx]
     have : NeZero (Fintype.card {S : Finset d // S.card = k}) := ⟨by omega⟩
     exact singularValuesSorted_antitone (compoundMatrix M k) (Fin.zero_le idx)
   · obtain ⟨j, hj⟩ := singularValuesSorted_mem_values (compoundMatrix M k) ⟨0, hcard⟩
-    obtain ⟨S, hS⟩ := singularValues_compoundMatrix_rev M k hcard j
+    obtain ⟨S, hS⟩ := singularValues_compoundMatrix_rev M k j
     rw [hj, hS]
     exact prod_singularValues_subset_le_sorted_prod M k hk S
 
@@ -871,8 +868,7 @@ lemma sum_mul_log_nonneg_of_weak_log_maj {n : ℕ}
             rw [show (Finset.Iic (Fin.succ m) : Finset (Fin (n + 1))) = Finset.Iic (Fin.castSucc m) ∪ { Fin.succ m } from ?_, Finset.sum_union] <;> norm_num; ring!
             ext i; simp [Finset.mem_Iic, Finset.mem_insert]
             exact ⟨fun hi => or_iff_not_imp_left.mpr fun hi' => Nat.le_of_lt_succ <| hi.lt_of_ne hi', fun hi => hi.elim (fun hi => hi.symm ▸ le_rfl) fun hi => Nat.le_trans hi (Nat.le_succ _)⟩
-          · ext i; simp [Fin.lt_iff_val_lt_val, Fin.le_iff_val_le_val]
-            exact Nat.lt_succ_iff
+          · ext i; simp [Fin.lt_def, Fin.le_iff_val_le_val]
         · ext i; simp [Finset.mem_Iic, Finset.mem_insert]
           exact ⟨fun hi => or_iff_not_imp_left.mpr fun hi' => Nat.le_of_lt_succ <| hi.lt_of_ne hi', fun hi => hi.elim (fun hi => hi.symm ▸ le_rfl) fun hi => Nat.le_trans hi (Nat.le_succ _)⟩
     convert h_abel ⟨n, Nat.lt_succ_self _⟩ using 1
@@ -887,11 +883,12 @@ lemma sum_mul_log_nonneg_of_weak_log_maj {n : ℕ}
       specialize h_log_maj (k + 1) (by linarith [Fin.is_lt k])
       rw [show (Finset.Iic k : Finset (Fin n)) = Finset.image (fun i : Fin (k + 1) => ⟨i, by linarith [Fin.is_lt k, Fin.is_lt i]⟩) Finset.univ from ?_, Finset.prod_image] <;> norm_num
       · rwa [Finset.prod_image <| by intros i hi j hj hij; simpa [Fin.ext_iff] using hij]
-      · exact fun i _ j _ hij => Fin.ext <| by simpa using congr_arg Fin.val hij
+      · intro i j hij
+        exact Fin.ext <| by simpa using congr_arg Fin.val hij
       · ext ⟨i, hi⟩; simp [Fin.ext_iff, Fin.le_iff_val_le_val]
         exact ⟨fun hi' => ⟨⟨i, by linarith [Fin.is_lt k]⟩, rfl⟩, fun ⟨a, ha⟩ => ha ▸ Nat.le_trans (Nat.le_of_lt_succ (by linarith [Fin.is_lt a, Fin.is_lt k])) (Nat.le_refl _)⟩
     simp +zetaDelta at *
-    rw [← Real.log_prod _ _ fun i hi => ne_of_gt (div_pos (hy_pos i) (hx_pos i))]; exact Real.log_nonneg (by rw [Finset.prod_div_distrib]; exact by rw [le_div_iff₀ (Finset.prod_pos fun i hi => hx_pos i)]; linarith)
+    rw [← Real.log_prod fun i hi => ne_of_gt (div_pos (hy_pos i) (hx_pos i))]; exact Real.log_nonneg (by rw [Finset.prod_div_distrib]; exact by rw [le_div_iff₀ (Finset.prod_pos fun i hi => hx_pos i)]; linarith)
   exact h_neg <| h_abel.symm ▸ add_nonneg (mul_nonneg (le_of_lt (hx_pos _)) (h_nonneg _)) (Finset.sum_nonneg fun i hi => mul_nonneg (sub_nonneg.mpr (hx_anti <| Nat.le_succ _)) (h_nonneg _))
 
 /-

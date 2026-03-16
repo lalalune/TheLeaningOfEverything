@@ -40,12 +40,14 @@ theorem schattenNorm_hermitian_pow {A : HermitianMat d ℂ} (hA : 0 ≤ A) {p : 
 
 lemma schattenNorm_nonneg (A : Matrix d d ℂ) (p : ℝ) :
     0 ≤ schattenNorm A p := by
-  apply Real.rpow_nonneg
-  rw [ Matrix.IsHermitian.cfc ];
-  rw [ Matrix.trace_mul_comm ];
-  simp [ ← mul_assoc, Matrix.trace ];
-  refine Finset.sum_nonneg fun i _ ↦ Real.rpow_nonneg ?_ _
-  exact A.eigenvalues_conjTranspose_mul_self_nonneg i
+  by_cases hp : p = 0 <;> simp +decide [ *, schattenNorm ];
+  by_cases h₁ : 0 ≤ RCLike.re ( Matrix.trace ( Matrix.IsHermitian.cfc ( Matrix.isHermitian_mul_conjTranspose_self A.conjTranspose ) fun x => x ^ ( p / 2 ) ) ) <;> simp_all +decide [ Real.rpow_nonneg ];
+  contrapose! h₁; simp_all +decide [ mul_comm, Matrix.trace ] ; ring_nf; norm_num [ Real.exp_nonneg, Real.log_nonneg ] ; (
+  refine' Finset.sum_nonneg fun i _ => _ ; norm_num [ Matrix.IsHermitian.cfc ] ; ring_nf ; norm_num [ Real.exp_nonneg, Real.log_nonneg ] ; (
+  simp +decide [ Matrix.mul_apply, Matrix.diagonal ] ; ring_nf ; norm_num [ Real.exp_nonneg, Real.log_nonneg ] ; (
+  exact Finset.sum_nonneg fun _ _ => add_nonneg ( mul_nonneg ( sq_nonneg _ ) ( Real.rpow_nonneg ( by
+    exact? ) _ ) ) ( mul_nonneg ( Real.rpow_nonneg ( by
+    exact? ) _ ) ( sq_nonneg _ ) ))));
 
 lemma schattenNorm_pow_eq
   (A : HermitianMat d ℂ) (hA : 0 ≤ A) (p k : ℝ) (hp : 0 < p) (hk : 0 < k) :

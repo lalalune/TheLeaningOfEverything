@@ -1327,7 +1327,7 @@ theorem IsHermitian.spectrum_subset_Ici_of_sub {d 𝕜 : Type*} [Fintype d] [Dec
             Unitary.conjStarAlgAut_apply]
           simp [ mul_comm, mul_left_comm, Algebra.smul_def ]
           congr! 1
-          sorry
+          simp [Algebra.algebraMap_eq_smul_one, mul_assoc]
         -- Substitute the decomposition of $A$ into the expression $(star v ⬝ᵥ (A.mulVec v))$.
         have h_subst : (star v ⬝ᵥ (A.mulVec v)) = ∑ i, (hA.eigenvalues i) * (star v ⬝ᵥ (Matrix.mulVec (Matrix.of (fun j k => (hA.eigenvectorBasis i j) * (star (hA.eigenvectorBasis i k)))) v)) := by
           -- Substitute the decomposition of $A$ into the expression $(star v ⬝ᵥ (A.mulVec v))$ and use the linearity of matrix multiplication.
@@ -1380,10 +1380,19 @@ theorem IsHermitian.spectrum_subset_Ici_of_sub {d 𝕜 : Type*} [Fintype d] [Dec
           simp only [dotProduct, Pi.star_apply, RCLike.star_def, mul_comm,
             hA.eigenvectorBasis.repr_apply_apply, PiLp.inner_apply, RCLike.inner_apply];
           simp only [WithLp.ofLp_sum, WithLp.ofLp_smul]
-          sorry
+          have key : ∀ (c : d → 𝕜) (f : d → EuclideanSpace 𝕜 d) (w : d → 𝕜),
+              (∑ x, c x • (f x).ofLp = w) ↔ (∑ x, c x • f x = WithLp.toLp 2 w) := by
+            intro c f w
+            conv_lhs => rw [show ∑ x, c x • (f x).ofLp = (∑ x, c x • f x).ofLp from by
+              rw [WithLp.ofLp_sum]; simp [WithLp.ofLp_smul]]
+            constructor
+            · intro h; apply_fun WithLp.toLp 2 at h; simpa using h
+            · intro h; apply_fun WithLp.ofLp at h; simpa using h
+          exact key _ _ _
         -- Taking the inner product of both sides of h_sum with star v, we get the desired equality.
         have h_inner : star v ⬝ᵥ (∑ i, (star (hA.eigenvectorBasis i) ⬝ᵥ v) • (hA.eigenvectorBasis i)) = star v ⬝ᵥ v := by
-          sorry
+          congr 1
+          simp_rw [← WithLp.ofLp_smul, ← WithLp.ofLp_sum, h_sum]
         convert h_inner using 1;
         simp [ dotProduct, Finset.mul_sum _ _ _ ];
         exact Finset.sum_comm.trans ( Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => by ring );

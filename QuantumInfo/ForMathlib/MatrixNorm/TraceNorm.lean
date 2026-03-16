@@ -154,7 +154,7 @@ theorem traceNorm_smul (A : Matrix m n R) (c : R) : (c • A).traceNorm = ‖c�
   · have hM_pd : (Aᴴ * A).PosSemidef := by apply posSemidef_conjTranspose_mul_self
     set M := (Aᴴ * A)
     rw [sq]
-    simp [MulAction.mul_smul]
+    simp [SemigroupAction.mul_smul]
     apply CFC.sqrt_unique;
     · simp; rw [CFC.sqrt_mul_sqrt_self M hM_pd.nonneg]
     · exact le_trans ( by norm_num ) (

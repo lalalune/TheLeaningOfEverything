@@ -8,10 +8,12 @@ import QuantumInfo.ForMathlib.IsMaximalSelfAdjoint
 import QuantumInfo.ForMathlib.ContinuousLinearMap
 import QuantumInfo.ForMathlib.Tactic.Commutes
 
-import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.ExpLog
+import Mathlib.Analysis.Matrix.Normed
+import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.ExpLog.Basic
 import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Rpow.Basic
-import Mathlib.LinearAlgebra.Matrix.HermitianFunctionalCalculus
-import Mathlib.Analysis.Matrix
+import Mathlib.Analysis.SpecialFunctions.Bernstein
+import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
+import Mathlib.Tactic.NormNum.GCD
 
 /-- The type of Hermitian matrices, as a `Subtype`. Equivalent to a `Matrix n n α` bundled
 with the fact that `Matrix.IsHermitian`. -/
@@ -54,7 +56,7 @@ theorem H (A : HermitianMat n α) : A.mat.IsHermitian :=
   A.2
 
 @[ext] protected theorem ext {A B : HermitianMat n α} : A.mat = B.mat → A = B :=
-  Subtype.eq
+  Subtype.ext
 
 instance instFun : FunLike (HermitianMat n α) n (n → α) where
   coe M := (M : Matrix n n α)
@@ -449,11 +451,10 @@ noncomputable def eigenspace (μ : 𝕜) : Submodule 𝕜 (EuclideanSpace 𝕜 n
 /-- The kernel of a Hermitian matrix `A` as a submodule of Euclidean space, defined by
 `LinearMap.ker A.toMat.toEuclideanLin`. Equivalently, the zero-eigenspace. -/
 def ker : Submodule 𝕜 (EuclideanSpace 𝕜 n) :=
-  LinearMap.ker A.lin
+  LinearMap.ker A.lin.toLinearMap
 
 theorem mem_ker_iff_mulVec_zero (x : EuclideanSpace 𝕜 n) : x ∈ A.ker ↔ A.mat.mulVec x = 0 := by
-  simp [ker, LinearMap.mem_ker, lin, Matrix.toEuclideanLin_apply]
-  norm_cast
+  simp [ker, LinearMap.mem_ker, lin, Matrix.toLpLin_apply]
 
 /-- The kernel of a Hermitian matrix is its zero eigenspace. -/
 theorem ker_eq_eigenspace_zero : A.ker = A.eigenspace 0 := by
@@ -475,7 +476,7 @@ theorem ker_pos_smul {c : ℝ} (hc : c ≠ 0) : (c • A).ker = A.ker := by
 /-- The support of a Hermitian matrix `A` as a submodule of Euclidean space, defined by
 `LinearMap.range A.toMat.toEuclideanLin`. Equivalently, the sum of all nonzero eigenspaces. -/
 def support : Submodule 𝕜 (EuclideanSpace 𝕜 n) :=
-  LinearMap.range A.lin
+  LinearMap.range A.lin.toLinearMap
 
 /-- The support of a Hermitian matrix is the sum of its nonzero eigenspaces. -/
 theorem support_eq_sup_eigenspace_nonzero : A.support = ⨆ μ ≠ 0, A.eigenspace μ := by
@@ -650,11 +651,7 @@ theorem range_le_ker_imp_zero {A : HermitianMat d 𝕜}
     simp_all only [← Matrix.ext_iff, Matrix.mul_apply, mat_apply, Matrix.zero_apply]
     intro i j
     specialize h ( EuclideanSpace.single j 1 )
-    simp_all only [Matrix.toEuclideanLin, LinearEquiv.trans_apply, LinearEquiv.arrowCongr_apply,
-      LinearEquiv.symm_symm, WithLp.linearEquiv_apply, EuclideanSpace.ofLp_single,
-      Matrix.toLin'_apply, Matrix.mulVec_single, MulOpposite.op_one, one_smul,
-      WithLp.linearEquiv_symm_apply, WithLp.ofLp_toLp, WithLp.toLp_eq_zero] ;
-    simpa [ Matrix.mulVec, dotProduct ] using congr_fun h i;
+    simpa [ Matrix.mulVec, dotProduct ] using congr(WithLp.ofLp $(h) i)
   simp_all only [mat_apply, Matrix.zero_apply]
   replace hA_sq := congr_fun ( congr_fun hA_sq i ) i
   simp_all only [Matrix.mul_apply, mat_apply, Matrix.zero_apply] ;
@@ -685,25 +682,19 @@ theorem _root_.Matrix.range_mul_conjTranspose_of_ker_le_ker {A : Matrix d d 𝕜
     obtain ⟨y, hy⟩ : ∃ y ∈ LinearMap.range (Matrix.toEuclideanLin (M.conjTranspose)), A.toEuclideanLin y = x := by
       have h_range_MH : LinearMap.range (Matrix.toEuclideanLin (M.conjTranspose)) = (LinearMap.ker (Matrix.toEuclideanLin M))ᗮ := by
         have h_orthogonal : (LinearMap.range (Matrix.toEuclideanLin (M.conjTranspose)))ᗮ = LinearMap.ker (Matrix.toEuclideanLin M) := by
-          ext x;
-          simp only [Matrix.toEuclideanLin, LinearEquiv.trans_apply, Submodule.mem_orthogonal',
-            LinearMap.mem_range, LinearEquiv.arrowCongr_apply, LinearEquiv.symm_symm,
-            WithLp.linearEquiv_apply, Matrix.toLin'_apply, WithLp.linearEquiv_symm_apply,
-            forall_exists_index, forall_apply_eq_imp_iff, LinearMap.mem_ker, WithLp.toLp_eq_zero];
-          simp only [EuclideanSpace.inner_eq_star_dotProduct, dotProduct, PiLp.ofLp_apply,
-            PiLp.toLp_apply, Matrix.mulVec, Matrix.conjTranspose_apply, RCLike.star_def, Pi.star_apply];
-          simp only [funext_iff, Matrix.mulVec, dotProduct, PiLp.ofLp_apply, Pi.zero_apply];
-          constructor <;> intro h;
-          · intro i; specialize h ( Pi.single i 1 )
-            simp_all only [LinearMap.mem_range] ;
-            simp_all only [Pi.single_apply, mul_ite, mul_one, mul_zero, Finset.sum_ite_eq',
-              Finset.mem_univ, ↓reduceIte];
-            simpa [ ← map_sum, ← map_mul ] using congr_arg Star.star h;
-          · simp [ mul_comm, mul_left_comm, Finset.mul_sum]
-            intro a
-            rw [Finset.sum_comm]
-            simp only [← Finset.mul_sum]
-            simp_all [← map_mul, ← map_sum ];
+          ext x
+          rw [Matrix.toEuclideanLin_conjTranspose_eq_adjoint]
+          simp only [Submodule.mem_orthogonal, LinearMap.mem_ker, LinearMap.mem_range]
+          constructor
+          · intro h
+            rw [← inner_self_eq_zero (𝕜 := 𝕜)]
+            have : ∀ y, @inner 𝕜 _ _ y (Matrix.toEuclideanLin M x) = 0 := by
+              intro y
+              rw [← LinearMap.adjoint_inner_left]
+              exact h _ ⟨y, rfl⟩
+            exact this _
+          · intro h y ⟨z, hz⟩
+            rw [← hz, LinearMap.adjoint_inner_left, h, inner_zero_right]
         rw [← h_orthogonal, Submodule.orthogonal_orthogonal]
       obtain ⟨ y, rfl ⟩ := hx;
       -- Since $y$ is in the range of $Mᴴ$, we can write $y$ as $y = y_1 + y_2$ where $y_1 \in \text{range}(Mᴴ)$ and $y_2 \in \text{ker}(M)$.
@@ -727,7 +718,7 @@ theorem conj_ne_zero {A : HermitianMat d 𝕜} {M : Matrix d₂ d 𝕜} (hA : A 
     have h_range : LinearMap.range (A.mat * M.conjTranspose).toEuclideanLin ≤ LinearMap.ker M.toEuclideanLin := by
       rintro x ⟨y, rfl⟩
       replace h_contra := congr($(h_contra).mat)
-      simp_all [Matrix.toEuclideanLin_apply, Matrix.mul_assoc]
+      simp_all [Matrix.toLpLin_apply, Matrix.mul_assoc]
     rw [← Matrix.range_mul_conjTranspose_of_ker_le_ker h]
     exact h_range.trans h
   exact hA (range_le_ker_imp_zero h_range)

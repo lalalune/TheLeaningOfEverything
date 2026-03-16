@@ -191,8 +191,12 @@ lemma rpow_inv_eq_neg_rpow (hA : A.mat.PosDef) (p : ℝ) : (A ^ p)⁻¹ = A ^ (-
 open ComplexOrder in
 lemma sandwich_le_one (hB : B.mat.PosDef) (h : A ≤ B) :
     (A.conj (B ^ (-1/2 : ℝ)).mat) ≤ 1 := by
-  convert ← conj_mono h using 1
-  exact sandwich_self hB
+  have h_B_sq : B.conj (B ^ (-1 / 2 : ℝ)).mat = 1 := by
+    exact?
+  generalize_proofs at *; (
+  convert le_trans _ h_B_sq.le using 1
+  generalize_proofs at *; (
+  exact?));
 
 open ComplexOrder in
 lemma rpow_neg_mul_rpow_self (hA : A.mat.PosDef) (p : ℝ) :
