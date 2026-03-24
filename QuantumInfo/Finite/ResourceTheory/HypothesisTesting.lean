@@ -295,11 +295,15 @@ theorem Lemma3 {ρ : MState d} (ε : Prob) {S : Set (MState d)} (hS₁ : IsCompa
 --Maybe should be phrased in terms of `0 < ...` instead? Maybe belongs in another file? It's kiinnnd of specialized..
 theorem ker_diagonal_prob_eq_bot {q : Prob} (hq₁ : 0 < q) (hq₂ : q < 1) :
     HermitianMat.ker (.diagonal ℂ (ProbDistribution.coin q ·)) = ⊥ := by
-  apply Matrix.PosDef.toLin_ker_eq_bot
-  apply Matrix.PosDef.diagonal
-  intro i; fin_cases i
-  · simpa
-  · simpa [← Complex.ofReal_one, Complex.real_lt_real]
+  have hA : (Matrix.toLin' (HermitianMat.diagonal ℂ (ProbDistribution.coin q ·)).mat).ker = ⊥ := by
+    apply Matrix.PosDef.toLin_ker_eq_bot
+    apply Matrix.PosDef.diagonal
+    intro i; fin_cases i
+    · simpa
+    · simpa [← Complex.ofReal_one, Complex.real_lt_real]
+  simp [LinearMap.ker_eq_bot', HermitianMat.ker] at hA ⊢
+  intro m hm
+  simpa only [WithLp.ofLp_eq_zero] using hA m congr($hm)
 
 variable {d₂ : Type*} [Fintype d₂] [DecidableEq d₂] in
 /-- Lemma S1 -/
@@ -379,7 +383,7 @@ theorem Ref81Lem5 (ρ σ : MState d) (ε : Prob) (hε : ε < 1) (α : ℝ) (hα 
   have hq : 0 < q := pos_of_lt_one {σ} ⟨σ, rfl, h_supp⟩ hε
 
   suffices —log q ≤ D̃_ α(p2‖q2) + —log (1 - ε) * (.ofNNReal ⟨α, pf1⟩) / (.ofNNReal ⟨α - 1, pf2⟩) by
-    refine this.trans (add_le_add_right ?_ _)
+    refine this.trans (add_le_add_left ?_ _)
     --Show that this is an instance of the Data Processing Inequality
     obtain ⟨Φ, hΦ₁, hΦ₂⟩ : ∃ (Φ : CPTPMap d (Fin 2)), p2 = Φ ρ ∧ q2 = Φ σ := by
       --The relevant map here is to take the T that optimizes inside β_ ε (ρ‖{σ}),
@@ -414,7 +418,7 @@ theorem Ref81Lem5 (ρ σ : MState d) (ε : Prob) (hε : ε < 1) (α : ℝ) (hα 
         rw [← hT₁]
         exact HermitianMat.inner_comm _ _
     rw [hΦ₁, hΦ₂]
-    exact sandwichedRenyiEntropy_DPI hα.le ρ σ Φ
+    exact sandwichedRenyiEntropy_DPI_ax hα.le ρ σ Φ
 
   --If q = 1, this inequality is trivial
   by_cases hq₂ : q = 1
@@ -437,7 +441,7 @@ theorem Ref81Lem5 (ρ σ : MState d) (ε : Prob) (hε : ε < 1) (α : ℝ) (hα 
 
   --The logs are finite
   rw [Prob.negLog, Prob.negLog, if_neg hq.ne']
-  rw [if_neg (show 1 - ε ≠ 0 by simpa [Subtype.eq_iff, Prob.coe_sub] using h₂.ne')]
+  rw [if_neg (show 1 - ε ≠ 0 by simpa [Subtype.ext_iff, Prob.coe_sub] using h₂.ne')]
 
   --Turn the ENNReal problem into a Real problem
   have hα₂ : Subtype.mk _ pf2 ≠ 0 := by

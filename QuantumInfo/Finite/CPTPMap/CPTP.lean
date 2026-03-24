@@ -505,7 +505,7 @@ private lemma exists_unitary_extending_isometry
     (emb : n ↪ m) :
     ∃ U : 𝐔[m], ∀ i j, U.val i (emb j) = V i j := by
   -- Let $u_i$ be the $i$-th column of $V$.
-  set u : n → EuclideanSpace ℂ m := fun j => fun i => V i j;
+  set u : n → EuclideanSpace ℂ m := fun j => WithLp.toLp 2 (fun i => V i j)
   -- Since $u$ is an orthonormal set, we can extend it to an orthonormal basis of $\mathbb{C}^m$.
   obtain ⟨b, hb⟩ : ∃ b : OrthonormalBasis m ℂ (EuclideanSpace ℂ m), ∀ j, b (emb j) = u j := by
     have h_orthonormal : Orthonormal ℂ (fun j => u j) := by

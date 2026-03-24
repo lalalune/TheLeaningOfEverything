@@ -116,7 +116,7 @@ theorem pinching_commutes (ρ σ : MState d) :
   dsimp [MState.m, Commute, SemiconjBy]
   rw [pinchingMap_apply_M]
   simp only [MatrixMap.of_kraus, Function.comp_apply]
-  simp only [HermitianMat.conjTranspose_mat, MState.mat_M, LinearMap.coeFn_sum,
+  simp only [HermitianMat.conjTranspose_mat, MState.mat_M, LinearMap.coe_sum,
     LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply]
   simp only [HermitianMat.mat_mk, Finset.sum_mul, Finset.mul_sum]
   congr! 1 with i
@@ -133,7 +133,7 @@ theorem pinching_self (ρ : MState d) : pinching_map ρ ρ = ρ := by
   ext1
   rw [pinchingMap_apply_M]
   simp only [MatrixMap.of_kraus, Function.comp_apply]
-  simp only [HermitianMat.conjTranspose_mat, MState.mat_M, LinearMap.coeFn_sum,
+  simp only [HermitianMat.conjTranspose_mat, MState.mat_M, LinearMap.coe_sum,
     LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply]
   simp_rw [(pinching_kraus_commutes ρ _).eq, mul_assoc, ← sq]
   conv_lhs =>
@@ -167,7 +167,7 @@ theorem pinching_bound (ρ σ : MState d) : ρ.M ≤ (↑(Fintype.card (spectrum
   · --The spectrum of a MState is always positive.
     --Should be a helper lemma, it's only like two lines though.
     --*Could* be a positivity extension.
-    dsimp [MState.spectrum, Distribution.mk']
+    dsimp [MState.spectrum, ProbDistribution.mk']
     rw [Complex.zero_le_real]
     exact (HermitianMat.zero_le_iff.mp ρ.nonneg).eigenvalues_nonneg _
   have h1 : (1 : Matrix d d ℂ) = (1 : HermitianMat d ℂ) := by exact selfAdjoint.val_one
@@ -182,7 +182,7 @@ theorem pinching_bound (ρ σ : MState d) : ρ.M ≤ (↑(Fintype.card (spectrum
   dsimp [MState.m]
   --This out to be Cauchy-Schwarz.
   have hschwarz := inner_mul_inner_self_le (𝕜 := ℂ) (E := EuclideanSpace ℂ (↑(spectrum ℝ σ.m)))
-    (x := fun i ↦ 1) (y := fun k ↦ (
+    (x := .toLp 2 fun i ↦ 1) (y := .toLp 2 fun k ↦ (
       star v ⬝ᵥ ((pinching_kraus σ k).mat *ᵥ (ψs i))
     ))
   rw [← Complex.real_le_real] at hschwarz
@@ -222,8 +222,11 @@ theorem pinching_bound (ρ σ : MState d) : ρ.M ≤ (↑(Fintype.card (spectrum
 
 open ComplexOrder in
 theorem ker_le_ker_pinching_of_PosDef (ρ σ : MState d) (hpos : σ.m.PosDef) : σ.M.ker ≤ (pinching_map σ ρ).M.ker := by
-  have h_ker : σ.M.ker = ⊥ :=
-    hpos.toLin_ker_eq_bot
+  have h_ker : σ.M.ker = ⊥ := by
+    have := hpos.toLin_ker_eq_bot
+    simp [LinearMap.ker_eq_bot', HermitianMat.ker] at this ⊢
+    intro m hm
+    simpa only [WithLp.ofLp_eq_zero] using this m congr($hm)
   rw [h_ker]
   exact bot_le
 
@@ -305,6 +308,8 @@ theorem pinching_map_ker_le (ρ σ : MState d) : (pinching_map σ ρ).M.ker ≤ 
     rw [← Matrix.sum_mulVec, ← HermitianMat.mat_finset_sum, pinching_sum σ,
       HermitianMat.mat_one, Matrix.one_mulVec]
   rw [pinching_map_eq_sum_conj_hermitian σ ρ, h_ker_sum, Submodule.mem_iInf] at hv
+  replace hv_sum := congr(WithLp.toLp 2 $(hv_sum))
+  simp only [WithLp.toLp_sum, WithLp.toLp_ofLp] at hv_sum
   rw [← hv_sum]
   exact Submodule.sum_mem _ fun k _ ↦ by simpa [HermitianMat.ker_conj ρ.nonneg] using hv k
 
@@ -338,7 +343,8 @@ theorem ker_le_ker_pinching_map_ker (ρ σ : MState d) (h : σ.M.ker ≤ ρ.M.ke
   intro v hv;
   -- Since $v \in \ker \sigma$, we have $P_k v = 0$ for all $k$ where the eigenvalue of $k$ is non-zero.
   have h_proj_zero : ∀ k : spectrum ℝ σ.m, k.val ≠ 0 → (pinching_kraus σ k).mat *ᵥ v = 0 := by
-    exact fun k hk ↦ pinching_kraus_ker_of_ne_zero σ v ( by simpa [ Matrix.mulVec ] using hv ) k hk;
+    intro k hk
+    exact pinching_kraus_ker_of_ne_zero σ v congr($hv) k hk
   -- Since $v \in \ker \sigma$, we have $P_k v = v$ for all $k$ where the eigenvalue of $k$ is zero.
   have h_proj_one : ∀ k : spectrum ℝ σ.m, k.val = 0 → (pinching_kraus σ k).mat *ᵥ v = v := by
     intro k hk
@@ -360,18 +366,21 @@ theorem ker_le_ker_pinching_map_ker (ρ σ : MState d) (h : σ.M.ker ≤ ρ.M.ke
   have h_sum : (pinching_map σ ρ).M.mat *ᵥ v = ∑ k : spectrum ℝ σ.m, (pinching_kraus σ k).mat *ᵥ (ρ.M.mat *ᵥ ((pinching_kraus σ k).mat *ᵥ v)) := by
     convert congr_arg ( fun x : Matrix d d ℂ => x.mulVec v ) ( pinching_eq_sum_conj σ ρ ) using 1;
     simp [ Matrix.mul_assoc, Matrix.sum_mulVec ];
-  refine' h_sum.trans _;
+  refine' Eq.trans congr(WithLp.toLp 2 $(h_sum)) _;
+  simp only [MState.mat_M, Matrix.mulVec_mulVec, WithLp.toLp_sum]
   refine' Finset.sum_eq_zero fun k hk => _;
   by_cases hk_zero : k.val = 0
   · simp_all only [ne_eq, Subtype.forall, Matrix.mulVec_mulVec, Finset.mem_univ]
-    convert congr_arg ( fun x => (pinching_kraus σ k).mat *ᵥ x ) (h hv) using 1;
-    · simp [ ← Matrix.mul_assoc, ← Matrix.mulVec_mulVec]
-      congr! 2;
-      convert h_proj_one k.val k.2 hk_zero using 1;
-      congr! 2;
-      exact congr_arg _ ( Subtype.ext hk_zero );
+    simp only [WithLp.toLp_eq_zero]
+    convert congr_arg ( fun x => (pinching_kraus σ k).mat *ᵥ x ) congr($(h hv)) using 1;
+    · specialize h_proj_one k.val k.2 hk_zero
+      rw! [← hk_zero] at h_proj_one
+      simp only [Subtype.coe_eta] at h_proj_one
+      simp only [← Matrix.mul_assoc, ← Matrix.mulVec_mulVec, ContinuousLinearMap.coe_coe]
+      rw [h_proj_one]
+      rfl
     · simp
-  · simp_all
+  · simp [← Matrix.mulVec_mulVec, h_proj_zero _ hk_zero]
 
 /-- Exercise 2.8 of Hayashi's book "A group theoretic approach to Quantum Information". -/
 theorem pinching_pythagoras (ρ σ : MState d) :

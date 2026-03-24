@@ -44,9 +44,9 @@ theorem Matrix.isometry_preserves_norm (A : Matrix n m 𝕜) (hA : A.Isometry) (
     have h_inner_eq : inner 𝕜 (toEuclideanLin A x) (toEuclideanLin A y) = inner 𝕜 x (toEuclideanLin A.conjTranspose (toEuclideanLin A y)) := by
       simp [ Matrix.toEuclideanLin, inner ];
       simp [ Matrix.mulVec, dotProduct, Finset.mul_sum, mul_comm, ];
-      simp [ Matrix.mul_apply, mul_assoc, mul_comm, mul_left_comm, Finset.mul_sum _ _ _, Finset.sum_mul ];
-      exact Finset.sum_comm.trans ( Finset.sum_congr rfl fun _ _ => Finset.sum_comm );
-    simp_all [ Matrix.toEuclideanLin];
+      simp [ Matrix.mul_apply, mul_assoc, mul_comm, mul_left_comm, Finset.mul_sum]
+      rw [Finset.sum_comm, Finset.sum_comm_cycle]
+    simp_all [ Matrix.toEuclideanLin, toLpLin];
   convert congr_arg Real.sqrt ( congr_arg ( fun z => ‖z‖ ) ( h_inner x x ) ) using 1;
   · simp [ EuclideanSpace.norm_eq, inner_self_eq_norm_sq_to_K ];
   · simp [ EuclideanSpace.norm_eq, inner_self_eq_norm_sq_to_K ]
@@ -115,11 +115,7 @@ lemma V_rho_conj_mul_self_eq (ρAB : HermitianMat (dA × dB) ℂ) (hρ : ρAB.ma
     have h_simp : (ρAB.sqrt : Matrix (dA × dB) (dA × dB) ℂ)ᴴ * (ρAB.sqrt : Matrix (dA × dB) (dA × dB) ℂ) = ρAB := by
       convert ρAB.sqrt_sq ( show 0 ≤ ρAB from ?_ ) using 1;
       · simp [ HermitianMat.sqrt ];
-      · have := hρ.2;
-        constructor;
-        · simp [Matrix.IsHermitian]
-        · intro x; by_cases hx : x = 0 <;> simp_all
-          exact le_of_lt ( this x hx );
+      · positivity
     ext ⟨ i, j ⟩ ⟨ k, l ⟩
     simp [ ← h_simp, Matrix.mul_apply ]
     ring_nf
@@ -142,24 +138,32 @@ lemma PosDef_traceRight [Nonempty dB] (A : HermitianMat (dA × dB) ℂ) (hA : A.
   have h_trace_right_pos_def : ∀ (x : EuclideanSpace ℂ dA), x ≠ 0 → 0 < ∑ k : dB, (star x) ⬝ᵥ (Matrix.mulVec (A.val.submatrix (fun i => (i, k)) (fun i => (i, k))) x) := by
     intro x hx_ne_zero
     have h_inner_pos : ∀ k : dB, 0 ≤ (star x) ⬝ᵥ (Matrix.mulVec (A.val.submatrix (fun i => (i, k)) (fun i => (i, k))) x) := by
-      have := hA.2;
+      have := (Matrix.posDef_iff_dotProduct_mulVec.mp hA).2;
       intro k
-      specialize this ( fun i => if h : i.2 = k then x i.1 else 0 )
+      specialize @this ( fun i => if h : i.2 = k then x i.1 else 0 )
       simp_all only [ne_eq, dite_eq_ite, dotProduct, Pi.star_apply, RCLike.star_def, Matrix.mulVec,
         HermitianMat.mat_apply, mul_ite, mul_zero, HermitianMat.val_eq_coe, Matrix.submatrix_apply]
       convert this ( show ( fun i : dA × dB => if i.2 = k then x i.1 else 0 ) ≠ 0 from fun h => hx_ne_zero <| by ext i; simpa using congr_fun h ( i, k ) ) |> le_of_lt using 1;
-      rw [ ← Finset.sum_subset ( Finset.subset_univ ( Finset.image ( fun i : dA => ( i, k ) ) Finset.univ ) ) ] <;> simp [ Finset.sum_image, Finset.sum_ite ];
-      · refine' Finset.sum_congr rfl fun i hi => _;
+      rw [ ← Finset.sum_subset ( Finset.subset_univ ( Finset.image ( fun i : dA => ( i, k ) ) Finset.univ ) ) ]
+      · simp only [Finset.sum_ite, Finset.sum_const_zero, add_zero, Set.InjOn, Finset.coe_univ,
+          Set.mem_univ, Prod.mk.injEq, and_true, imp_self, implies_true, Finset.sum_image, ↓reduceIte];
+        refine' Finset.sum_congr rfl fun i hi => _;
         refine' congr_arg _ ( Finset.sum_bij ( fun j _ => ( j, k ) ) _ _ _ _ ) <;> simp
-      · exact fun a b hb => Or.inl fun h => False.elim <| hb <| h.symm;
+      · simp only [Finset.mem_univ, Finset.mem_image, true_and, not_exists, ne_eq, Finset.sum_ite,
+          Finset.sum_const_zero, add_zero, mul_eq_zero, map_eq_zero, ite_eq_right_iff, forall_const,
+          Prod.forall, Prod.mk.injEq, not_and, forall_eq];
+        exact fun a b hb => Or.inl fun h => False.elim <| hb <| h.symm;
     obtain ⟨k, hk⟩ : ∃ k : dB, (star x) ⬝ᵥ (Matrix.mulVec (A.val.submatrix (fun i => (i, k)) (fun i => (i, k))) x) > 0 := by
-      have := hA.2 ( fun i => x i.1 * ( if i.2 = Classical.arbitrary dB then 1 else 0 ) )
+      have := @(Matrix.posDef_iff_dotProduct_mulVec.mp hA).2 ( fun i => x i.1 * ( if i.2 = Classical.arbitrary dB then 1 else 0 ) )
       simp_all only [ne_eq, dotProduct, Pi.star_apply, RCLike.star_def, Matrix.mulVec,
         HermitianMat.val_eq_coe, Matrix.submatrix_apply, HermitianMat.mat_apply, mul_ite, mul_one, mul_zero]
       contrapose! this
       simp_all only [ne_eq, funext_iff, Pi.zero_apply, ite_eq_right_iff, Prod.forall, forall_eq,
         not_forall, Finset.sum_ite, Finset.sum_const_zero, add_zero] ;
-      refine' ⟨ Function.ne_iff.mp hx_ne_zero, _ ⟩;
+      constructor
+      · rw [← Function.ne_iff]
+        change _ ≠ 0
+        simpa using hx_ne_zero
       convert this ( Classical.arbitrary dB ) using 1;
       rw [ ← Finset.sum_subset ( Finset.subset_univ ( Finset.univ.image fun i : dA => ( i, Classical.arbitrary dB ) ) ) ]
       · simp only [Finset.coe_univ, Prod.mk.injEq, and_true, implies_true, Set.injOn_of_eq_iff_eq,
@@ -170,8 +174,9 @@ lemma PosDef_traceRight [Nonempty dB] (A : HermitianMat (dA × dB) ℂ) (hA : A.
           map_eq_zero, ite_eq_right_iff, forall_const, Prod.forall, Prod.mk.injEq, not_and, forall_eq]
         exact fun a b hb => Or.inl fun h => False.elim <| hb <| h.symm ▸ rfl
     exact lt_of_lt_of_le hk ( Finset.single_le_sum ( fun k _ => h_inner_pos k ) ( Finset.mem_univ k ) );
+  rw [Matrix.posDef_iff_dotProduct_mulVec]
   refine' ⟨A.traceRight.2, fun x hx => _ ⟩;
-  · convert h_trace_right_pos_def x hx using 1;
+  · convert h_trace_right_pos_def (WithLp.toLp 2 x) (by simpa using hx) using 1;
     unfold HermitianMat.traceRight
     simp only [dotProduct, Pi.star_apply, RCLike.star_def, HermitianMat.mat_mk, HermitianMat.val_eq_coe]
     simp only [Matrix.mulVec, dotProduct, mul_comm, Matrix.submatrix_apply, HermitianMat.mat_apply];
@@ -250,17 +255,17 @@ theorem Matrix.opNorm_reindex_proven {l m n p : Type*} [Fintype l] [Fintype m] [
   · refine' csInf_le _ _;
     · exact ⟨ 0, fun c hc => hc.1 ⟩;
     · refine' ⟨ norm_nonneg _, fun x => _ ⟩;
-      convert ContinuousLinearMap.le_opNorm ( LinearMap.toContinuousLinearMap ( Matrix.toEuclideanLin A ) ) ( fun i => x ( f i ) ) using 1;
+      convert ContinuousLinearMap.le_opNorm ( LinearMap.toContinuousLinearMap ( Matrix.toEuclideanLin A ) ) (WithLp.toLp 2 ( fun i => x ( f i ) )) using 1;
       · simp [ Matrix.toEuclideanLin, EuclideanSpace.norm_eq ];
         rw [ ← Equiv.sum_comp e.symm ] ; aesop;
       · simp [ EuclideanSpace.norm_eq, Matrix.opNorm ];
         exact Or.inl ( by rw [ ← Equiv.sum_comp f ] );
   · refine' ContinuousLinearMap.opNorm_le_bound _ _ fun a => _;
     · exact ContinuousLinearMap.opNorm_nonneg _;
-    · convert ContinuousLinearMap.le_opNorm ( LinearMap.toContinuousLinearMap ( toEuclideanLin ( Matrix.reindex e f A ) ) ) ( fun i => a ( f.symm i ) ) using 1;
+    · convert ContinuousLinearMap.le_opNorm ( LinearMap.toContinuousLinearMap ( toEuclideanLin ( Matrix.reindex e f A ) ) ) (WithLp.toLp 2 ( fun i => a ( f.symm i ) )) using 1;
       · simp [ EuclideanSpace.norm_eq, Matrix.toEuclideanLin ];
-        rw [ ← Equiv.sum_comp e.symm ] ; simp [ Matrix.mulVec, dotProduct ] ;
-        grind;
+        rw [ ← Equiv.sum_comp e.symm ]
+        simp [ Matrix.mulVec, dotProduct ] ;
       · congr! 2;
         simp [ EuclideanSpace.norm_eq]
         conv_lhs => rw [ ← Equiv.sum_comp f.symm ] ;
@@ -764,7 +769,8 @@ theorem intermediate_ineq [Nonempty dA] [Nonempty dB] [Nonempty dC]
   convert h_sorted using 1;
   rw [HermitianMat.le_iff];
   rw [ ← S_mat_conj_rhs_eq_one ρAB σBC hρ hσ ];
-  constructor <;> intro h <;> simp_all [ Matrix.PosSemidef ];
+  simp only [ Matrix.posSemidef_iff_dotProduct_mulVec ]
+  constructor <;> intro h <;> simp_all
   · convert h_sorted using 1;
     convert S_mat_conj_rhs_eq_one ρAB σBC hρ hσ using 1;
   · have := S_mat_isUnit ρAB σBC hρ hσ;
@@ -772,7 +778,7 @@ theorem intermediate_ineq [Nonempty dA] [Nonempty dB] [Nonempty dC]
     have h_pos_semidef : Matrix.PosSemidef ((S_mat ρAB σBC)⁻¹ * (S_mat ρAB σBC * ((ρAB.traceRight ⊗ₖ σBC⁻¹).reindex (Equiv.prodAssoc dA dB dC).symm).mat * S_mat ρAB σBC - S_mat ρAB σBC * (ρAB ⊗ₖ (σBC.traceLeft)⁻¹).mat * S_mat ρAB σBC) * (S_mat ρAB σBC)⁻¹ᴴ) := by
       exact Matrix.PosSemidef.mul_mul_conjTranspose_same h (S_mat ρAB σBC)⁻¹;
     simp_all [ Matrix.mul_assoc, Matrix.sub_mul, Matrix.mul_sub ];
-    simp_all [ Matrix.PosSemidef, Matrix.IsHermitian ];
+    simp_all [ Matrix.posSemidef_iff_dotProduct_mulVec, Matrix.IsHermitian ];
     have h_conj : (S_mat ρAB σBC)ᴴ = S_mat ρAB σBC := by
       unfold S_mat; simp [ Matrix.conjTranspose_kronecker, Matrix.conjTranspose_submatrix ] ;
     simp_all [  Matrix.conjTranspose_nonsing_inv ]
@@ -968,11 +974,12 @@ private lemma MState.approx_by_pd
       aesop;
     have h_pos_def : ∀ (A : Matrix d₁ d₁ ℂ), A.PosSemidef → ∀ (B : Matrix d₁ d₁ ℂ), B.PosDef → ∀ (ε : ℝ), 0 < ε ∧ ε < 1 → (1 - ε) • A + ε • B ∈ {M : Matrix d₁ d₁ ℂ | M.PosDef} := by
       intro A hA B hB ε hε
-      constructor <;> simp_all [ Matrix.PosSemidef, Matrix.PosDef ];
+      simp only [ Matrix.posSemidef_iff_dotProduct_mulVec, Matrix.posDef_iff_dotProduct_mulVec ] at *
+      constructor <;> simp_all
       · simp_all [ Matrix.IsHermitian, Matrix.conjTranspose_add, Matrix.conjTranspose_smul ];
       · intro x hx_ne_zero
         have h_pos : 0 < (1 - ε) * (star x ⬝ᵥ A *ᵥ x) + ε * (star x ⬝ᵥ B *ᵥ x) := by
-          exact add_pos_of_nonneg_of_pos ( mul_nonneg ( sub_nonneg.2 <| mod_cast hε.2.le ) <| mod_cast hA.2 x ) <| mul_pos ( mod_cast hε.1 ) <| mod_cast hB.2 x hx_ne_zero;
+          exact add_pos_of_nonneg_of_pos ( mul_nonneg ( sub_nonneg.2 <| mod_cast hε.2.le ) <| mod_cast hA.2 x ) <| mul_pos ( mod_cast hε.1 ) <| mod_cast hB.2 hx_ne_zero;
         convert h_pos using 1 ; simp [ Matrix.add_mulVec ] ; ring_nf!
         simp [ Matrix.mulVec, dotProduct, Finset.mul_sum _ _ _, mul_assoc, mul_left_comm, sub_mul, mul_sub ] ; ring!;
     convert h_pos_def _ _ _ _ _ ⟨ _, _ ⟩ <;> norm_num [ * ];
@@ -1167,8 +1174,6 @@ private lemma S_R_of_BCR_eq (ρ : MState (dA × dB × dC)) :
   convert Sᵥₙ_of_partial_eq ρ.purify using 1;
   · rw [h_trace];
   · rw [ ρ.purify_spec ]
-
-end SSA_proof
 
 /-- Strong subadditivity on a tripartite system -/
 theorem Sᵥₙ_strong_subadditivity (ρ₁₂₃ : MState (d₁ × d₂ × d₃)) :

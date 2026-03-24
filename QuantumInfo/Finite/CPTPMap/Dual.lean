@@ -59,12 +59,14 @@ theorem _root_.Matrix.PosSemidef.trace_mul_nonneg {n : Type*} [Fintype n] [Decid
   have h : (sqrtB * A * sqrtBᴴ).PosSemidef := by
     convert hA.conjTranspose_mul_mul_same sqrtBᴴ using 1
     simp [Matrix.mul_assoc]
+  rw [Matrix.posSemidef_iff_dotProduct_mulVec] at h
   simpa [Matrix.mulVec, dotProduct, Matrix.trace, Pi.single_apply] using
     Finset.sum_nonneg fun i _ ↦ h.2 (Pi.single i 1)
 
 /-- The dual of a `IsPositive` map also `IsPositive`. -/
 theorem IsPositive.dual (h : M.IsPositive) : M.dual.IsPositive := by
   intro x hx
+  rw [Matrix.posSemidef_iff_dotProduct_mulVec] at hx ⊢
   use IsHermitianPreserving.dual h.IsHermitianPreserving hx.1
   intro v
   have h_dual_pos : 0 ≤ (M (Matrix.vecMulVec v (star v)) * x).trace := by
@@ -72,7 +74,8 @@ theorem IsPositive.dual (h : M.IsPositive) : M.dual.IsPositive := by
     apply Matrix.PosSemidef.trace_mul_nonneg;
     · apply h;
       exact Matrix.posSemidef_vecMulVec_self_star v;
-    · exact hx;
+    · rw [← Matrix.posSemidef_iff_dotProduct_mulVec] at hx
+      exact hx;
   convert h_dual_pos using 1;
   rw [ MatrixMap.Dual.trace_eq ];
   simp [ Matrix.vecMulVec, Matrix.mul_apply, Matrix.trace ];
@@ -176,9 +179,9 @@ lemma dual_kron {A B C D : Type*} [Fintype A] [Fintype B] [Fintype C] [Fintype D
       ext ⟨i, j⟩ ⟨k, l⟩; simp [ Matrix.kroneckerMap ] ;
       rw [ Finset.sum_image ] <;> simp [ Matrix.sum_apply ];
       · rw [ Finset.sum_eq_single ( j, l ) ] <;> aesop;
-      · intro p hp q hq h
+      · intro p q h
         subst hX_sum
-        simp_all only [Set.mem_univ, Prod.mk.injEq, EmbeddingLike.apply_eq_iff_eq]
+        simp_all only [Prod.mk.injEq, EmbeddingLike.apply_eq_iff_eq]
         obtain ⟨fst, snd⟩ := p
         obtain ⟨fst_1, snd_1⟩ := q
         obtain ⟨left, right⟩ := h

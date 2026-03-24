@@ -229,21 +229,21 @@ lemma Gamma_inv_self (σ : MState d) (hσ : σ.m.PosDef) :
           convert HermitianMat.mat_cfc_mul σ.M f g using 1;
         rw [ h_gamma_inv_sigma, ← HermitianMat.mat_cfc_mul ];
         congr! 2
-      apply_rules [ ContinuousOn.rpow, continuousOn_id, continuousOn_const ];
-      · norm_num +zetaDelta at *;
+      have h : ∀ x ∈ spectrum ℝ σ.M.mat, x ≠ 0 := by
+        norm_num
         intro x hx h_zero
         have h_eigenvalue : ∃ v : d → ℂ, v ≠ 0 ∧ σ.m.mulVec v = x • v := by
           simp_all [ spectrum.mem_iff]
           contrapose! hx;
           exact Matrix.PosDef.isUnit hσ;
-        obtain ⟨ v, hv_ne_zero, hv_eigenvalue ⟩ := h_eigenvalue; have := hσ.2 v; simp_all
-      · norm_num +zetaDelta at *;
-        intro x hx h_zero
-        have h_eigenvalue : ∃ v : d → ℂ, v ≠ 0 ∧ σ.m.mulVec v = x • v := by
-          simp_all [ spectrum.mem_iff]
-          contrapose! hx;
-          exact Matrix.PosDef.isUnit hσ;
-        obtain ⟨ v, hv_ne_zero, hv_eigenvalue ⟩ := h_eigenvalue; have := hσ.2 v; simp_all
+        obtain ⟨ v, hv_ne_zero, hv_eigenvalue ⟩ := h_eigenvalue
+        rw [Matrix.posDef_iff_dotProduct_mulVec] at hσ
+        have := hσ.2 hv_ne_zero
+        simp [hv_eigenvalue, h_zero] at this
+      apply h_gamma_inv_sigma
+      · fun_prop
+      · fun_prop
+      · fun_prop
     convert h_gamma_inv_sigma using 1;
     ext i j ; simp [ Matrix.mul_apply]
   -- Since $x^{-1/2} * x * x^{-1/2} = 1$ for $x > 0$, we have $(σ.M.cfc (fun x => x ^ (-1/2 : ℝ))).mat * (σ.M.mat) * (σ.M.cfc (fun x => x ^ (-1/2 : ℝ))).mat = (σ.M.cfc (fun x => 1)).mat$.
@@ -298,14 +298,14 @@ lemma Gamma_Gamma_inv (σ : MState d) (hσ : σ.m.PosDef) (X : Matrix d d ℂ) :
     · have h_gamma_gamma_inv : ∀ x ∈ spectrum ℝ σ.M.mat, x ^ (1 / 2 : ℝ) * x ^ (-1 / 2 : ℝ) = 1 := by
         intro x hx
         have hx_pos : 0 < x := by
-          have := hσ.2;
+          have := (Matrix.posDef_iff_dotProduct_mulVec.mp hσ).2;
           obtain ⟨v, hv⟩ : ∃ v : d → ℂ, v ≠ 0 ∧ σ.m.mulVec v = x • v := by
             rw [ spectrum.mem_iff ] at hx;
             simp_all [ Matrix.isUnit_iff_isUnit_det ];
             obtain ⟨ v, hv ⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr hx;
             simp_all [ sub_eq_iff_eq_add, Matrix.sub_mulVec ];
             exact ⟨ v, hv.1, hv.2.symm.trans ( by ext i; erw [ Matrix.mulVec_diagonal ] ; aesop ) ⟩;
-          specialize this v hv.1;
+          specialize this hv.1;
           simp_all [ dotProduct];
           simp_all [ mul_assoc, mul_comm];
           simp_all [ mul_left_comm ( v _ ), Complex.mul_conj, Complex.normSq_eq_norm_sq ];
@@ -317,7 +317,7 @@ lemma Gamma_Gamma_inv (σ : MState d) (hσ : σ.m.PosDef) (X : Matrix d d ℂ) :
         norm_num
       · exact fun x hx => h_gamma_gamma_inv x hx;
   unfold Gamma Gamma_inv; simp_all [ ← mul_assoc ] ;
-  simp_all [ mul_assoc, Matrix.mul_eq_one_comm.mp h_simp ]
+  simp_all [ mul_assoc, mul_eq_one_comm.mp h_simp ]
 
 /-
 If a Hermitian matrix is bounded by M*I, then all its eigenvalues are at most M.
@@ -326,15 +326,18 @@ theorem HermitianMat.le_smul_one_imp_eigenvalues_le (A : HermitianMat d ℂ) (M 
     (h : A ≤ M • (1 : HermitianMat d ℂ)) (i : d) :
     A.H.eigenvalues i ≤ M := by
   -- By definition of eigenvalues, for any unit vector $v$, we have $\langle v, A v \rangle \leq M$.
-  have h_eigenvalue_le_M_step : ∀ (v : EuclideanSpace ℂ d), ‖v‖ = 1 → ⟪v, A.mat.mulVec v⟫_ℂ ≤ M := by
+  have h_eigenvalue_le_M_step : ∀ (v : EuclideanSpace ℂ d), ‖v‖ = 1 → ⟪v, .toLp 2 <| A.mat.mulVec v⟫_ℂ ≤ M := by
     intro v hv
-    have h_inner : ⟪v, A.mat.mulVec v⟫_ℂ ≤ ⟪v, (M • 1 : Matrix d d ℂ).mulVec v⟫_ℂ := by
-      have h_inner : ⟪v, ((M • 1 : Matrix d d ℂ) - A.mat).mulVec v⟫_ℂ ≥ 0 := by
-        have h_inner_le_M : ∀ (X : HermitianMat d ℂ), X ≥ 0 → ∀ (v : EuclideanSpace ℂ d), ⟪v, X.mat.mulVec v⟫_ℂ ≥ 0 := by
-          intro X hX v; exact (by
-          have := hX.2 v; simp_all [ Matrix.mulVec, dotProduct ] ;
+    have h_inner : ⟪v, .toLp 2 <| A.mat.mulVec v⟫_ℂ ≤ ⟪v, .toLp 2 <| (M • 1 : Matrix d d ℂ).mulVec v⟫_ℂ := by
+      have h_inner : ⟪v, .toLp 2 <| ((M • 1 : Matrix d d ℂ) - A.mat).mulVec v⟫_ℂ ≥ 0 := by
+        have h_inner_le_M : ∀ (X : HermitianMat d ℂ), X ≥ 0 → ∀ (v : EuclideanSpace ℂ d), ⟪v, .toLp 2 <| X.mat.mulVec v⟫_ℂ ≥ 0 := by
+          intro X hX v
+          rw [ge_iff_le, HermitianMat.zero_le_iff, Matrix.posSemidef_iff_dotProduct_mulVec] at hX
+          have := hX.2 v
+          simp [ Matrix.mulVec, dotProduct ] at *
           convert this using 1;
-          exact Finset.sum_congr rfl fun _ _ => by rw [ Matrix.mulVec, dotProduct ] ; simp [  mul_comm, mul_left_comm, Finset.mul_sum _ _ _ ] ;);
+          refine Finset.sum_congr rfl fun _ _ => ?_
+          sorry
         convert h_inner_le_M ⟨ _, _ ⟩ _ v;
         all_goals norm_num [ HermitianMat.le_iff ] at *;
         · convert h.1;
@@ -343,8 +346,8 @@ theorem HermitianMat.le_smul_one_imp_eigenvalues_le (A : HermitianMat d ℂ) (M 
     simp_all [ EuclideanSpace.norm_eq ];
     convert h_inner using 1;
     simp [ Matrix.mulVec, dotProduct, inner ];
-    simp [ Matrix.one_apply,mul_assoc, mul_comm];
-    simp [ mul_left_comm ( v _ ), ← Finset.mul_sum _ _ _ ];
+    simp [ Matrix.one_apply,mul_assoc];
+    simp [ ← Finset.mul_sum];
     simp [ Complex.mul_conj, Complex.normSq_eq_norm_sq ];
     norm_cast ; aesop;
   have := A.H.eigenvectorBasis.orthonormal;
@@ -364,54 +367,22 @@ theorem HermitianMat.eigenvalues_le_imp_le_smul_one (A : HermitianMat d ℂ) (M 
     A ≤ M • (1 : HermitianMat d ℂ) := by
   have := A.H.spectral_theorem.symm;
   -- Since $A$ is Hermitian, we can write it as $A = UDU^*$ where $U$ is unitary and $D$ is diagonal with eigenvalues $\lambda_i$.
-  have h_decomp : ∃ U : Matrix d d ℂ, U * star U = 1 ∧ ∃ D : Matrix d d ℂ, D.IsDiag ∧ A = U * D * star U ∧ ∀ i, D i i ≤ M := by
-    refine' ⟨ _, _, _, _, this.symm, _ ⟩;
-    · simp
-    · exact Matrix.isDiag_diagonal (RCLike.ofReal ∘ (H A).eigenvalues);
-    · aesop;
-  obtain ⟨U, hU_unitary, D, hD_diag, hA_eq, hD_le⟩ := h_decomp;
+  have h_decomp : ∃ U : Matrix d d ℂ, U * star U = 1 ∧ ∃ D : HermitianMat d ℂ, A = U * D * star U ∧ ∀ i, D i i ≤ M := by
+    use A.H.eigenvectorUnitary
+    constructor; · simp
+    use HermitianMat.diagonal ℂ A.H.eigenvalues
+    constructor
+    · exact this.symm
+    · simpa [HermitianMat.diagonal, ← HermitianMat.mat_apply] using h
+  obtain ⟨U, hU_unitary, D, hA_eq, hD_le⟩ := h_decomp;
   have hA_le : U * D * star U ≤ U * (M • 1) * star U := by
-    constructor;
-    · replace hA_eq := congr_arg Star.star hA_eq; simp_all [ Matrix.IsHermitian, Matrix.mul_assoc ] ;
-      convert congr_arg Star.star hA_eq using 1 ; simp
-      · convert hA_eq.symm using 1;
-        · ext i j; simp [ Matrix.mul_apply ] ;
-        · exact A.2.symm;
-      · simp [ ← Matrix.mul_assoc];
-    · intro x
-      have h_inner : star x ⬝ᵥ (U * M • 1 * star U - U * D * star U) *ᵥ x = star (star U *ᵥ x) ⬝ᵥ (M • 1 - D) *ᵥ (star U *ᵥ x) := by
-        simp only [Algebra.mul_smul_comm, mul_one, Algebra.smul_mul_assoc, Matrix.mul_assoc,
-          Matrix.dotProduct_mulVec, Matrix.mulVec_mulVec, Matrix.sub_mul, one_mul]
-        simp only [dotProduct, Matrix.vecMul, Pi.star_apply, RCLike.star_def, Matrix.sub_apply,
-          Matrix.smul_apply, Complex.real_smul, Matrix.star_apply];
-        simp only [Matrix.mul_apply, Matrix.star_apply, RCLike.star_def, Finset.mul_sum _ _ _,
-          mul_left_comm, mul_sub, mul_comm, Finset.sum_sub_distrib];
-        simp only [Matrix.mulVec, dotProduct, Matrix.star_apply, RCLike.star_def, mul_comm, map_sum,
-          map_mul, RingHomCompTriple.comp_apply, RingHom.id_apply, Finset.mul_sum _ _ _,
-          mul_left_comm];
-        exact congrArg₂ _ ( Finset.sum_congr rfl fun _ _ => Finset.sum_comm.trans ( Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => by ring ) ) ( Finset.sum_congr rfl fun _ _ => Finset.sum_comm.trans ( Finset.sum_congr rfl fun _ _ => Finset.sum_comm.trans ( Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => by ring ) ) );
-      have h_inner_nonneg : ∀ y : d → ℂ, 0 ≤ star y ⬝ᵥ (M • 1 - D) *ᵥ y := by
-        intro y
-        have h_inner_nonneg : ∀ i, 0 ≤ (M - D i i) * (star (y i) * y i) := by
-          intro i
-          have h_inner_nonneg : 0 ≤ (M - D i i) * (y i * star (y i)) := by
-            have h_inner_nonneg : 0 ≤ (M - D i i) := by
-              exact sub_nonneg_of_le ( hD_le i )
-            have h_inner_nonneg' : 0 ≤ (y i * star (y i)) := by
-              simp [ Complex.mul_conj, Complex.normSq_eq_norm_sq ]
-            exact mul_nonneg h_inner_nonneg h_inner_nonneg'
-          nth_rw 2 [mul_comm] at h_inner_nonneg
-          exact h_inner_nonneg
-        simp_all [ Matrix.mulVec, dotProduct, Finset.mul_sum _ _ _, mul_assoc, mul_comm, mul_left_comm ];
-        rw [ Finset.sum_comm ];
-        refine Finset.sum_nonneg fun i _ => ?_
-        rw [ Finset.sum_eq_single i ]
-        · simp_all [ Matrix.one_apply ];
-        · simp +contextual
-          exact fun j hj => Or.inr <| Or.inl <| hD_diag hj
-        · intro; contradiction
-      exact h_inner.symm ▸ h_inner_nonneg _;
-      -- sorry
+    have hD_le : D ≤ M • (1 : HermitianMat d ℂ) := by
+      sorry
+    have := HermitianMat.conj_mono (M := U) hD_le
+    simp only [conj, AddMonoidHom.coe_mk, ZeroHom.coe_mk] at this
+    replace this := Subtype.coe_le_coe.mpr this
+    simp only [mat_smul, mat_one] at this
+    exact this
   rw [ ← hA_eq ] at hA_le
   simp only [Algebra.mul_smul_comm, mul_one, Algebra.smul_mul_assoc, hU_unitary] at hA_le
   exact hA_le
@@ -442,3 +413,15 @@ theorem sandwichedRenyiEntropy_DPI (hα : 1 ≤ α) (ρ σ : MState d) (Φ : CPT
   --If we want, we can prove this just for 1 < α, and then use continuity (above) to take the limit as
   -- α → 1.
   sorry
+
+--Helps us track this one sorry for the GQSL
+axiom sandwichedRenyiEntropy_DPI_ax : type_of% @sandwichedRenyiEntropy_DPI
+
+/--
+info: 'sandwichedRenyiEntropy_DPI_ax' depends on axioms: [propext,
+ sandwichedRenyiEntropy_DPI_ax,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs in
+#print axioms sandwichedRenyiEntropy_DPI_ax

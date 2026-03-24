@@ -158,7 +158,8 @@ lemma HermitianMat.eigenvalues_le_one_of_le_one
     rw [← hv₁]
     refine Finset.sum_congr rfl fun _ _ => ?_
     rw [Real.mul_self_sqrt (add_nonneg (mul_self_nonneg _) (mul_self_nonneg _))]
-  have := hA1.2 v
+  open ComplexOrder in
+  have := (Matrix.posSemidef_iff_dotProduct_mulVec.mp hA1).2 v
   simp only [val_eq_coe, mul_one, mat_one, Matrix.sub_mulVec,
     Matrix.one_mulVec, dotProduct_sub, h_eigenvalue, h_unit] at this
   norm_cast at this
@@ -271,24 +272,28 @@ lemma HermitianMat.supportProj_mul_self (A : HermitianMat d ℂ) :
     A.supportProj.mat * A.mat = A.mat := by
   have h_supportProj_mul_A : ∀ (v : d → ℂ), (A.supportProj.val.mulVec (A.val.mulVec v)) = (A.val.mulVec v) := by
     intro v
-    have h_range : A.val.mulVec v ∈ LinearMap.range A.val.toEuclideanLin := by
-      exact ⟨ v, rfl ⟩
+    have h_range : WithLp.toLp 2 (A.val.mulVec v) ∈ LinearMap.range A.val.toEuclideanLin := by
+      exact ⟨ _, rfl ⟩
     have h_supportProj_mul_A : ∀ (v : EuclideanSpace ℂ d), v ∈ LinearMap.range A.val.toEuclideanLin → (A.supportProj.val.toEuclideanLin v) = v := by
       intro v hv
       have h_supportProj_mul_A : (A.supportProj.val.toEuclideanLin v) = (Submodule.orthogonalProjection (LinearMap.range A.val.toEuclideanLin) v) := by
-        simp only [Matrix.toEuclideanLin, supportProj, val_eq_coe, LinearEquiv.trans_apply,
-          LinearEquiv.arrowCongr_apply, LinearEquiv.symm_symm, WithLp.linearEquiv_apply,
-          Matrix.toLin'_apply, WithLp.linearEquiv_symm_apply,
-          Submodule.coe_orthogonalProjection_apply];
-        simp only [projector, ContinuousLinearMap.coe_comp, Submodule.coe_subtypeL, mat_mk];
-        simp only [LinearMap.toMatrix, OrthonormalBasis.coe_toBasis_repr, LinearEquiv.trans_apply,
-          LinearMap.toMatrix'_mulVec, LinearEquiv.arrowCongr_apply, LinearMap.comp_apply,
-          ContinuousLinearMap.coe_coe, Submodule.subtype_apply,
-          Submodule.coe_orthogonalProjection_apply];
-        exact rfl
+        simp only [val_eq_coe, Submodule.coe_orthogonalProjection_apply]
+        simp [supportProj, projector]
+        simp only [Submodule.starProjection]
+        simp [-Submodule.coe_orthogonalProjection_apply]
+        have key : ∀ (f : EuclideanSpace ℂ d →ₗ[ℂ] EuclideanSpace ℂ d),
+            Matrix.toEuclideanLin
+              ((LinearMap.toMatrix (EuclideanSpace.basisFun d ℂ).toBasis (EuclideanSpace.basisFun d ℂ).toBasis) f) = f := by
+          intro f
+          rw [Matrix.toEuclideanLin, Matrix.toLpLin_eq_toLin]
+          exact Matrix.toLin_toMatrix _ _ f
+        have hsup : A.support = (Matrix.toEuclideanLin (↑A : Matrix d d ℂ)).range := by
+          simp [HermitianMat.support, HermitianMat.lin]
+        rw [key, LinearMap.comp_apply, Submodule.subtype_apply, hsup]
+        rfl
       rw [h_supportProj_mul_A]
       exact Submodule.eq_starProjection_of_mem_of_inner_eq_zero (by simpa using hv) (by simp)
-    convert h_supportProj_mul_A _ h_range using 1;
+    exact congr(WithLp.ofLp $(h_supportProj_mul_A _ h_range))
   exact Matrix.toLin'.injective ( LinearMap.ext fun v => by simpa using h_supportProj_mul_A v )
 
 lemma HermitianMat.inner_supportProj_self (A : HermitianMat d ℂ) :
@@ -303,12 +308,12 @@ lemma HermitianMat.inner_supportProj_self (A : HermitianMat d ℂ) :
   · simp only [Matrix.trace, Matrix.diag_apply, mat_apply, Complex.re_sum]
 
 lemma HermitianMat.mul_supportProj_of_ker_le {A B : HermitianMat d ℂ}
-  (h : LinearMap.ker B.lin ≤ LinearMap.ker A.lin) :
+  (h : LinearMap.ker B.lin.toLinearMap ≤ LinearMap.ker A.lin.toLinearMap) :
     A.mat * B.supportProj.mat = A.mat := by
   -- Since $B.supportProj$ is the projection onto $range B$, we have $B.supportProj * B.mat = B.mat$.
   have h_supportProj_mul_B : B.supportProj.mat * B.mat = B.mat := by
     exact supportProj_mul_self B
-  have h_range_A_subset_range_B : LinearMap.range A.lin ≤ LinearMap.range B.lin := by
+  have h_range_A_subset_range_B : LinearMap.range A.lin.toLinearMap ≤ LinearMap.range B.lin.toLinearMap := by
     have h_orthogonal_complement : LinearMap.range (B.lin : EuclideanSpace ℂ d →ₗ[ℂ] EuclideanSpace ℂ d) = (LinearMap.ker (B.lin : EuclideanSpace ℂ d →ₗ[ℂ] EuclideanSpace ℂ d))ᗮ := by
       have h_orthogonal_complement : ∀ (T : EuclideanSpace ℂ d →ₗ[ℂ] EuclideanSpace ℂ d), T = T.adjoint → LinearMap.range T = (LinearMap.ker T)ᗮ := by
         intro T hT;
@@ -324,8 +329,7 @@ lemma HermitianMat.mul_supportProj_of_ker_le {A B : HermitianMat d ℂ}
       apply h_orthogonal_complement
       simp
     have h_orthogonal_complement_A : LinearMap.range (A.lin : EuclideanSpace ℂ d →ₗ[ℂ] EuclideanSpace ℂ d) ≤ (LinearMap.ker (A.lin : EuclideanSpace ℂ d →ₗ[ℂ] EuclideanSpace ℂ d))ᗮ := by
-      intro x hx;
-      intro y hy
+      intro x hx y hy
       simp_all only [LinearMap.mem_range, ContinuousLinearMap.coe_coe, LinearMap.mem_ker]
       obtain ⟨ z, rfl ⟩ := hx;
       have h_orthogonal_complement_A : ∀ (y z : EuclideanSpace ℂ d), ⟪y, A.lin z⟫_ℂ = ⟪A.lin y, z⟫_ℂ := by
@@ -335,18 +339,24 @@ lemma HermitianMat.mul_supportProj_of_ker_le {A B : HermitianMat d ℂ}
   -- Since $B.supportProj$ is the projection onto $range B$, and $range A \subseteq range B$, we have $B.supportProj * A = A$.
   have h_supportProj_mul_A : ∀ (v : EuclideanSpace ℂ d), B.supportProj.mat.mulVec (A.mat.mulVec v) = A.mat.mulVec v := by
     intro v
-    obtain ⟨w, hw⟩ : A.mat.mulVec v ∈ LinearMap.range B.lin := by
+    obtain ⟨w, hw⟩ : WithLp.toLp 2 (A.mat.mulVec v) ∈ LinearMap.range B.lin.toLinearMap := by
       exact h_range_A_subset_range_B ( Set.mem_range_self v );
     replace h_supportProj_mul_B := congr(Matrix.mulVec $h_supportProj_mul_B w)
+    replace hw := congr(WithLp.ofLp $hw)
+    simp only [ContinuousLinearMap.coe_coe] at hw
     simpa only [← hw, ← Matrix.mulVec_mulVec] using h_supportProj_mul_B
   -- By definition of matrix multiplication, if B.supportProj * A * v = A * v for all vectors v, then B.supportProj * A = A.
   have h_matrix_eq : ∀ (M N : Matrix d d ℂ), (∀ v : EuclideanSpace ℂ d, M.mulVec (N.mulVec v) = N.mulVec v) → M * N = N := by
-    intro M N hMN; ext i j; specialize hMN ( Pi.single j 1 ) ; replace hMN := congr_fun hMN i; aesop;
+    intro M N hMN
+    ext i j
+    specialize hMN (WithLp.toLp 2 ( Pi.single j 1 ))
+    replace hMN := congr_fun hMN i
+    aesop;
   rw [← Matrix.conjTranspose_inj]
   simp_all only [Matrix.mulVec_mulVec, Matrix.conjTranspose_mul, conjTranspose_mat, implies_true]
 
 lemma HermitianMat.inner_supportProj_of_ker_le {A B : HermitianMat d ℂ}
-  (h : LinearMap.ker B.lin ≤ LinearMap.ker A.lin) :
+  (h : LinearMap.ker B.lin.toLinearMap ≤ LinearMap.ker A.lin.toLinearMap) :
     ⟪A, B.supportProj⟫ = A.trace := by
   rw [inner_def, mul_supportProj_of_ker_le h, trace]
 
@@ -424,554 +434,6 @@ private theorem sandwichedRelRentropy_nonneg_α_gt_1 (h : σ.M.ker ≤ ρ.M.ker)
   · simp
   · linarith
 
-theorem inner_log_sub_log_nonneg (h : σ.M.ker ≤ ρ.M.ker) :
-    0 ≤ ⟪ρ.M, ρ.M.log - σ.M.log⟫ := by
-  sorry
-
-theorem sandwichedRelRentropy_nonneg {α : ℝ} (hα : 0 < α) (h : σ.M.ker ≤ ρ.M.ker) :
-    0 ≤ if α = 1 then ⟪ρ.M, ρ.M.log - σ.M.log⟫
-      else ((ρ.M.conj (σ.M ^ ((1 - α)/(2 * α)) ).mat) ^ α).trace.log / (α - 1) := by
-  split_ifs with h1
-  · exact inner_log_sub_log_nonneg h
-  by_cases hα₂ : α > 1
-  · exact sandwichedRelRentropy_nonneg_α_gt_1 h hα₂
-  · have : α < 1 := by push_neg at hα₂; exact lt_of_le_of_ne hα₂ h1
-    exact sandwichedRelRentropy_nonneg_α_lt_1 h hα this
-
-/-- The Sandwiched Renyi Relative Entropy, defined with ln (nits). Note that at `α = 1` this definition
-  switch to the standard Relative Entropy, for continuity. For α ≤ 0, this gives junk value 0. (There
-  is no conventional value for α < 0; there is a continuous limit at α = 0, but it is complicated and
-  unneeded at the moment.)-/
-def SandwichedRelRentropy (α : ℝ) (ρ σ : MState d) : ENNReal :=
-  open Classical in
-  if hα : 0 < α then
-    if h : σ.M.ker ≤ ρ.M.ker
-    then (.ofNNReal ⟨if α = 1 then
-        ⟪ρ.M, ρ.M.log - σ.M.log⟫
-      else
-        ((ρ.M.conj (σ.M ^ ((1 - α)/(2 * α)) ).mat) ^ α).trace.log / (α - 1),
-      sandwichedRelRentropy_nonneg hα h⟩)
-    else ⊤
-  else 0
-
-notation "D̃_" α "(" ρ "‖" σ ")" => SandwichedRelRentropy α ρ σ
-
-/-- The quantum relative entropy `𝐃(ρ‖σ) := Tr[ρ (log ρ - log σ)]`. Also called
-the Umegaki quantum relative entropy, when it's necessary to distinguish from other
-relative entropies. -/
-def qRelativeEnt (ρ σ : MState d) : ENNReal :=
-  D̃_1(ρ‖σ)
-
-notation "𝐃(" ρ "‖" σ ")" => qRelativeEnt ρ σ
-
-section additivity
-
---TODO Cleanup. Ugh.
-
-/--
-If the kernels of the components are contained, then the kernel of the Kronecker product is contained.
--/
-lemma ker_kron_le_of_le {d₁ d₂ : Type*} [Fintype d₁] [Fintype d₂] [DecidableEq d₁] [DecidableEq d₂]
-    (A C : Matrix d₁ d₁ ℂ) (B D : Matrix d₂ d₂ ℂ)
-    (hA : LinearMap.ker A.toEuclideanLin ≤ LinearMap.ker C.toEuclideanLin)
-    (hB : LinearMap.ker B.toEuclideanLin ≤ LinearMap.ker D.toEuclideanLin) :
-    LinearMap.ker (A.kronecker B).toEuclideanLin ≤ LinearMap.ker (C.kronecker D).toEuclideanLin := by
-  intro x hx
-  simp only [Matrix.kronecker, LinearMap.mem_ker, Matrix.toEuclideanLin_apply,
-    WithLp.toLp_eq_zero] at hx ⊢
-  -- By definition of Kronecker product, we know that $(A \otimes B)x = 0$ if and only if for all $i$ and $j$, $\sum_{k,l} A_{ik} B_{jl} x_{kl} = 0$.
-  have h_kronecker : ∀ i j, ∑ k, A i k • ∑ l, B j l • x (k, l) = 0 := by
-    intro i j
-    replace hx := congr_fun hx ( i, j )
-    simp only [Matrix.mulVec, dotProduct, Matrix.kroneckerMap_apply, PiLp.ofLp_apply,
-      Pi.zero_apply, smul_eq_mul, Finset.mul_sum] at hx ⊢
-    rw [ ← Finset.sum_product' ]
-    simpa only [mul_assoc, Finset.univ_product_univ] using hx
-  -- Apply the hypothesis `hA` to each term in the sum.
-  have h_apply_hA : ∀ i j, ∑ k, C i k • ∑ l, B j l • x (k, l) = 0 := by
-    intro i j
-    specialize hA ( show ( fun k => ∑ l, B j l • x ( k, l ) ) ∈ LinearMap.ker ( Matrix.toEuclideanLin A ) from ?_ )
-    · simp_all only [smul_eq_mul, LinearMap.mem_ker]
-      ext i_1 : 1
-      simp_all only [PiLp.zero_apply]
-      apply h_kronecker
-    · exact congr_fun hA i
-  ext ⟨ i, j ⟩
-  simp only [smul_eq_mul, Matrix.mulVec, dotProduct, Matrix.kroneckerMap_apply, PiLp.ofLp_apply,
-    Pi.zero_apply] at h_kronecker h_apply_hA ⊢
-  have h_apply_hB : ∑ l, D j l • ∑ k, C i k • x (k, l) = 0 := by
-    specialize hB
-    simp_all only [funext_iff, Pi.zero_apply, Prod.forall, smul_eq_mul]
-    have := hB ( show ( fun l => ∑ k, C i k * x ( k, l ) ) ∈ LinearMap.ker ( Matrix.toEuclideanLin B ) from ?_ )
-    · simp_all only [LinearMap.mem_ker] ;
-      exact congr_fun this j
-    · ext j
-      specialize h_apply_hA i j
-      simp_all [ Matrix.mulVec, dotProduct, Finset.mul_sum ] ;
-      convert h_apply_hA using 1
-      simp only [Matrix.toEuclideanLin, LinearEquiv.trans_apply, LinearEquiv.arrowCongr_apply,
-        LinearEquiv.symm_symm, WithLp.linearEquiv_apply, Matrix.toLin'_apply,
-        WithLp.linearEquiv_symm_apply, PiLp.toLp_apply];
-      simp only [Matrix.mulVec, dotProduct, PiLp.ofLp_apply, Finset.mul_sum, mul_left_comm];
-      rw [Finset.sum_comm]
-  rw [← h_apply_hB]
-  simp only [mul_comm, mul_left_comm]
-  simp only [smul_eq_mul, Finset.mul_sum]
-  rw [ Finset.sum_sigma' ];
-  refine' Finset.sum_bij ( fun x _ => ⟨ x.2, x.1 ⟩ ) _ _ _ _ <;> simp [mul_left_comm ]
-
---TODO: Generalize to arbitrary PSD matrices.
-/--
-If the kernel of a product state is contained in another, the left component kernel is contained.
--/
-lemma ker_le_of_ker_kron_le_left (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂)
-  (h : (σ₁ ⊗ᴹ σ₂).M.ker ≤ (ρ₁ ⊗ᴹ ρ₂).M.ker) :
-    σ₁.M.ker ≤ ρ₁.M.ker := by
-  intro u hu
-  obtain ⟨v, hv⟩ : ∃ v : d₂ → ℂ, v ∉ (σ₂ :HermitianMat d₂ ℂ).ker ∧ v ∉ (ρ₂ :HermitianMat d₂ ℂ).ker := by
-    have h_union : (σ₂ : HermitianMat d₂ ℂ).ker ≠ ⊤ ∧ (ρ₂ : HermitianMat d₂ ℂ).ker ≠ ⊤ := by
-      constructor <;> intro h_top;
-      · have h_contra : σ₂.M = 0 := by
-          ext1
-          simp_all [ Submodule.eq_top_iff'];
-          ext i j; specialize h_top ( EuclideanSpace.single j 1 )
-          simp_all
-          replace h_top := congr_fun h_top i
-          simp_all
-          convert h_top using 1;
-          erw [ Matrix.toEuclideanLin_apply ] ; aesop;
-        exact σ₂.pos.ne' h_contra;
-      · have h_contra : ρ₂.M = 0 := by
-          ext i j; simp_all [ Submodule.eq_top_iff' ] ;
-          convert congr_fun ( h_top ( Pi.single j 1 ) ) i using 1 ; simp
-          simp [ HermitianMat.lin ];
-          simp [ Matrix.toEuclideanLin, Matrix.mulVec, dotProduct ];
-          rw [ Finset.sum_eq_single j ] <;> aesop;
-        exact ρ₂.pos.ne' h_contra;
-    have h_union : ∀ (U V : Submodule ℂ (EuclideanSpace ℂ d₂)), U ≠ ⊤ → V ≠ ⊤ → ∃ v : EuclideanSpace ℂ d₂, v ∉ U ∧ v ∉ V := by
-      intros U V hU hV;
-      by_contra h_contra;
-      have h_union : U ⊔ V = ⊤ := by
-        ext v
-        simp only [Submodule.mem_top, iff_true]
-        by_cases hvU : v ∈ U <;> by_cases hvV : v ∈ V <;> simp_all [ Submodule.mem_sup ];
-        · exact ⟨ v, hvU, 0, by simp, by simp ⟩;
-        · exact ⟨ v, hvU, 0, by simp, by simp ⟩;
-        · exact ⟨ 0, by simp, v, h_contra v hvU, by simp ⟩;
-      have h_union : ∃ v : EuclideanSpace ℂ d₂, v ∉ U ∧ v ∈ V := by
-        have h_union : ∃ v : EuclideanSpace ℂ d₂, v ∈ V ∧ v ∉ U := by
-          have h_not_subset : ¬V ≤ U := by
-            exact fun h => hU <| by rw [ eq_top_iff ] ; exact h_union ▸ sup_le ( by tauto ) h;
-          exact Set.not_subset.mp h_not_subset;
-        exact ⟨ h_union.choose, h_union.choose_spec.2, h_union.choose_spec.1 ⟩;
-      obtain ⟨ v, hv₁, hv₂ ⟩ := h_union;
-      obtain ⟨ w, hw₁, hw₂ ⟩ : ∃ w : EuclideanSpace ℂ d₂, w ∉ V ∧ w ∈ U := by
-        obtain ⟨ w, hw ⟩ := ( show ∃ w : EuclideanSpace ℂ d₂, w ∉ V from by simpa [ Submodule.eq_top_iff' ] using hV ) ; use w; simp_all [ Submodule.eq_top_iff' ] ;
-        exact Classical.not_not.1 fun hw' => hw <| h_contra _ hw';
-      have h_union : v + w ∉ U ∧ v + w ∉ V := by
-        exact ⟨ fun h => hv₁ <| by simpa using U.sub_mem h hw₂, fun h => hw₁ <| by simpa using V.sub_mem h hv₂ ⟩;
-      exact h_contra ⟨ v + w, h_union.1, h_union.2 ⟩;
-    exact h_union _ _ ( by tauto ) ( by tauto );
-  -- Consider $z = u \otimes v$.
-  set z : EuclideanSpace ℂ (d₁ × d₂) := fun p => u p.1 * v p.2;
-  have hz : z ∈ (σ₁ ⊗ᴹ σ₂ : HermitianMat (d₁ × d₂) ℂ).ker := by
-    ext ⟨i, j⟩
-    simp [z]
-    have h_kronecker : ∀ (A : Matrix d₁ d₁ ℂ) (B : Matrix d₂ d₂ ℂ) (u : d₁ → ℂ) (v : d₂ → ℂ), (A.kronecker B).mulVec (fun p => u p.1 * v p.2) = fun p => (A.mulVec u) p.1 * (B.mulVec v) p.2 := by
-      intro A B u v; ext ⟨ i, j ⟩ ; simp [ Matrix.mulVec, dotProduct, Finset.mul_sum, mul_comm, mul_left_comm ] ;
-      exact Fintype.sum_prod_type_right fun x => A i x.1 * (B j x.2 * (u x.1 * v x.2));
-    convert congr_fun ( h_kronecker σ₁.1.mat σ₂.1.mat u v ) ( i, j ) using 1 ; simp
-    exact Or.inl ( by simpa [ Matrix.mulVec ] using congr_fun hu i );
-  have hz' : z ∈ (ρ₁ ⊗ᴹ ρ₂ : HermitianMat (d₁ × d₂) ℂ).ker := by
-    exact h hz;
-  have hz'' : ∀ a b, (ρ₁.M.val.mulVec u) a * (ρ₂.M.val.mulVec v) b = 0 := by
-    intro a b
-    have hz'' : (ρ₁.M.val.mulVec u) a * (ρ₂.M.val.mulVec v) b = ((ρ₁ ⊗ᴹ ρ₂ : HermitianMat (d₁ × d₂) ℂ).val.mulVec z) (a, b) := by
-      simp [ Matrix.mulVec, dotProduct];
-      simp [  Finset.sum_mul, mul_assoc, mul_comm];
-      simp [ z, Finset.mul_sum, mul_assoc, mul_left_comm ];
-      erw [ Finset.sum_product ] ; simp
-      exact rfl;
-    exact hz''.trans ( by simpa using congr_fun hz' ( a, b ) );
-  ext a; specialize hz'' a; simp_all [ Matrix.mulVec, dotProduct ] ;
-  contrapose! hv;
-  intro hv'; ext b; specialize hz'' b; simp_all
-  exact hz''.resolve_left ( by simpa [ Matrix.mulVec, dotProduct ] using hv )
-
-
---TODO: Generalize to arbitrary PSD matrices.
---TODO: Rewrite the proof using the `ker_le_of_ker_kron_le_left` lemma, and the fact that
--- there's a unitary whose conjugation swaps the kronecker product.
-/--
-If the kernel of a product state is contained in another, the right component kernel is contained.
--/
-lemma ker_le_of_ker_kron_le_right (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂)
-  (h : (σ₁ ⊗ᴹ σ₂).M.ker ≤ (ρ₁ ⊗ᴹ ρ₂).M.ker) :
-    σ₂.M.ker ≤ ρ₂.M.ker := by
-  intro v hv;
-  have h_z : ∃ u : EuclideanSpace ℂ d₁, u ≠ 0 ∧ u ∉ σ₁.M.ker ∧ u ∉ ρ₁.M.ker := by
-    have h_z : σ₁.M.ker ≠ ⊤ ∧ ρ₁.M.ker ≠ ⊤ := by
-      have h_ker_ne_top : ∀ (ρ : MState d₁), ρ.M.ker ≠ ⊤ := by
-        intro ρ hρ_top
-        have h_contra : ρ.M = 0 := by
-          ext i j
-          simp_all [ Submodule.eq_top_iff' ] ;
-          convert congr_fun ( hρ_top ( EuclideanSpace.single j 1 ) ) i using 1
-          simp
-          erw [ Matrix.toEuclideanLin_apply ] ; aesop;
-        exact ρ.pos.ne' h_contra;
-      exact ⟨ h_ker_ne_top σ₁, h_ker_ne_top ρ₁ ⟩;
-    have h_z : ∃ u : EuclideanSpace ℂ d₁, u ∉ σ₁.M.ker ∧ u ∉ ρ₁.M.ker := by
-      have h_z : ∀ (U V : Submodule ℂ (EuclideanSpace ℂ d₁)), U ≠ ⊤ → V ≠ ⊤ → ∃ u : EuclideanSpace ℂ d₁, u ∉ U ∧ u ∉ V := by
-        intro U V hU hV
-        by_contra h_contra
-        push_neg at h_contra;
-        have h_union : ∃ u : EuclideanSpace ℂ d₁, u ∉ U ∧ u ∈ V := by
-          exact Exists.elim ( show ∃ u : EuclideanSpace ℂ d₁, u ∉ U from by simpa [ Submodule.eq_top_iff' ] using hU ) fun u hu => ⟨ u, hu, h_contra u hu ⟩;
-        obtain ⟨ u, hu₁, hu₂ ⟩ := h_union;
-        have h_union : ∀ v : EuclideanSpace ℂ d₁, v ∈ U → v + u ∈ V := by
-          intro v hv; specialize h_contra ( v + u ) ; simp_all [ Submodule.add_mem_iff_right ] ;
-        have h_union : ∀ v : EuclideanSpace ℂ d₁, v ∈ U → v ∈ V := by
-          exact fun v hv => by simpa using V.sub_mem ( h_union v hv ) hu₂;
-        exact hV ( eq_top_iff.mpr fun x hx => by by_cases hxU : x ∈ U <;> aesop );
-      exact h_z _ _ ( by tauto ) ( by tauto );
-    exact ⟨ h_z.choose, by intro h; simpa [ h ] using h_z.choose_spec.1, h_z.choose_spec.1, h_z.choose_spec.2 ⟩;
-  obtain ⟨ u, hu₁, hu₂, hu₃ ⟩ := h_z;
-  -- Consider the vector $z = u \otimes v$.
-  set z : EuclideanSpace ℂ (d₁ × d₂) := fun p => u p.1 * v p.2;
-  have hz : z ∈ (σ₁ ⊗ᴹ σ₂).M.ker := by
-    -- By definition of $z$, we have $(σ₁ ⊗ σ₂).mat.mulVec z = σ₁.mat.mulVec u ⊗ σ₂.mat.mulVec v$.
-    have hz_mul : (σ₁ ⊗ᴹ σ₂).M.mat.mulVec z = fun p => (σ₁.M.mat.mulVec u) p.1 * (σ₂.M.mat.mulVec v) p.2 := by
-      ext p; simp [z, Matrix.mulVec]
-      simp [ dotProduct, Finset.mul_sum, Finset.sum_mul, mul_assoc, mul_comm, mul_left_comm ];
-      rw [ ← Finset.sum_product' ];
-      refine' Finset.sum_bij ( fun x _ => ( x.2, x.1 ) ) _ _ _ _ <;> simp;
-      exact fun a b => Or.inl <| Or.inl <| rfl;
-    simp_all [ funext_iff, Matrix.mulVec ];
-    ext ⟨ a, b ⟩ ; specialize hz_mul a b
-    simp_all [ dotProduct] ;
-    convert hz_mul using 1;
-    simp_all only [zero_eq_mul]
-    exact Or.inr ( by simpa [ Matrix.mulVec, dotProduct ] using congr_fun hv b );
-  have hz' : z ∈ (ρ₁ ⊗ᴹ ρ₂).M.ker := by
-    exact h hz;
-  have hz'' : ∀ i j, (ρ₁.M.val.mulVec u) i * (ρ₂.M.val.mulVec v) j = 0 := by
-    intro i j;
-    have hz'' : (ρ₁.M.val.kronecker ρ₂.M.val).mulVec (fun p => u p.1 * v p.2) (i, j) = (ρ₁.M.val.mulVec u) i * (ρ₂.M.val.mulVec v) j := by
-      simp [ Matrix.mulVec, dotProduct, Finset.mul_sum, mul_assoc, mul_comm, mul_left_comm ];
-      simp [ mul_assoc, Finset.mul_sum, Finset.sum_mul ];
-      rw [ ← Finset.sum_product' ];
-      refine' Finset.sum_bij ( fun x _ => ( x.2, x.1 ) ) _ _ _ _ <;> simp;
-      exact fun _ _ => Or.inl <| Or.inl rfl;
-    exact hz''.symm.trans ( by simpa using congr_fun hz' ( i, j ) );
-  contrapose! hz'';
-  obtain ⟨ i, hi ⟩ := Function.ne_iff.mp ( show ρ₁.M.val.mulVec u ≠ 0 from fun h => hu₃ <| by simpa [ h ] )
-  obtain ⟨ j, hj ⟩ := Function.ne_iff.mp ( show ρ₂.M.val.mulVec v ≠ 0 from fun h => hz'' <| by simpa [ h ] )
-  use i, j
-  aesop;
-
-/--
-The kernel of a product state is contained in another product state's kernel iff the individual
-kernels are contained.
--/
-lemma ker_prod_le_iff (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) :
-    (σ₁ ⊗ᴹ σ₂).M.ker ≤ (ρ₁ ⊗ᴹ ρ₂).M.ker ↔ σ₁.M.ker ≤ ρ₁.M.ker ∧ σ₂.M.ker ≤ ρ₂.M.ker := by
-  constructor <;> intro h;
-  · exact ⟨ ker_le_of_ker_kron_le_left ρ₁ σ₁ ρ₂ σ₂ h, ker_le_of_ker_kron_le_right ρ₁ σ₁ ρ₂ σ₂ h ⟩;
-  · convert ker_kron_le_of_le _ _ _ _ h.1 h.2 using 1
-
---TODO: Generalize to RCLike.
-omit [DecidableEq d₁] [DecidableEq d₂] in
-lemma HermitianMat.inner_kron
-    (A : HermitianMat d₁ ℂ) (B : HermitianMat d₂ ℂ) (C : HermitianMat d₁ ℂ) (D : HermitianMat d₂ ℂ) :
-    ⟪A ⊗ₖ B, C ⊗ₖ D⟫ = ⟪A, C⟫ * ⟪B, D⟫ := by
-  -- Apply the property of the trace of Kronecker products.
-  have h_trace_kron : ∀ (A₁ B₁ : Matrix d₁ d₁ ℂ) (A₂ B₂ : Matrix d₂ d₂ ℂ), Matrix.trace (Matrix.kroneckerMap (· * ·) A₁ A₂ * Matrix.kroneckerMap (· * ·) B₁ B₂) = Matrix.trace (A₁ * B₁) * Matrix.trace (A₂ * B₂) := by
-    intro A₁ B₁ A₂ B₂
-    rw [← Matrix.mul_kronecker_mul, Matrix.trace_kronecker]
-  simp_all only [inner, IsMaximalSelfAdjoint.RCLike_selfadjMap, kronecker_mat, RCLike.mul_re,
-    RCLike.re_to_complex, RCLike.im_to_complex, sub_eq_self, mul_eq_zero];
-  simp only [Matrix.trace, Matrix.diag_apply, Matrix.mul_apply, mat_apply, Complex.im_sum,
-    Complex.mul_im];
-  left;
-  have h_symm : ∀ x x_1, (A x x_1).re * (C x_1 x).im + (A x x_1).im * (C x_1 x).re = -((A x_1 x).re * (C x x_1).im + (A x_1 x).im * (C x x_1).re) := by
-    intro x y; have := congr_fun ( congr_fun A.2 y ) x; have := congr_fun ( congr_fun C.2 y ) x; simp_all [ Complex.ext_iff ] ;
-    grind;
-  have h_sum_zero : ∑ x, ∑ x_1, ((A x x_1).re * (C x_1 x).im + (A x x_1).im * (C x_1 x).re) = ∑ x, ∑ x_1, -((A x x_1).re * (C x_1 x).im + (A x x_1).im * (C x_1 x).re) := by
-    rw [ Finset.sum_comm ];
-    exact Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => h_symm _ _ ▸ rfl;
-  norm_num [ Finset.sum_add_distrib ] at * ; linarith
-
-attribute [fun_prop] ContinuousAt.rpow
-
-lemma continuousOn_rpow_uniform {K : Set ℝ} (hK : IsCompact K) :
-    ContinuousOn (fun r : ℝ ↦ UniformOnFun.ofFun {K} (fun t : ℝ ↦ t ^ r)) (Set.Ioi 0) := by
-  refine continuousOn_of_forall_continuousAt fun r hr => ?_
-  rw [Set.mem_Ioi] at hr
-  apply UniformOnFun.tendsto_iff_tendstoUniformlyOn.mpr
-  simp only [Set.mem_singleton_iff, UniformOnFun.toFun_ofFun, Metric.tendstoUniformlyOn_iff,
-    Function.comp_apply, forall_eq]
-  intro ε hεpos;
-  have h_unif_cont : UniformContinuousOn (fun (p : ℝ × ℝ) => p.1 ^ p.2) (K ×ˢ Set.Icc (r / 2) (r * 2)) := by
-    apply IsCompact.uniformContinuousOn_of_continuous
-    · exact hK.prod CompactIccSpace.isCompact_Icc
-    · refine continuousOn_of_forall_continuousAt fun p ⟨hp₁, ⟨hp₂₁, hp₂₂⟩⟩ ↦ ?_
-      have _ : p.1 ≠ 0 ∨ 0 < p.2 := by right; linarith
-      fun_prop (disch := assumption)
-  rw [Metric.uniformContinuousOn_iff] at h_unif_cont
-  obtain ⟨δ, hδpos, H⟩ := h_unif_cont ε hεpos
-  filter_upwards [Ioo_mem_nhds (show r / 2 < r by linarith) (show r < r * 2 by linarith), Ioo_mem_nhds (show r - δ < r by linarith) (show r < r + δ by linarith)] with n ⟨_, _⟩ ⟨_, _⟩ x hx
-  refine H (x, r) ⟨hx, ?_⟩ (x, n) ⟨hx, ?_⟩ ?_
-  · constructor <;> linarith
-  · constructor <;> linarith
-  · have : |r - n| < δ := abs_lt.mpr ⟨by linarith, by linarith⟩
-    simpa
-
-theorem sandwichedRelRentropy_additive_alpha_one_aux (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂)
-  (h1 : σ₁.M.ker ≤ ρ₁.M.ker) (h2 : σ₂.M.ker ≤ ρ₂.M.ker) :
-    ⟪(ρ₁ ⊗ᴹ ρ₂).M, (ρ₁ ⊗ᴹ ρ₂).M.log - (σ₁ ⊗ᴹ σ₂).M.log⟫ =
-    ⟪ρ₁.M, ρ₁.M.log - σ₁.M.log⟫_ℝ + ⟪ρ₂.M, ρ₂.M.log - σ₂.M.log⟫ := by
-  have h_log_kron : (ρ₁ ⊗ᴹ ρ₂).M.log = ρ₁.M.log ⊗ₖ ρ₂.M.supportProj + ρ₁.M.supportProj ⊗ₖ ρ₂.M.log ∧ (σ₁ ⊗ᴹ σ₂).M.log = σ₁.M.log ⊗ₖ σ₂.M.supportProj + σ₁.M.supportProj ⊗ₖ σ₂.M.log := by
-    constructor <;> apply HermitianMat.log_kron_with_proj;
-  have h_inner_supportProj : ∀ (A : HermitianMat d₁ ℂ) (B : HermitianMat d₂ ℂ), ⟪A ⊗ₖ B, ρ₁ ⊗ᴹ ρ₂⟫ = ⟪A, ρ₁⟫ * ⟪B, ρ₂⟫ := by
-    exact fun A B => HermitianMat.inner_kron A B ρ₁ ρ₂;
-  simp only [HermitianMat.ker] at h1 h2
-  simp_all only [inner_sub_right, inner_add_right, real_inner_comm,
-    HermitianMat.inner_supportProj_self, MState.tr, mul_one, one_mul,
-    HermitianMat.inner_supportProj_of_ker_le]
-  abel
-
-/--
-The Sandwiched Renyi Relative entropy is additive for α=1 (standard relative entropy).
--/
-private theorem sandwichedRelRentropy_additive_alpha_one (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) :
-    D̃_ 1(ρ₁ ⊗ᴹ ρ₂‖σ₁ ⊗ᴹ σ₂) = D̃_ 1(ρ₁‖σ₁) + D̃_ 1(ρ₂‖σ₂) := by
-  by_cases h1 : σ₁.M.ker ≤ ρ₁.M.ker
-  <;> by_cases h2 : σ₂.M.ker ≤ ρ₂.M.ker
-  · simp only [SandwichedRelRentropy, ↓reduceIte, ↓reduceDIte, h1, h2]
-    split_ifs <;> simp_all [ ker_prod_le_iff ];
-    simp only [sandwichedRelRentropy_additive_alpha_one_aux ρ₁ σ₁ ρ₂ σ₂ h1 h2]
-    rfl
-  · simp only [SandwichedRelRentropy, zero_lt_one, ↓reduceDIte, ↓reduceIte, h1, h2,
-      add_top, dite_eq_right_iff, ENNReal.coe_ne_top, imp_false]
-    have := ker_prod_le_iff ρ₁ σ₁ ρ₂ σ₂
-    tauto
-  · simp only [SandwichedRelRentropy, zero_lt_one, ↓reduceDIte, ↓reduceIte, h1, h2,
-      top_add, dite_eq_right_iff, ENNReal.coe_ne_top, imp_false]
-    contrapose! h1
-    exact (ker_le_of_ker_kron_le_left ρ₁ σ₁ ρ₂ σ₂) h1
-  · simp only [SandwichedRelRentropy, zero_lt_one, ↓reduceDIte, ↓reduceIte, h1, h2,
-      add_top, dite_eq_right_iff, ENNReal.coe_ne_top, imp_false]
-    contrapose! h1
-    exact (ker_le_of_ker_kron_le_left ρ₁ σ₁ ρ₂ σ₂) h1
-
-lemma sandwiched_term_product (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) (α β : ℝ) :
-    (((ρ₁ ⊗ᴹ ρ₂).M.conj ((σ₁ ⊗ᴹ σ₂).M ^ β).mat) ^ α).trace =
-    ((ρ₁.M.conj (σ₁.M ^ β).mat) ^ α).trace * ((ρ₂.M.conj (σ₂.M ^ β).mat) ^ α).trace := by
-  simp only [MState.prod]
-  rw [← HermitianMat.trace_kronecker]
-  rw [← HermitianMat.rpow_kron α ?_ ?_, ← HermitianMat.conj_kron,
-    HermitianMat.rpow_kron β σ₁.nonneg σ₂.nonneg, HermitianMat.kronecker_mat]
-  · exact HermitianMat.conj_nonneg _ ρ₁.nonneg
-  · exact HermitianMat.conj_nonneg _ ρ₂.nonneg
-
-/-
-The Sandwiched Renyi Relative entropy is additive for alpha != 1.
--/
-theorem sandwichedRelRentropy_additive_alpha_ne_one {α : ℝ} (hα : α ≠ 1) (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) :
-    D̃_ α(ρ₁ ⊗ᴹ ρ₂‖σ₁ ⊗ᴹ σ₂) = D̃_ α(ρ₁‖σ₁) + D̃_ α(ρ₂‖σ₂) := by
-  by_cases hα0 : 0 < α; swap
-  · simp [SandwichedRelRentropy, hα0]
-  by_cases h_ker : σ₁.M.ker ≤ ρ₁.M.ker ∧ σ₂.M.ker ≤ ρ₂.M.ker
-  · simp_all [SandwichedRelRentropy]
-    -- Apply the additivity of the trace term to split the logarithm into the sum of the logarithms.
-    have h_trace_add : Real.log ((ρ₁ ⊗ᴹ ρ₂).M.conj ((σ₁ ⊗ᴹ σ₂).M ^ ((1 - α) / (2 * α))).mat ^ α).trace = Real.log ((ρ₁.M.conj (σ₁.M ^ ((1 - α) / (2 * α))).mat) ^ α).trace + Real.log ((ρ₂.M.conj (σ₂.M ^ ((1 - α) / (2 * α))).mat) ^ α).trace := by
-      rw [ sandwiched_term_product, Real.log_mul ];
-      · exact (sandwiched_trace_pos h_ker.1).ne'
-      · exact (sandwiched_trace_pos h_ker.2).ne'
-    split_ifs <;> simp_all
-    · norm_num [ add_div ];
-      exact rfl;
-    · exact False.elim ( ‹¬ ( σ₁ ⊗ᴹ σ₂ |> MState.M |> HermitianMat.ker ) ≤ ( ρ₁ ⊗ᴹ ρ₂ |> MState.M |> HermitianMat.ker ) › ( by simpa [ HermitianMat.ker ] using ker_prod_le_iff _ _ _ _ |>.2 h_ker ) );
-  · have h_ker_prod : ¬((σ₁ ⊗ᴹ σ₂).M.ker ≤ (ρ₁ ⊗ᴹ ρ₂).M.ker) := by
-      simp_all  [ ker_prod_le_iff ]
-    rw [not_and_or] at h_ker
-    rcases h_ker with h_ker | h_ker
-    · simp [SandwichedRelRentropy, h_ker_prod, h_ker, hα0]
-    · simp [SandwichedRelRentropy, h_ker_prod, h_ker, hα0]
-
-end additivity
-
-/-- The Sandwiched Renyi Relative entropy is additive when the inputs are product states -/
-@[simp]
-theorem sandwichedRelRentropy_additive (α) (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) :
-    D̃_ α(ρ₁ ⊗ᴹ ρ₂‖σ₁ ⊗ᴹ σ₂) = D̃_ α(ρ₁‖σ₁) + D̃_ α(ρ₂‖σ₂) := by
-  rcases eq_or_ne α 1 with rfl | hα
-  · exact sandwichedRelRentropy_additive_alpha_one ρ₁ σ₁ ρ₂ σ₂
-  · apply sandwichedRelRentropy_additive_alpha_ne_one hα
-
-/-- The quantum relative entropy is additive when the inputs are product states -/
-@[simp]
-theorem qRelativeEnt_additive (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) :
-    𝐃(ρ₁ ⊗ᴹ ρ₂‖σ₁ ⊗ᴹ σ₂) = 𝐃(ρ₁‖σ₁) + 𝐃(ρ₂‖σ₂) := by
-  --or `simp [SandwichedRelRentropy]`.
-  exact sandwichedRelRentropy_additive_alpha_one ρ₁ σ₁ ρ₂ σ₂
-
-@[simp]
-theorem sandwichedRelRentropy_relabel (ρ σ : MState d) (e : d₂ ≃ d) :
-    D̃_ α(ρ.relabel e‖σ.relabel e) = D̃_ α(ρ‖σ) := by
-  simp only [SandwichedRelRentropy, MState.relabel_M]
-  rw! [HermitianMat.ker_reindex_le_iff] --Why doesn't this `simp`? Because it's an if condition, I'm guessing
-  simp [HermitianMat.conj_submatrix]
-
-@[simp]
-theorem sandwichedRelRentropy_self (hα : 0 < α) (ρ : MState d) :
-  --Technically this holds for all α except for `-1` and `0`. But those are stupid.
-  --TODO: Maybe SandwichedRelRentropy should actually be defined differently for α = 0?
-    D̃_ α(ρ‖ρ) = 0 := by
-  simp? [SandwichedRelRentropy, NNReal.eq_iff] says
-    simp only [SandwichedRelRentropy, hα, ↓reduceDIte, le_refl, sub_self, inner_zero_right,
-    ENNReal.coe_eq_zero, NNReal.eq_iff, NNReal.coe_mk, NNReal.coe_zero, ite_eq_left_iff,
-    div_eq_zero_iff, Real.log_eq_zero]
-  intro hα
-  left; right; left
-  rw [HermitianMat.rpow_eq_cfc, HermitianMat.rpow_eq_cfc]
-  nth_rw 2 [← HermitianMat.cfc_id ρ.M]
-  rw [HermitianMat.cfc_conj, ← HermitianMat.cfc_comp]
-  conv =>
-    enter [1, 1]
-    equals ρ.M.cfc id =>
-      apply HermitianMat.cfc_congr_of_nonneg ρ.nonneg
-      intro i (hi : 0 ≤ i)
-      simp
-      rw [← Real.rpow_mul_natCast hi, ← Real.rpow_one_add' hi]
-      · rw [← Real.rpow_mul hi]
-        field_simp
-        ring_nf
-        exact Real.rpow_one i
-      · field_simp; ring_nf; positivity
-  simp
-
-@[aesop (rule_sets := [finiteness]) unsafe apply]
-theorem sandwichedRelEntropy_ne_top {ρ σ : MState d} [σ.M.NonSingular] : D̃_ α(ρ‖σ) ≠ ⊤ := by
-  by_cases 0 < α
-  · simp [SandwichedRelRentropy, HermitianMat.nonSingular_ker_bot, *]
-  · simp [SandwichedRelRentropy, *]
-
-@[fun_prop]
-lemma continuousOn_exponent : ContinuousOn (fun α : ℝ => (1 - α) / (2 * α)) (Set.Ioi 0) := by
-  fun_prop (disch := intros; linarith [Set.mem_Ioi.mp ‹_›])
-
-@[fun_prop]
-lemma Complex.continuousOn_cpow_const_Ioi (z : ℂ) :
-    ContinuousOn (fun r : ℝ => z ^ (r : ℂ)) (Set.Ioi 0) := by
-  apply ContinuousOn.const_cpow (f := Complex.ofReal)
-  · fun_prop
-  · grind [ofReal_ne_zero]
-
-/--
-The function α ↦ (1 - α) / (2 * α) maps the interval (1, ∞) to (-∞, 0).
--/
-lemma maps_to_Iio_of_Ioi_1 : Set.MapsTo (fun α : ℝ => (1 - α) / (2 * α)) (Set.Ioi 1) (Set.Iio 0) := by
-  intro x hx
-  rw [Set.mem_Ioi] at hx
-  rw [Set.mem_Iio]
-  have h1 : 1 - x < 0 := by linarith
-  have h2 : 0 < 2 * x := by linarith
-  exact div_neg_of_neg_of_pos h1 h2
-
---PR'ed: #35494
-@[simp]
-theorem frontier_singleton {X : Type*} [TopologicalSpace X] [T1Space X] [PerfectSpace X]
-    (p : X) : frontier {p} = {p} := by
-  simp [frontier]
-
-private theorem sandwichedRelRentropy.continuousOn_Ioi_1_aux (ρ σ : MState d) :
-    ContinuousOn (fun (α : ℝ) ↦ ((HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M ^ α)) (Set.Ioi 1) := by
-  have h_cont : ContinuousOn (fun α : ℝ => (HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M) (Set.Ioi 1) := by
-    have h_cont : ContinuousOn (fun α : ℝ => (σ.M ^ ((1 - α) / (2 * α))).mat) (Set.Ioi 1) := by
-      have h_cont : ContinuousOn (fun α : ℝ => σ.M ^ ((1 - α) / (2 * α))) (Set.Ioi 1) := by
-        have h_cont : ContinuousOn (fun α : ℝ => (1 - α) / (2 * α)) (Set.Ioi 1) := by
-          exact continuousOn_of_forall_continuousAt fun x hx => ContinuousAt.div ( continuousAt_const.sub continuousAt_id ) ( continuousAt_const.mul continuousAt_id ) ( by linarith [ hx.out ] )
-        have h_cont : ContinuousOn (fun α : ℝ => (σ.M ^ α)) (Set.Iio 0) := by
-          apply_rules [ HermitianMat.continuousOn_rpow_neg ];
-        exact h_cont.comp ‹_› fun x hx => by rw [ Set.mem_Iio ] ; rw [ div_lt_iff₀ ] <;> linarith [ hx.out ] ;
-      exact Continuous.comp_continuousOn ( by continuity ) h_cont;
-    fun_prop;
-  -- Apply the lemma HermitianMat.continuousOn_rpow_joint_nonneg_pos with the given conditions.
-  apply HermitianMat.continuousOn_rpow_joint_nonneg_pos;
-  · exact h_cont;
-  · exact continuousOn_id;
-  · exact fun x hx => zero_lt_one.trans hx;
-
-private theorem sandwichedRelRentropy.continuousOn_Ioi_1 (ρ σ : MState d) :
-    ContinuousOn (fun α => D̃_ α(ρ‖σ)) (Set.Ioi 1) := by
-  dsimp [SandwichedRelRentropy]
-  split_ifs with hρ
-  · simp [← ENNReal.ofReal_eq_coe_nnreal]
-    rw [continuousOn_congr (f := fun α ↦ ENNReal.ofReal
-      (Real.log ((HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M ^ α).trace / (α - 1)))]
-    · apply (ENNReal.continuous_ofReal).comp_continuousOn
-      apply ContinuousOn.div₀
-      · apply ContinuousOn.log
-        · exact HermitianMat.trace_Continuous.comp_continuousOn
-            (continuousOn_Ioi_1_aux ρ σ)
-        · intro x hx
-          apply LT.lt.ne'
-          grw [← sandwiched_trace_of_gt_1 hρ hx]
-          exact zero_lt_one
-      · fun_prop
-      · clear hρ; grind
-    · intro α (hα : 1 < α)
-      dsimp only
-      rw [if_pos (zero_lt_one.trans hα), if_neg hα.ne']
-  · rw [continuousOn_congr (f := fun α ↦ ⊤)]
-    · fun_prop
-    · clear ρ σ hρ;
-      grind only [→ Set.EqOn.eq_of_mem, = Set.mem_Ioi, Set.EqOn, cases Or]
-
-private theorem sandwichedRelRentropy.continuousOn_Ioo_0_1_aux (ρ σ : MState d) :
-    ContinuousOn (fun (α : ℝ) ↦ ((HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M ^ α)) (Set.Ioo 0 1) := by
-  have h_cont : ContinuousOn (fun α : ℝ => (HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M) (Set.Ioo 0 1) := by
-    have h_cont : ContinuousOn (fun α : ℝ => (σ.M ^ ((1 - α) / (2 * α))).mat) (Set.Ioo 0 1) := by
-      have h_cont : ContinuousOn (fun α : ℝ => σ.M ^ ((1 - α) / (2 * α))) (Set.Ioo 0 1) := by
-        have h_exp_cont : ContinuousOn (fun α : ℝ => (1 - α) / (2 * α)) (Set.Ioo 0 1) := by
-          exact continuousOn_of_forall_continuousAt fun x hx => ContinuousAt.div ( continuousAt_const.sub continuousAt_id ) ( continuousAt_const.mul continuousAt_id ) ( by linarith [ hx.1 ] )
-        have h_rpow_cont : ContinuousOn (fun α : ℝ => (σ.M ^ α)) (Set.Ioi 0) := by
-          apply_rules [ HermitianMat.continuousOn_rpow_pos ]
-        exact h_rpow_cont.comp h_exp_cont fun x hx => by rw [ Set.mem_Ioi ] ; apply div_pos <;> linarith [ hx.1, hx.2 ]
-      exact Continuous.comp_continuousOn ( by continuity ) h_cont
-    fun_prop
-  apply HermitianMat.continuousOn_rpow_joint_nonneg_pos
-  · exact h_cont
-  · exact continuousOn_id
-  · exact fun x hx => hx.1
-
-/-- Continuity on (0,1): the sandwich relative Rényi entropy is continuous in α on (0,1). -/
-private theorem sandwichedRelRentropy.continuousOn_Ioo_0_1 (ρ σ : MState d) :
-    ContinuousOn (fun α => D̃_ α(ρ‖σ)) (Set.Ioo 0 1) := by
-  dsimp [SandwichedRelRentropy]
-  split_ifs with hρ
-  · simp [← ENNReal.ofReal_eq_coe_nnreal]
-    rw [continuousOn_congr (f := fun α ↦ ENNReal.ofReal
-      (Real.log ((HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M ^ α).trace / (α - 1)))]
-    · apply (ENNReal.continuous_ofReal).comp_continuousOn
-      apply ContinuousOn.div₀
-      · apply ContinuousOn.log
-        · exact HermitianMat.trace_Continuous.comp_continuousOn
-            (continuousOn_Ioo_0_1_aux ρ σ)
-        · intro x hx
-          exact (sandwiched_trace_pos hρ).ne'
-      · fun_prop
-      · intro x hx; exact sub_ne_zero.mpr (ne_of_lt hx.2)
-    · intro α hα
-      dsimp only
-      rw [if_pos hα.1, if_neg (ne_of_lt hα.2)]
-  · rw [continuousOn_congr (f := fun α ↦ ⊤)]
-    · fun_prop
-    · intro x hx
-      dsimp only
-      simp [hx.1]
 
 private lemma sandwichedRelRentropy.trace_at_one (ρ σ : MState d) :
     ((ρ.M.conj (σ.M ^ ((1 - (1:ℝ)) / (2 * (1:ℝ)))).mat) ^ (1:ℝ)).trace = 1 := by
@@ -1090,7 +552,8 @@ private lemma eigenWeight_nonneg (ρ σ : MState d) (i : d) : 0 ≤ eigenWeight 
   -- Since ρ is positive semi-definite, we have that the inner product of any vector with ρ is non-negative. Hence, we can write:
   have := ρ.pos
   obtain ⟨ h₁, h₂ ⟩ := this;
-  have := h₁.2 v;
+  open ComplexOrder in
+  have := (Matrix.posSemidef_iff_dotProduct_mulVec.mp h₁).2 v;
   exact this.1.trans (by simp [w])
 
 private lemma eigenWeight_zero_of_eigenvalue_zero {i : d} (hσ : σ.M.ker ≤ ρ.M.ker)
@@ -1101,7 +564,8 @@ private lemma eigenWeight_zero_of_eigenvalue_zero {i : d} (hσ : σ.M.ker ≤ ρ
     convert Matrix.IsHermitian.mulVec_eigenvectorBasis σ.M.H i using 1
     simp [hei]
   have h_mulVec_zero' : ρ.M.mat.mulVec (σ.M.H.eigenvectorBasis i) = 0 := by
-    exact hσ h_mulVec_zero
+    specialize hσ congr(WithLp.toLp 2 $h_mulVec_zero)
+    exact congr(WithLp.ofLp $hσ)
   convert congr_arg ( fun x : d → ℂ => RCLike.re ( star ( σ.M.H.eigenvectorBasis i ) ⬝ᵥ x ) ) h_mulVec_zero' using 1;
   · simp [Matrix.dotProduct_mulVec]
   · simp [dotProduct]
@@ -1680,6 +1144,577 @@ private theorem sandwichedRelRentropy.limit_at_one (ρ σ : MState d)
   · norm_num [ div_eq_inv_mul, slope_def_field ]
   · simp
 
+theorem inner_log_sub_log_nonneg (h : σ.M.ker ≤ ρ.M.ker) :
+    0 ≤ ⟪ρ.M, ρ.M.log - σ.M.log⟫ := by
+  -- Take the limit α → 1+ of the sandwiched Renyi relative entropy,
+  -- which converges to ⟪ρ.M, ρ.M.log - σ.M.log⟫ and is nonneg for all α > 1.
+  -- Use the limit from the right: for α > 1, log(Tr[...]^α) / (α - 1) ≥ 0
+  have h_limit := sandwichedRelRentropy.limit_at_one ρ σ h
+  -- Restrict the filter to (1, ∞) ⊂ (0, ∞) \ {1}
+  have h_mono : nhdsWithin (1 : ℝ) (Set.Ioi 1) ≤ nhdsWithin 1 (Set.Ioi 0 \ {1}) := by
+    apply nhdsWithin_mono
+    intro x hx
+    exact ⟨Set.mem_Ioi.mpr (lt_trans zero_lt_one hx), ne_of_gt hx⟩
+  haveI : (nhdsWithin (1 : ℝ) (Set.Ioi 1)).NeBot := inferInstance
+  apply ge_of_tendsto (h_limit.mono_left h_mono)
+  filter_upwards [self_mem_nhdsWithin] with α hα
+  exact sandwichedRelRentropy_nonneg_α_gt_1 h hα
+
+theorem sandwichedRelRentropy_nonneg {α : ℝ} (hα : 0 < α) (h : σ.M.ker ≤ ρ.M.ker) :
+    0 ≤ if α = 1 then ⟪ρ.M, ρ.M.log - σ.M.log⟫
+      else ((ρ.M.conj (σ.M ^ ((1 - α)/(2 * α)) ).mat) ^ α).trace.log / (α - 1) := by
+  split_ifs with h1
+  · exact inner_log_sub_log_nonneg h
+  by_cases hα₂ : α > 1
+  · exact sandwichedRelRentropy_nonneg_α_gt_1 h hα₂
+  · have : α < 1 := by push_neg at hα₂; exact lt_of_le_of_ne hα₂ h1
+    exact sandwichedRelRentropy_nonneg_α_lt_1 h hα this
+
+section additivity
+
+--TODO Cleanup. Ugh.
+
+/--
+If the kernels of the components are contained, then the kernel of the Kronecker product is contained.
+-/
+lemma ker_kron_le_of_le {d₁ d₂ : Type*} [Fintype d₁] [Fintype d₂] [DecidableEq d₁] [DecidableEq d₂]
+    (A C : Matrix d₁ d₁ ℂ) (B D : Matrix d₂ d₂ ℂ)
+    (hA : LinearMap.ker A.toEuclideanLin ≤ LinearMap.ker C.toEuclideanLin)
+    (hB : LinearMap.ker B.toEuclideanLin ≤ LinearMap.ker D.toEuclideanLin) :
+    LinearMap.ker (A.kronecker B).toEuclideanLin ≤ LinearMap.ker (C.kronecker D).toEuclideanLin := by
+  intro x hx
+  simp only [Matrix.kronecker, LinearMap.mem_ker, Matrix.toLpLin_apply,
+    WithLp.toLp_eq_zero] at hx ⊢
+  -- By definition of Kronecker product, we know that $(A \otimes B)x = 0$ if and only if for all $i$ and $j$, $\sum_{k,l} A_{ik} B_{jl} x_{kl} = 0$.
+  have h_kronecker : ∀ i j, ∑ k, A i k • ∑ l, B j l • x (k, l) = 0 := by
+    intro i j
+    replace hx := congr_fun hx ( i, j )
+    simp only [Matrix.mulVec, dotProduct, Matrix.kroneckerMap_apply,
+      Pi.zero_apply, smul_eq_mul, Finset.mul_sum] at hx ⊢
+    rw [ ← Finset.sum_product' ]
+    simpa only [mul_assoc, Finset.univ_product_univ] using hx
+  -- Apply the hypothesis `hA` to each term in the sum.
+  have h_apply_hA : ∀ i j, ∑ k, C i k • ∑ l, B j l • x (k, l) = 0 := by
+    intro i j
+    specialize hA ( show (WithLp.toLp 2 ( fun k => ∑ l, B j l • x ( k, l ) )) ∈ LinearMap.ker ( Matrix.toEuclideanLin A ) from ?_ )
+    · simp_all only [smul_eq_mul, LinearMap.mem_ker]
+      ext i_1 : 1
+      simp_all only [PiLp.zero_apply]
+      apply h_kronecker
+    · exact congr(WithLp.ofLp $hA i)
+  ext ⟨ i, j ⟩
+  simp only [smul_eq_mul, Matrix.mulVec, dotProduct, Matrix.kroneckerMap_apply,
+    Pi.zero_apply] at h_kronecker h_apply_hA ⊢
+  have h_apply_hB : ∑ l, D j l • ∑ k, C i k • x (k, l) = 0 := by
+    specialize hB
+    simp_all only [funext_iff, Pi.zero_apply, Prod.forall, smul_eq_mul]
+    have := hB ( show  (WithLp.toLp 2 ( fun l => ∑ k, C i k * x ( k, l ) )) ∈ LinearMap.ker ( Matrix.toEuclideanLin B ) from ?_ )
+    · simp_all only [LinearMap.mem_ker] ;
+      exact congr(WithLp.ofLp $this j)
+    · ext j
+      specialize h_apply_hA i j
+      simp [ Matrix.mulVec, dotProduct, Finset.mul_sum ] at h_apply_hA ⊢
+      simp_rw [mul_left_comm]
+      rw [Finset.sum_comm]
+      exact h_apply_hA
+  rw [← h_apply_hB]
+  simp only [smul_eq_mul, Finset.mul_sum]
+  rw [ Finset.sum_sigma' ];
+  refine' Finset.sum_bij ( fun x _ => ⟨ x.2, x.1 ⟩ ) _ _ _ _
+  · simp
+  · simp
+  · simp
+  · simp only [Finset.mem_univ, mul_assoc, Prod.mk.eta, mul_left_comm, imp_self, implies_true]
+
+--TODO: Generalize to arbitrary PSD matrices.
+/--
+If the kernel of a product state is contained in another, the left component kernel is contained.
+-/
+lemma ker_le_of_ker_kron_le_left (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂)
+  (h : (σ₁ ⊗ᴹ σ₂).M.ker ≤ (ρ₁ ⊗ᴹ ρ₂).M.ker) :
+    σ₁.M.ker ≤ ρ₁.M.ker := by
+  intro u hu
+  obtain ⟨v, hv⟩ : ∃ v : EuclideanSpace ℂ d₂, v ∉ (σ₂ :HermitianMat d₂ ℂ).ker ∧ v ∉ (ρ₂ :HermitianMat d₂ ℂ).ker := by
+    have h_union : (σ₂ : HermitianMat d₂ ℂ).ker ≠ ⊤ ∧ (ρ₂ : HermitianMat d₂ ℂ).ker ≠ ⊤ := by
+      constructor <;> intro h_top;
+      · have h_contra : σ₂.M = 0 := by
+          ext1
+          simp_all [ Submodule.eq_top_iff'];
+          ext i j
+          specialize h_top ( EuclideanSpace.single j 1 )
+          simp_all
+          replace h_top := congr(WithLp.ofLp $h_top i)
+          simp_all
+          convert h_top using 1;
+          erw [ Matrix.toLpLin_apply ]
+          simp_all only [MState.mat_M, EuclideanSpace.ofLp_single, Matrix.mulVec_single,
+            MulOpposite.op_one, Pi.smul_apply, Matrix.col_apply, one_smul]
+        exact σ₂.pos.ne' h_contra;
+      · have h_contra : ρ₂.M = 0 := by
+          ext i j; simp_all [ Submodule.eq_top_iff' ] ;
+          convert congr(WithLp.ofLp $(h_top (WithLp.toLp 2 ( Pi.single j 1 )) ) i) using 1
+          simp
+          simp [ HermitianMat.lin ];
+          rfl
+        exact ρ₂.pos.ne' h_contra;
+    have h_union : ∀ (U V : Submodule ℂ (EuclideanSpace ℂ d₂)), U ≠ ⊤ → V ≠ ⊤ → ∃ v : EuclideanSpace ℂ d₂, v ∉ U ∧ v ∉ V := by
+      intros U V hU hV;
+      by_contra h_contra;
+      have h_union : U ⊔ V = ⊤ := by
+        ext v
+        simp only [Submodule.mem_top, iff_true]
+        by_cases hvU : v ∈ U <;> by_cases hvV : v ∈ V <;> simp_all [ Submodule.mem_sup ];
+        · exact ⟨ v, hvU, 0, by simp, by simp ⟩;
+        · exact ⟨ v, hvU, 0, by simp, by simp ⟩;
+        · exact ⟨ 0, by simp, v, h_contra v hvU, by simp ⟩;
+      have h_union : ∃ v : EuclideanSpace ℂ d₂, v ∉ U ∧ v ∈ V := by
+        have h_union : ∃ v : EuclideanSpace ℂ d₂, v ∈ V ∧ v ∉ U := by
+          have h_not_subset : ¬V ≤ U := by
+            exact fun h => hU <| by rw [ eq_top_iff ] ; exact h_union ▸ sup_le ( by tauto ) h;
+          exact Set.not_subset.mp h_not_subset;
+        exact ⟨ h_union.choose, h_union.choose_spec.2, h_union.choose_spec.1 ⟩;
+      obtain ⟨ v, hv₁, hv₂ ⟩ := h_union;
+      obtain ⟨ w, hw₁, hw₂ ⟩ : ∃ w : EuclideanSpace ℂ d₂, w ∉ V ∧ w ∈ U := by
+        obtain ⟨ w, hw ⟩ := ( show ∃ w : EuclideanSpace ℂ d₂, w ∉ V from by simpa [ Submodule.eq_top_iff' ] using hV ) ; use w; simp_all [ Submodule.eq_top_iff' ] ;
+        exact Classical.not_not.1 fun hw' => hw <| h_contra _ hw';
+      have h_union : v + w ∉ U ∧ v + w ∉ V := by
+        exact ⟨ fun h => hv₁ <| by simpa using U.sub_mem h hw₂, fun h => hw₁ <| by simpa using V.sub_mem h hv₂ ⟩;
+      exact h_contra ⟨ v + w, h_union.1, h_union.2 ⟩;
+    exact h_union _ _ ( by tauto ) ( by tauto );
+  -- Consider $z = u \otimes v$.
+  set z : EuclideanSpace ℂ (d₁ × d₂) := WithLp.toLp 2 ( fun p => u p.1 * v p.2 );
+  have hz : z ∈ (σ₁ ⊗ᴹ σ₂ : HermitianMat (d₁ × d₂) ℂ).ker := by
+    ext ⟨i, j⟩
+    simp [z]
+    have h_kronecker : ∀ (A : Matrix d₁ d₁ ℂ) (B : Matrix d₂ d₂ ℂ) (u : d₁ → ℂ) (v : d₂ → ℂ), (A.kronecker B).mulVec (fun p => u p.1 * v p.2) = fun p => (A.mulVec u) p.1 * (B.mulVec v) p.2 := by
+      intro A B u v; ext ⟨ i, j ⟩ ; simp [ Matrix.mulVec, dotProduct, Finset.mul_sum, mul_comm, mul_left_comm ] ;
+      exact Fintype.sum_prod_type_right fun x => A i x.1 * (B j x.2 * (u x.1 * v x.2));
+    convert congr_fun ( h_kronecker σ₁.1.mat σ₂.1.mat u v ) ( i, j ) using 1 ; simp
+    exact Or.inl ( by simpa [ Matrix.mulVec ] using congr(WithLp.ofLp $hu i) );
+  have hz' : z ∈ (ρ₁ ⊗ᴹ ρ₂ : HermitianMat (d₁ × d₂) ℂ).ker := by
+    exact h hz;
+  have hz'' : ∀ a b, (ρ₁.M.val.mulVec u) a * (ρ₂.M.val.mulVec v) b = 0 := by
+    intro a b
+    have hz'' : (ρ₁.M.val.mulVec u) a * (ρ₂.M.val.mulVec v) b = ((ρ₁ ⊗ᴹ ρ₂ : HermitianMat (d₁ × d₂) ℂ).val.mulVec z) (a, b) := by
+      simp [ Matrix.mulVec, dotProduct];
+      simp [  Finset.sum_mul, mul_assoc, mul_comm];
+      simp [ z, Finset.mul_sum, mul_assoc, mul_left_comm ];
+      erw [ Finset.sum_product ] ; simp
+      exact rfl;
+    exact hz''.trans ( by simpa using congr(WithLp.ofLp $hz' ( a, b )) );
+  ext a; specialize hz'' a; simp_all [ Matrix.mulVec, dotProduct ] ;
+  contrapose! hv;
+  intro hv'; ext b; specialize hz'' b; simp_all
+  exact hz''.resolve_left ( by simpa [ Matrix.mulVec, dotProduct ] using hv )
+
+
+--TODO: Generalize to arbitrary PSD matrices.
+--TODO: Rewrite the proof using the `ker_le_of_ker_kron_le_left` lemma, and the fact that
+-- there's a unitary whose conjugation swaps the kronecker product.
+/--
+If the kernel of a product state is contained in another, the right component kernel is contained.
+-/
+lemma ker_le_of_ker_kron_le_right (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂)
+  (h : (σ₁ ⊗ᴹ σ₂).M.ker ≤ (ρ₁ ⊗ᴹ ρ₂).M.ker) :
+    σ₂.M.ker ≤ ρ₂.M.ker := by
+  intro v hv;
+  have h_z : ∃ u : EuclideanSpace ℂ d₁, u ≠ 0 ∧ u ∉ σ₁.M.ker ∧ u ∉ ρ₁.M.ker := by
+    have h_z : σ₁.M.ker ≠ ⊤ ∧ ρ₁.M.ker ≠ ⊤ := by
+      have h_ker_ne_top : ∀ (ρ : MState d₁), ρ.M.ker ≠ ⊤ := by
+        intro ρ hρ_top
+        have h_contra : ρ.M = 0 := by
+          ext i j
+          simp_all [ Submodule.eq_top_iff' ] ;
+          convert congr(WithLp.ofLp $(hρ_top ( EuclideanSpace.single j 1 ) ) i) using 1
+          simp
+          erw [ Matrix.toLpLin_apply ]
+          aesop
+        exact ρ.pos.ne' h_contra;
+      exact ⟨ h_ker_ne_top σ₁, h_ker_ne_top ρ₁ ⟩;
+    have h_z : ∃ u : EuclideanSpace ℂ d₁, u ∉ σ₁.M.ker ∧ u ∉ ρ₁.M.ker := by
+      have h_z : ∀ (U V : Submodule ℂ (EuclideanSpace ℂ d₁)), U ≠ ⊤ → V ≠ ⊤ → ∃ u : EuclideanSpace ℂ d₁, u ∉ U ∧ u ∉ V := by
+        intro U V hU hV
+        by_contra h_contra
+        push_neg at h_contra;
+        have h_union : ∃ u : EuclideanSpace ℂ d₁, u ∉ U ∧ u ∈ V := by
+          exact Exists.elim ( show ∃ u : EuclideanSpace ℂ d₁, u ∉ U from by simpa [ Submodule.eq_top_iff' ] using hU ) fun u hu => ⟨ u, hu, h_contra u hu ⟩;
+        obtain ⟨ u, hu₁, hu₂ ⟩ := h_union;
+        have h_union : ∀ v : EuclideanSpace ℂ d₁, v ∈ U → v + u ∈ V := by
+          intro v hv; specialize h_contra ( v + u ) ; simp_all [ Submodule.add_mem_iff_right ] ;
+        have h_union : ∀ v : EuclideanSpace ℂ d₁, v ∈ U → v ∈ V := by
+          exact fun v hv => by simpa using V.sub_mem ( h_union v hv ) hu₂;
+        exact hV ( eq_top_iff.mpr fun x hx => by by_cases hxU : x ∈ U <;> aesop );
+      exact h_z _ _ ( by tauto ) ( by tauto );
+    exact ⟨ h_z.choose, by intro h; simpa [ h ] using h_z.choose_spec.1, h_z.choose_spec.1, h_z.choose_spec.2 ⟩;
+  obtain ⟨ u, hu₁, hu₂, hu₃ ⟩ := h_z;
+  -- Consider the vector $z = u \otimes v$.
+  set z : EuclideanSpace ℂ (d₁ × d₂) := .toLp 2 ( fun p => u p.1 * v p.2 );
+  have hz : z ∈ (σ₁ ⊗ᴹ σ₂).M.ker := by
+    -- By definition of $z$, we have $(σ₁ ⊗ σ₂).mat.mulVec z = σ₁.mat.mulVec u ⊗ σ₂.mat.mulVec v$.
+    have hz_mul : (σ₁ ⊗ᴹ σ₂).M.mat.mulVec z = fun p => (σ₁.M.mat.mulVec u) p.1 * (σ₂.M.mat.mulVec v) p.2 := by
+      ext p; simp [z, Matrix.mulVec]
+      simp [ dotProduct, Finset.mul_sum, Finset.sum_mul, mul_assoc, mul_comm, mul_left_comm ];
+      rw [ ← Finset.sum_product' ];
+      refine' Finset.sum_bij ( fun x _ => ( x.2, x.1 ) ) _ _ _ _ <;> simp;
+      exact fun a b => Or.inl <| Or.inl <| rfl;
+    simp_all [ funext_iff, Matrix.mulVec ];
+    ext ⟨ a, b ⟩
+    specialize hz_mul a b
+    simp_all [ dotProduct]
+    convert hz_mul using 1;
+    simp_all only [zero_eq_mul]
+    exact Or.inr ( by simpa [ Matrix.mulVec, dotProduct ] using congr(WithLp.ofLp $hv b) );
+  have hz' : z ∈ (ρ₁ ⊗ᴹ ρ₂).M.ker := by
+    exact h hz;
+  have hz'' : ∀ i j, (ρ₁.M.val.mulVec u) i * (ρ₂.M.val.mulVec v) j = 0 := by
+    intro i j;
+    have hz'' : (ρ₁.M.val.kronecker ρ₂.M.val).mulVec (fun p => u p.1 * v p.2) (i, j) = (ρ₁.M.val.mulVec u) i * (ρ₂.M.val.mulVec v) j := by
+      simp [ Matrix.mulVec, dotProduct, Finset.mul_sum, mul_assoc, mul_comm, mul_left_comm ];
+      simp [ mul_assoc, Finset.mul_sum, Finset.sum_mul ];
+      rw [ ← Finset.sum_product' ];
+      refine' Finset.sum_bij ( fun x _ => ( x.2, x.1 ) ) _ _ _ _
+      · simp
+      · simp
+      · simp
+      · intro _ _
+        simp only [MState.m, HermitianMat.mat_apply]
+        ring_nf
+    exact hz''.symm.trans ( by simpa using congr(WithLp.ofLp $hz' ( i, j )) );
+  contrapose! hz'';
+  obtain ⟨ i, hi ⟩ := Function.ne_iff.mp ( show ρ₁.M.val.mulVec u ≠ 0 from fun h => hu₃ <| congr(WithLp.toLp 2 $h))
+  obtain ⟨ j, hj ⟩ := Function.ne_iff.mp ( show ρ₂.M.val.mulVec v ≠ 0 from fun h => hz'' <| congr(WithLp.toLp 2 $h))
+  use i, j
+  aesop;
+
+/--
+The kernel of a product state is contained in another product state's kernel iff the individual
+kernels are contained.
+-/
+lemma ker_prod_le_iff (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) :
+    (σ₁ ⊗ᴹ σ₂).M.ker ≤ (ρ₁ ⊗ᴹ ρ₂).M.ker ↔ σ₁.M.ker ≤ ρ₁.M.ker ∧ σ₂.M.ker ≤ ρ₂.M.ker := by
+  constructor <;> intro h;
+  · exact ⟨ ker_le_of_ker_kron_le_left ρ₁ σ₁ ρ₂ σ₂ h, ker_le_of_ker_kron_le_right ρ₁ σ₁ ρ₂ σ₂ h ⟩;
+  · convert ker_kron_le_of_le _ _ _ _ h.1 h.2 using 1
+
+--TODO: Generalize to RCLike.
+omit [DecidableEq d₁] [DecidableEq d₂] in
+lemma HermitianMat.inner_kron
+    (A : HermitianMat d₁ ℂ) (B : HermitianMat d₂ ℂ) (C : HermitianMat d₁ ℂ) (D : HermitianMat d₂ ℂ) :
+    ⟪A ⊗ₖ B, C ⊗ₖ D⟫ = ⟪A, C⟫ * ⟪B, D⟫ := by
+  -- Apply the property of the trace of Kronecker products.
+  have h_trace_kron : ∀ (A₁ B₁ : Matrix d₁ d₁ ℂ) (A₂ B₂ : Matrix d₂ d₂ ℂ), Matrix.trace (Matrix.kroneckerMap (· * ·) A₁ A₂ * Matrix.kroneckerMap (· * ·) B₁ B₂) = Matrix.trace (A₁ * B₁) * Matrix.trace (A₂ * B₂) := by
+    intro A₁ B₁ A₂ B₂
+    rw [← Matrix.mul_kronecker_mul, Matrix.trace_kronecker]
+  simp_all only [inner, IsMaximalSelfAdjoint.RCLike_selfadjMap, kronecker_mat, RCLike.mul_re,
+    RCLike.re_to_complex, RCLike.im_to_complex, sub_eq_self, mul_eq_zero];
+  simp only [Matrix.trace, Matrix.diag_apply, Matrix.mul_apply, mat_apply, Complex.im_sum,
+    Complex.mul_im];
+  left;
+  have h_symm : ∀ x x_1, (A x x_1).re * (C x_1 x).im + (A x x_1).im * (C x_1 x).re = -((A x_1 x).re * (C x x_1).im + (A x_1 x).im * (C x x_1).re) := by
+    intro x y; have := congr_fun ( congr_fun A.2 y ) x; have := congr_fun ( congr_fun C.2 y ) x; simp_all [ Complex.ext_iff ] ;
+    grind;
+  have h_sum_zero : ∑ x, ∑ x_1, ((A x x_1).re * (C x_1 x).im + (A x x_1).im * (C x_1 x).re) = ∑ x, ∑ x_1, -((A x x_1).re * (C x_1 x).im + (A x x_1).im * (C x_1 x).re) := by
+    rw [ Finset.sum_comm ];
+    exact Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => h_symm _ _ ▸ rfl;
+  norm_num [ Finset.sum_add_distrib ] at * ; linarith
+
+attribute [fun_prop] ContinuousAt.rpow
+
+lemma continuousOn_rpow_uniform {K : Set ℝ} (hK : IsCompact K) :
+    ContinuousOn (fun r : ℝ ↦ UniformOnFun.ofFun {K} (fun t : ℝ ↦ t ^ r)) (Set.Ioi 0) := by
+  refine continuousOn_of_forall_continuousAt fun r hr => ?_
+  rw [Set.mem_Ioi] at hr
+  apply UniformOnFun.tendsto_iff_tendstoUniformlyOn.mpr
+  simp only [Set.mem_singleton_iff, UniformOnFun.toFun_ofFun, Metric.tendstoUniformlyOn_iff,
+    Function.comp_apply, forall_eq]
+  intro ε hεpos;
+  have h_unif_cont : UniformContinuousOn (fun (p : ℝ × ℝ) => p.1 ^ p.2) (K ×ˢ Set.Icc (r / 2) (r * 2)) := by
+    apply IsCompact.uniformContinuousOn_of_continuous
+    · exact hK.prod CompactIccSpace.isCompact_Icc
+    · refine continuousOn_of_forall_continuousAt fun p ⟨hp₁, ⟨hp₂₁, hp₂₂⟩⟩ ↦ ?_
+      have _ : p.1 ≠ 0 ∨ 0 < p.2 := by right; linarith
+      fun_prop (disch := assumption)
+  rw [Metric.uniformContinuousOn_iff] at h_unif_cont
+  obtain ⟨δ, hδpos, H⟩ := h_unif_cont ε hεpos
+  filter_upwards [Ioo_mem_nhds (show r / 2 < r by linarith) (show r < r * 2 by linarith), Ioo_mem_nhds (show r - δ < r by linarith) (show r < r + δ by linarith)] with n ⟨_, _⟩ ⟨_, _⟩ x hx
+  refine H (x, r) ⟨hx, ?_⟩ (x, n) ⟨hx, ?_⟩ ?_
+  · constructor <;> linarith
+  · constructor <;> linarith
+  · have : |r - n| < δ := abs_lt.mpr ⟨by linarith, by linarith⟩
+    simpa
+
+theorem sandwichedRelRentropy_additive_alpha_one_aux (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂)
+  (h1 : σ₁.M.ker ≤ ρ₁.M.ker) (h2 : σ₂.M.ker ≤ ρ₂.M.ker) :
+    ⟪(ρ₁ ⊗ᴹ ρ₂).M, (ρ₁ ⊗ᴹ ρ₂).M.log - (σ₁ ⊗ᴹ σ₂).M.log⟫ =
+    ⟪ρ₁.M, ρ₁.M.log - σ₁.M.log⟫_ℝ + ⟪ρ₂.M, ρ₂.M.log - σ₂.M.log⟫ := by
+  have h_log_kron : (ρ₁ ⊗ᴹ ρ₂).M.log = ρ₁.M.log ⊗ₖ ρ₂.M.supportProj + ρ₁.M.supportProj ⊗ₖ ρ₂.M.log ∧ (σ₁ ⊗ᴹ σ₂).M.log = σ₁.M.log ⊗ₖ σ₂.M.supportProj + σ₁.M.supportProj ⊗ₖ σ₂.M.log := by
+    constructor <;> apply HermitianMat.log_kron_with_proj;
+  have h_inner_supportProj : ∀ (A : HermitianMat d₁ ℂ) (B : HermitianMat d₂ ℂ), ⟪A ⊗ₖ B, ρ₁ ⊗ᴹ ρ₂⟫ = ⟪A, ρ₁⟫ * ⟪B, ρ₂⟫ := by
+    exact fun A B => HermitianMat.inner_kron A B ρ₁ ρ₂;
+  simp only [HermitianMat.ker] at h1 h2
+  simp_all only [inner_sub_right, inner_add_right, real_inner_comm,
+    HermitianMat.inner_supportProj_self, MState.tr, mul_one, one_mul,
+    HermitianMat.inner_supportProj_of_ker_le]
+  abel
+
+/-- The Sandwiched Renyi Relative Entropy, defined with ln (nits). Note that at `α = 1` this definition
+  switch to the standard Relative Entropy, for continuity. For α ≤ 0, this gives junk value 0. (There
+  is no conventional value for α < 0; there is a continuous limit at α = 0, but it is complicated and
+  unneeded at the moment.)-/
+def SandwichedRelRentropy (α : ℝ) (ρ σ : MState d) : ENNReal :=
+  open Classical in
+  if hα : 0 < α then
+    if h : σ.M.ker ≤ ρ.M.ker
+    then (.ofNNReal ⟨if α = 1 then
+        ⟪ρ.M, ρ.M.log - σ.M.log⟫
+      else
+        ((ρ.M.conj (σ.M ^ ((1 - α)/(2 * α)) ).mat) ^ α).trace.log / (α - 1),
+      sandwichedRelRentropy_nonneg hα h⟩)
+    else ⊤
+  else 0
+
+notation "D̃_" α "(" ρ "‖" σ ")" => SandwichedRelRentropy α ρ σ
+
+/-- The quantum relative entropy `𝐃(ρ‖σ) := Tr[ρ (log ρ - log σ)]`. Also called
+the Umegaki quantum relative entropy, when it's necessary to distinguish from other
+relative entropies. -/
+def qRelativeEnt (ρ σ : MState d) : ENNReal :=
+  D̃_1(ρ‖σ)
+
+notation "𝐃(" ρ "‖" σ ")" => qRelativeEnt ρ σ
+
+/--
+The Sandwiched Renyi Relative entropy is additive for α=1 (standard relative entropy).
+-/
+private theorem sandwichedRelRentropy_additive_alpha_one (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) :
+    D̃_ 1(ρ₁ ⊗ᴹ ρ₂‖σ₁ ⊗ᴹ σ₂) = D̃_ 1(ρ₁‖σ₁) + D̃_ 1(ρ₂‖σ₂) := by
+  by_cases h1 : σ₁.M.ker ≤ ρ₁.M.ker
+  <;> by_cases h2 : σ₂.M.ker ≤ ρ₂.M.ker
+  · simp only [SandwichedRelRentropy, ↓reduceIte, ↓reduceDIte, h1, h2]
+    split_ifs <;> simp_all [ ker_prod_le_iff ];
+    simp only [sandwichedRelRentropy_additive_alpha_one_aux ρ₁ σ₁ ρ₂ σ₂ h1 h2]
+    rfl
+  · simp only [SandwichedRelRentropy, zero_lt_one, ↓reduceDIte, ↓reduceIte, h1, h2,
+      add_top, dite_eq_right_iff, ENNReal.coe_ne_top, imp_false]
+    have := ker_prod_le_iff ρ₁ σ₁ ρ₂ σ₂
+    tauto
+  · simp only [SandwichedRelRentropy, zero_lt_one, ↓reduceDIte, ↓reduceIte, h1, h2,
+      top_add, dite_eq_right_iff, ENNReal.coe_ne_top, imp_false]
+    contrapose! h1
+    exact (ker_le_of_ker_kron_le_left ρ₁ σ₁ ρ₂ σ₂) h1
+  · simp only [SandwichedRelRentropy, zero_lt_one, ↓reduceDIte, ↓reduceIte, h1, h2,
+      add_top, dite_eq_right_iff, ENNReal.coe_ne_top, imp_false]
+    contrapose! h1
+    exact (ker_le_of_ker_kron_le_left ρ₁ σ₁ ρ₂ σ₂) h1
+
+lemma sandwiched_term_product (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) (α β : ℝ) :
+    (((ρ₁ ⊗ᴹ ρ₂).M.conj ((σ₁ ⊗ᴹ σ₂).M ^ β).mat) ^ α).trace =
+    ((ρ₁.M.conj (σ₁.M ^ β).mat) ^ α).trace * ((ρ₂.M.conj (σ₂.M ^ β).mat) ^ α).trace := by
+  simp only [MState.prod]
+  rw [← HermitianMat.trace_kronecker]
+  rw [← HermitianMat.rpow_kron α ?_ ?_, ← HermitianMat.conj_kron,
+    HermitianMat.rpow_kron β σ₁.nonneg σ₂.nonneg, HermitianMat.kronecker_mat]
+  · exact HermitianMat.conj_nonneg _ ρ₁.nonneg
+  · exact HermitianMat.conj_nonneg _ ρ₂.nonneg
+
+/-
+The Sandwiched Renyi Relative entropy is additive for alpha != 1.
+-/
+theorem sandwichedRelRentropy_additive_alpha_ne_one {α : ℝ} (hα : α ≠ 1) (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) :
+    D̃_ α(ρ₁ ⊗ᴹ ρ₂‖σ₁ ⊗ᴹ σ₂) = D̃_ α(ρ₁‖σ₁) + D̃_ α(ρ₂‖σ₂) := by
+  by_cases hα0 : 0 < α; swap
+  · simp [SandwichedRelRentropy, hα0]
+  by_cases h_ker : σ₁.M.ker ≤ ρ₁.M.ker ∧ σ₂.M.ker ≤ ρ₂.M.ker
+  · simp_all [SandwichedRelRentropy]
+    -- Apply the additivity of the trace term to split the logarithm into the sum of the logarithms.
+    have h_trace_add : Real.log ((ρ₁ ⊗ᴹ ρ₂).M.conj ((σ₁ ⊗ᴹ σ₂).M ^ ((1 - α) / (2 * α))).mat ^ α).trace = Real.log ((ρ₁.M.conj (σ₁.M ^ ((1 - α) / (2 * α))).mat) ^ α).trace + Real.log ((ρ₂.M.conj (σ₂.M ^ ((1 - α) / (2 * α))).mat) ^ α).trace := by
+      rw [ sandwiched_term_product, Real.log_mul ];
+      · exact (sandwiched_trace_pos h_ker.1).ne'
+      · exact (sandwiched_trace_pos h_ker.2).ne'
+    split_ifs <;> simp_all
+    · norm_num [ add_div ];
+      exact rfl;
+    · exact False.elim ( ‹¬ ( σ₁ ⊗ᴹ σ₂ |> MState.M |> HermitianMat.ker ) ≤ ( ρ₁ ⊗ᴹ ρ₂ |> MState.M |> HermitianMat.ker ) › ( by simpa [ HermitianMat.ker ] using ker_prod_le_iff _ _ _ _ |>.2 h_ker ) );
+  · have h_ker_prod : ¬((σ₁ ⊗ᴹ σ₂).M.ker ≤ (ρ₁ ⊗ᴹ ρ₂).M.ker) := by
+      simp_all  [ ker_prod_le_iff ]
+    rw [not_and_or] at h_ker
+    rcases h_ker with h_ker | h_ker
+    · simp [SandwichedRelRentropy, h_ker_prod, h_ker, hα0]
+    · simp [SandwichedRelRentropy, h_ker_prod, h_ker, hα0]
+
+end additivity
+
+/-- The Sandwiched Renyi Relative entropy is additive when the inputs are product states -/
+@[simp]
+theorem sandwichedRelRentropy_additive (α) (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) :
+    D̃_ α(ρ₁ ⊗ᴹ ρ₂‖σ₁ ⊗ᴹ σ₂) = D̃_ α(ρ₁‖σ₁) + D̃_ α(ρ₂‖σ₂) := by
+  rcases eq_or_ne α 1 with rfl | hα
+  · exact sandwichedRelRentropy_additive_alpha_one ρ₁ σ₁ ρ₂ σ₂
+  · apply sandwichedRelRentropy_additive_alpha_ne_one hα
+
+/-- The quantum relative entropy is additive when the inputs are product states -/
+@[simp]
+theorem qRelativeEnt_additive (ρ₁ σ₁ : MState d₁) (ρ₂ σ₂ : MState d₂) :
+    𝐃(ρ₁ ⊗ᴹ ρ₂‖σ₁ ⊗ᴹ σ₂) = 𝐃(ρ₁‖σ₁) + 𝐃(ρ₂‖σ₂) := by
+  --or `simp [SandwichedRelRentropy]`.
+  exact sandwichedRelRentropy_additive_alpha_one ρ₁ σ₁ ρ₂ σ₂
+
+@[simp]
+theorem sandwichedRelRentropy_relabel (ρ σ : MState d) (e : d₂ ≃ d) :
+    D̃_ α(ρ.relabel e‖σ.relabel e) = D̃_ α(ρ‖σ) := by
+  simp only [SandwichedRelRentropy, MState.relabel_M]
+  rw! [HermitianMat.ker_reindex_le_iff] --Why doesn't this `simp`? Because it's an if condition, I'm guessing
+  simp [HermitianMat.conj_submatrix]
+
+@[simp]
+theorem sandwichedRelRentropy_self (hα : 0 < α) (ρ : MState d) :
+  --Technically this holds for all α except for `-1` and `0`. But those are stupid.
+  --TODO: Maybe SandwichedRelRentropy should actually be defined differently for α = 0?
+    D̃_ α(ρ‖ρ) = 0 := by
+  simp? [SandwichedRelRentropy, NNReal.eq_iff] says
+    simp only [SandwichedRelRentropy, hα, ↓reduceDIte, le_refl, sub_self, inner_zero_right,
+    ENNReal.coe_eq_zero, NNReal.eq_iff, NNReal.coe_mk, NNReal.coe_zero, ite_eq_left_iff,
+    div_eq_zero_iff, Real.log_eq_zero]
+  intro hα
+  left; right; left
+  rw [HermitianMat.rpow_eq_cfc, HermitianMat.rpow_eq_cfc]
+  nth_rw 2 [← HermitianMat.cfc_id ρ.M]
+  rw [HermitianMat.cfc_conj, ← HermitianMat.cfc_comp]
+  conv =>
+    enter [1, 1]
+    equals ρ.M.cfc id =>
+      apply HermitianMat.cfc_congr_of_nonneg ρ.nonneg
+      intro i (hi : 0 ≤ i)
+      simp
+      rw [← Real.rpow_mul_natCast hi, ← Real.rpow_one_add' hi]
+      · rw [← Real.rpow_mul hi]
+        field_simp
+        ring_nf
+        exact Real.rpow_one i
+      · field_simp; ring_nf; positivity
+  simp
+
+@[aesop (rule_sets := [finiteness]) unsafe apply]
+theorem sandwichedRelEntropy_ne_top {ρ σ : MState d} [σ.M.NonSingular] : D̃_ α(ρ‖σ) ≠ ⊤ := by
+  by_cases 0 < α
+  · simp [SandwichedRelRentropy, HermitianMat.nonSingular_ker_bot, *]
+  · simp [SandwichedRelRentropy, *]
+
+@[fun_prop]
+lemma continuousOn_exponent : ContinuousOn (fun α : ℝ => (1 - α) / (2 * α)) (Set.Ioi 0) := by
+  fun_prop (disch := intros; linarith [Set.mem_Ioi.mp ‹_›])
+
+@[fun_prop]
+lemma Complex.continuousOn_cpow_const_Ioi (z : ℂ) :
+    ContinuousOn (fun r : ℝ => z ^ (r : ℂ)) (Set.Ioi 0) := by
+  apply ContinuousOn.const_cpow (f := Complex.ofReal)
+  · fun_prop
+  · grind [ofReal_ne_zero]
+
+/--
+The function α ↦ (1 - α) / (2 * α) maps the interval (1, ∞) to (-∞, 0).
+-/
+lemma maps_to_Iio_of_Ioi_1 : Set.MapsTo (fun α : ℝ => (1 - α) / (2 * α)) (Set.Ioi 1) (Set.Iio 0) := by
+  intro x hx
+  rw [Set.mem_Ioi] at hx
+  rw [Set.mem_Iio]
+  have h1 : 1 - x < 0 := by linarith
+  have h2 : 0 < 2 * x := by linarith
+  exact div_neg_of_neg_of_pos h1 h2
+
+--PR'ed: #35494
+@[simp]
+theorem frontier_singleton {X : Type*} [TopologicalSpace X] [T1Space X] [PerfectSpace X]
+    (p : X) : frontier {p} = {p} := by
+  simp [frontier]
+
+private theorem sandwichedRelRentropy.continuousOn_Ioi_1_aux (ρ σ : MState d) :
+    ContinuousOn (fun (α : ℝ) ↦ ((HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M ^ α)) (Set.Ioi 1) := by
+  have h_cont : ContinuousOn (fun α : ℝ => (HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M) (Set.Ioi 1) := by
+    have h_cont : ContinuousOn (fun α : ℝ => (σ.M ^ ((1 - α) / (2 * α))).mat) (Set.Ioi 1) := by
+      have h_cont : ContinuousOn (fun α : ℝ => σ.M ^ ((1 - α) / (2 * α))) (Set.Ioi 1) := by
+        have h_cont : ContinuousOn (fun α : ℝ => (1 - α) / (2 * α)) (Set.Ioi 1) := by
+          exact continuousOn_of_forall_continuousAt fun x hx => ContinuousAt.div ( continuousAt_const.sub continuousAt_id ) ( continuousAt_const.mul continuousAt_id ) ( by linarith [ hx.out ] )
+        have h_cont : ContinuousOn (fun α : ℝ => (σ.M ^ α)) (Set.Iio 0) := by
+          apply_rules [ HermitianMat.continuousOn_rpow_neg ];
+        exact h_cont.comp ‹_› fun x hx => by rw [ Set.mem_Iio ] ; rw [ div_lt_iff₀ ] <;> linarith [ hx.out ] ;
+      exact Continuous.comp_continuousOn ( by continuity ) h_cont;
+    fun_prop;
+  -- Apply the lemma HermitianMat.continuousOn_rpow_joint_nonneg_pos with the given conditions.
+  apply HermitianMat.continuousOn_rpow_joint_nonneg_pos;
+  · exact h_cont;
+  · exact continuousOn_id;
+  · exact fun x hx => zero_lt_one.trans hx;
+
+private theorem sandwichedRelRentropy.continuousOn_Ioi_1 (ρ σ : MState d) :
+    ContinuousOn (fun α => D̃_ α(ρ‖σ)) (Set.Ioi 1) := by
+  dsimp [SandwichedRelRentropy]
+  split_ifs with hρ
+  · simp [← ENNReal.ofReal_eq_coe_nnreal]
+    rw [continuousOn_congr (f := fun α ↦ ENNReal.ofReal
+      (Real.log ((HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M ^ α).trace / (α - 1)))]
+    · apply (ENNReal.continuous_ofReal).comp_continuousOn
+      apply ContinuousOn.div₀
+      · apply ContinuousOn.log
+        · exact HermitianMat.trace_Continuous.comp_continuousOn
+            (continuousOn_Ioi_1_aux ρ σ)
+        · intro x hx
+          apply LT.lt.ne'
+          grw [← sandwiched_trace_of_gt_1 hρ hx]
+          exact zero_lt_one
+      · fun_prop
+      · clear hρ; grind
+    · intro α (hα : 1 < α)
+      dsimp only
+      rw [if_pos (zero_lt_one.trans hα), if_neg hα.ne']
+  · rw [continuousOn_congr (f := fun α ↦ ⊤)]
+    · fun_prop
+    · clear ρ σ hρ;
+      grind only [→ Set.EqOn.eq_of_mem, = Set.mem_Ioi, Set.EqOn, cases Or]
+
+private theorem sandwichedRelRentropy.continuousOn_Ioo_0_1_aux (ρ σ : MState d) :
+    ContinuousOn (fun (α : ℝ) ↦ ((HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M ^ α)) (Set.Ioo 0 1) := by
+  have h_cont : ContinuousOn (fun α : ℝ => (HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M) (Set.Ioo 0 1) := by
+    have h_cont : ContinuousOn (fun α : ℝ => (σ.M ^ ((1 - α) / (2 * α))).mat) (Set.Ioo 0 1) := by
+      have h_cont : ContinuousOn (fun α : ℝ => σ.M ^ ((1 - α) / (2 * α))) (Set.Ioo 0 1) := by
+        have h_exp_cont : ContinuousOn (fun α : ℝ => (1 - α) / (2 * α)) (Set.Ioo 0 1) := by
+          exact continuousOn_of_forall_continuousAt fun x hx => ContinuousAt.div ( continuousAt_const.sub continuousAt_id ) ( continuousAt_const.mul continuousAt_id ) ( by linarith [ hx.1 ] )
+        have h_rpow_cont : ContinuousOn (fun α : ℝ => (σ.M ^ α)) (Set.Ioi 0) := by
+          apply_rules [ HermitianMat.continuousOn_rpow_pos ]
+        exact h_rpow_cont.comp h_exp_cont fun x hx => by rw [ Set.mem_Ioi ] ; apply div_pos <;> linarith [ hx.1, hx.2 ]
+      exact Continuous.comp_continuousOn ( by continuity ) h_cont
+    fun_prop
+  apply HermitianMat.continuousOn_rpow_joint_nonneg_pos
+  · exact h_cont
+  · exact continuousOn_id
+  · exact fun x hx => hx.1
+
+/-- Continuity on (0,1): the sandwich relative Rényi entropy is continuous in α on (0,1). -/
+private theorem sandwichedRelRentropy.continuousOn_Ioo_0_1 (ρ σ : MState d) :
+    ContinuousOn (fun α => D̃_ α(ρ‖σ)) (Set.Ioo 0 1) := by
+  dsimp [SandwichedRelRentropy]
+  split_ifs with hρ
+  · simp [← ENNReal.ofReal_eq_coe_nnreal]
+    rw [continuousOn_congr (f := fun α ↦ ENNReal.ofReal
+      (Real.log ((HermitianMat.conj (σ.M ^ ((1 - α) / (2 * α))).mat) ρ.M ^ α).trace / (α - 1)))]
+    · apply (ENNReal.continuous_ofReal).comp_continuousOn
+      apply ContinuousOn.div₀
+      · apply ContinuousOn.log
+        · exact HermitianMat.trace_Continuous.comp_continuousOn
+            (continuousOn_Ioo_0_1_aux ρ σ)
+        · intro x hx
+          exact (sandwiched_trace_pos hρ).ne'
+      · fun_prop
+      · intro x hx; exact sub_ne_zero.mpr (ne_of_lt hx.2)
+    · intro α hα
+      dsimp only
+      rw [if_pos hα.1, if_neg (ne_of_lt hα.2)]
+  · rw [continuousOn_congr (f := fun α ↦ ⊤)]
+    · fun_prop
+    · intro x hx
+      dsimp only
+      simp [hx.1]
+
 /-- Continuity at 1: the sandwich relative Rényi entropy is continuous at α = 1. -/
 private theorem sandwichedRelRentropy.continuousAt_1 (ρ σ : MState d) :
     ContinuousWithinAt (fun α => D̃_ α(ρ‖σ)) (Set.Ioi 0) 1 := by
@@ -1787,11 +1822,6 @@ theorem qRelativeEnt_rank {ρ σ : MState d} [σ.M.NonSingular] :
   apply qRelativeEnt_ker
   simp [HermitianMat.nonSingular_ker_bot]
 
---BACKPORT
-private theorem lowerSemicontinuous_iff {α : Type u_1} {β : Type u_2} [TopologicalSpace α] [Preorder β] {f : α → β} :
-    LowerSemicontinuous f ↔ ∀ (x : α), LowerSemicontinuousAt f x := by
-  rfl
-
 section lowerSemicontinuous_1
 
 variable {d : Type*} [Fintype d] [DecidableEq d]
@@ -1878,7 +1908,7 @@ open scoped InnerProductSpace RealInnerProductSpace HermitianMat
 
 private lemma eigenWeight_eq_zero_iff (ρ x : MState d) (i : d) :
     eigenWeight ρ x i = 0 ↔ (x.M.H.eigenvectorBasis i : EuclideanSpace ℂ d) ∈ ρ.M.ker := by
-  have h_forward : eigenWeight ρ x i = 0 → (x.M.H.eigenvectorBasis i : d → ℂ) ∈ ρ.M.ker := by
+  have h_forward : eigenWeight ρ x i = 0 → (x.M.H.eigenvectorBasis i) ∈ ρ.M.ker := by
     unfold eigenWeight
     intro h_zero
     have h_inner : star (x.M.H.eigenvectorBasis i : d → ℂ) ⬝ᵥ (ρ.M.mat.mulVec (x.M.H.eigenvectorBasis i : d → ℂ)) = 0 := by
@@ -1910,7 +1940,7 @@ private lemma eigenWeight_eq_zero_iff (ρ x : MState d) (i : d) :
   -- Since ρ e_i = 0, we have e_i^* ρ e_i = 0.
   have h_zero : (Matrix.vecMul (star (x.M.H.eigenvectorBasis i : d → ℂ)) ρ.M.mat) ⬝ᵥ (x.M.H.eigenvectorBasis i : d → ℂ) = 0 := by
     have h_zero : ρ.M.mat.mulVec (x.M.H.eigenvectorBasis i : d → ℂ) = 0 := by
-      exact h
+      exact congr(WithLp.ofLp $h)
     convert congr_arg ( fun v => star ( x.M.H.eigenvectorBasis i : d → ℂ ) ⬝ᵥ v ) h_zero using 1
     simp [ Matrix.dotProduct_mulVec]
     ring_nf
@@ -1930,10 +1960,16 @@ private lemma ker_le_iff_eigenWeight_zero (ρ x : MState d) :
       have h_eigenvalue : x.M.val.mulVec v = ∑ i, (x.M.H.eigenvalues i) • w i • x.M.H.eigenvectorBasis i := by
         have h_eigenvalue : ∀ i, x.M.val.mulVec (x.M.H.eigenvectorBasis i) = x.M.H.eigenvalues i • x.M.H.eigenvectorBasis i := by
           exact fun i => x.M.H.mulVec_eigenvectorBasis i |> fun h => by simpa [ mul_comm ] using h;
-        rw [ hw, Matrix.mulVec_sum ];
+        rw [ hw]
+        simp only [WithLp.ofLp_sum, WithLp.ofLp_smul]
+        rw [Matrix.mulVec_sum ];
         exact Finset.sum_congr rfl fun i _ => by rw [ Matrix.mulVec_smul, h_eigenvalue i, SMulCommClass.smul_comm ]
       have h_eigenvalue_zero : ∑ i, (x.M.H.eigenvalues i) • w i • x.M.H.eigenvectorBasis i = 0 := by
-        exact h_eigenvalue ▸ hv ▸ rfl
+        replace h_eigenvalue := congr(WithLp.toLp 2 $h_eigenvalue)
+        simp only [HermitianMat.val_eq_coe, MState.mat_M, WithLp.ofLp_sum, WithLp.ofLp_smul,
+          WithLp.toLp_sum, WithLp.toLp_smul, WithLp.toLp_ofLp] at h_eigenvalue
+        rw [← h_eigenvalue, ← hv]
+        rfl
       have h_eigenvalue_zero : ∀ i, (x.M.H.eigenvalues i) • w i = 0 := by
         intro i
         have h_eigenvalue_zero : (x.M.H.eigenvalues i) • w i = inner ℂ (x.M.H.eigenvectorBasis i) (∑ j, (x.M.H.eigenvalues j) • w j • x.M.H.eigenvectorBasis j) := by
@@ -2095,11 +2131,13 @@ private lemma HermitianMat.inner_log_mono_of_posDef_of_le {A B C : HermitianMat 
 open ComplexOrder in
 private lemma posDef_add_eps {A : HermitianMat d ℂ} (hA : 0 ≤ A) {ε : ℝ} (hε : 0 < ε) :
     (A + ε • 1).mat.PosDef := by
+  rw [HermitianMat.zero_le_iff] at hA
+  rw [Matrix.posDef_iff_dotProduct_mulVec]
   constructor
   · exact HermitianMat.H _
   · intro x hx_ne_zero
     have h_inner : star x ⬝ᵥ (A.val.mulVec x) ≥ 0 := by
-      simpa [*] using hA.2 x
+      simp [hA]
     have h_eps : star x ⬝ᵥ (ε • 1 : Matrix d d ℂ).mulVec x = ε * star x ⬝ᵥ x := by
       simp [Matrix.mulVec, dotProduct, Finset.mul_sum, mul_left_comm, Matrix.one_apply]
     have h_pos : 0 < ε * star x ⬝ᵥ x := by
@@ -2126,15 +2164,25 @@ private lemma eigenproj_coeff_zero_of_ker_le {A C : HermitianMat d 𝕜}
     (hker : A.ker ≤ C.ker) {i : d} (hi : A.H.eigenvalues i = 0) :
     RCLike.re ((C.mat * (A.H.eigenvectorUnitary.val * Matrix.single i i 1 * A.H.eigenvectorUnitary.val.conjTranspose)).trace) = 0 := by
   have h_eigenvector_in_ker_C : C.mat.mulVec (A.H.eigenvectorBasis i) = 0 := by
-    have h_eigenvector_in_ker : (A.H.eigenvectorBasis i) ∈ LinearMap.ker A.lin := by
-      simpa [hi] using A.H.mulVec_eigenvectorBasis i
-    exact hker h_eigenvector_in_ker
+    have h_eigenvector_in_ker : (A.H.eigenvectorBasis i) ∈ LinearMap.ker A.lin.toLinearMap := by
+      have := congr(WithLp.toLp 2 $(A.H.mulVec_eigenvectorBasis i))
+      simp [hi] at this
+      exact congr(WithLp.toLp 2 $this)
+    specialize hker h_eigenvector_in_ker
+    exact congr(WithLp.ofLp $hker)
   have h_trace_zero : (C.mat * (A.H.eigenvectorUnitary.val * Matrix.single i i 1 * A.H.eigenvectorUnitary.val.conjTranspose)).trace = (star (A.H.eigenvectorBasis i)) ⬝ᵥ (C.mat.mulVec (A.H.eigenvectorBasis i)) := by
     simp [Matrix.trace, Matrix.mulVec, dotProduct]
     simp [Matrix.mul_apply, Matrix.single, Matrix.conjTranspose_apply]
     simp [Finset.sum_ite, Finset.filter_eq, Finset.filter_and, mul_comm, mul_left_comm, Finset.mul_sum]
     refine Finset.sum_congr rfl fun j hj => Finset.sum_congr rfl fun k hk => ?_
-    rw [Finset.sum_eq_single i] <;> aesop
+    rw [Finset.sum_eq_single i]
+    · simp_all only [Finset.mem_univ, ↓reduceIte, Finset.inter_univ, Finset.sum_singleton]
+      rw [mul_assoc]
+    · intro b a a_1
+      simp_all only [Finset.mem_univ, ne_eq]
+      split <;> simp_all only [not_true_eq_false, Finset.inter_empty, Finset.sum_empty]
+    · intro a
+      simp_all only [Finset.mem_univ, not_true_eq_false]
   simp [h_eigenvector_in_ker_C, h_trace_zero]
 
 open scoped Topology in
@@ -2159,7 +2207,7 @@ private lemma HermitianMat.inner_log_mono_of_psd_of_le {A B C : HermitianMat d �
   have h_eventually : ∀ᶠ ε in 𝓝[>] (0 : ℝ),
       ⟪C, (A + ε • 1).log⟫ ≤ ⟪C, (B + ε • 1).log⟫ := by
     refine eventually_nhdsWithin_of_forall fun ε hε ↦ ?_
-    exact inner_log_mono_of_posDef_of_le hC (posDef_add_eps hA hε) (add_le_add_right hAB _)
+    exact inner_log_mono_of_posDef_of_le hC (posDef_add_eps hA hε) (add_le_add_left hAB _)
   refine le_of_tendsto_of_tendsto ?_ ?_ h_eventually
   · exact inner_log_shift_tendsto hker
   · apply inner_log_shift_tendsto

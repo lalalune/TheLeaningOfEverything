@@ -64,18 +64,18 @@ private theorem Lemma6 {m : ℕ} (hm : 0 < m) (ρ σf : MState (H i)) (σₘ : M
       rw [pow_mul]
     have h_Hn_eq : H (i ^ n) = H ((i ^ m) ^ (n / m) * i ^ (n % m)) := by
       rw [← pow_mul, ← pow_add, hnm_add]
-    simp only [MState.relabel_relabel, Equiv.cast_trans]
+    simp only [MState.relabel_relabel, ← Equiv.cast_trans]
     rw [← sandwichedRelRentropy_statePow]
     rw [← sandwichedRelRentropy_statePow]
     rw [← sandwichedRelRentropy_prodRelabel]
 
     gcongr
     · rw [MState.eq_relabel_iff]
-      simp only [MState.relabel_relabel, Equiv.cast_symm, Equiv.cast_trans]
+      simp only [MState.relabel_relabel, ← Equiv.cast_symm, ← Equiv.cast_trans]
       rw [prodRelabel_relabel_cast_prod _ _ _ ((pow_mul ..).symm) rfl]
       congr
       rw [statePow_mul_relabel]
-      simp
+      simp [← Equiv.cast_trans]
     · simp
 
   --This will probably need 1 < α actually
@@ -99,7 +99,7 @@ private theorem Lemma6 {m : ℕ} (hm : 0 < m) (ρ σf : MState (H i)) (σₘ : M
         unfold z
         have hz1 : —log (1 - ε) ≠ ⊤ := by
           --TODO: should be `bound`, ideally
-          simp [Subtype.eq_iff]
+          simp [Subtype.ext_iff]
           have : (ε : ℝ) < 1 := hε
           linarith
         have hz2 : (ENNReal.ofNNReal ⟨α - 1, pf2⟩) ≠ 0 := by
@@ -166,7 +166,7 @@ private theorem Lemma6 {m : ℕ} (hm : 0 < m) (ρ σf : MState (H i)) (σₘ : M
         · exact Filter.Eventually.of_forall (fun _ ↦ by positivity)
         · apply Filter.Eventually.of_forall (fun _ ↦ ?_)
           exact mul_le_mul_of_nonneg_right (mod_cast (Nat.mod_lt _ hm).le) (by positivity)
-        · exact tendsto_inverse_atTop_nhds_zero_nat
+        · exact tendsto_inv_atTop_nhds_zero_nat
 
   --Take the limit as α → 1.
   replace h_α : Filter.atTop.limsup (fun n ↦ —log β_ ε(ρ ⊗ᵣ^[n]‖{σn n}) / n) ≤ 𝐃(ρ ⊗ᵣ^[m]‖σₘ) / m := by
@@ -236,7 +236,7 @@ theorem LemmaS2liminf {ε3 : Prob} {ε4 : ℝ≥0} (hε4 : 0 < ε4)
       have hh : n * (Rinf + ε4) = ENNReal.ofReal (n * (Rinf + ε4)) := by
         simp only [Nat.cast_nonneg, ENNReal.ofReal_mul, ENNReal.ofReal_natCast, zero_le_coe,
           ENNReal.ofReal_add, ENNReal.ofReal_coe_nnreal]
-      apply (ENNReal.mul_le_mul_left (a := n) (b := Rinf + ε4) (c := —log β_ ε3(ρ n‖{σ n}) / n) hn1 hn2).mp
+      apply (ENNReal.mul_le_mul_iff_right (a := n) (b := Rinf + ε4) (c := —log β_ ε3(ρ n‖{σ n}) / n) hn1 hn2).mp
       rw [ENNReal.mul_div_cancel hn1 hn2, hh]
       apply Prob.le_negLog_of_le_exp
       rw [← neg_mul]
@@ -305,7 +305,7 @@ theorem LemmaS2limsup {ε3 : Prob} {ε4 : ℝ≥0} (hε4 : 0 < ε4)
       have hn2 : (n : ℝ≥0∞) ≠ ⊤ := by finiteness
       have hh : n * (Rsup + ε4) = ENNReal.ofReal (n * (Rsup + ε4)) := by
         simp [ENNReal.ofReal_add]
-      apply (ENNReal.mul_le_mul_left (a := n) (b := Rsup + ε4) (c := —log β_ ε3(ρ n‖{σ n}) / n) hn1 hn2).mp
+      apply (ENNReal.mul_le_mul_iff_right (a := n) (b := Rsup + ε4) (c := —log β_ ε3(ρ n‖{σ n}) / n) hn1 hn2).mp
       rw [ENNReal.mul_div_cancel hn1 hn2, hh]
       apply Prob.le_negLog_of_le_exp
       rwa [← neg_mul]
@@ -589,8 +589,7 @@ private lemma f_image_bound (mineig : ℝ) (n : ℕ) (h : 0 < mineig) (hn : 0 < 
     cases' h_bounded with m h_bounded
     cases' h_bounded with M h_bounded
     refine Set.Finite.subset ( Set.toFinite ( Finset.image ( fun i : ℤ => Real.exp ( ( i : ℝ ) * ( Real.log ( 1 / mineig ) + Real.log 3 / ( max n 1 : ℝ ) ) ) ) ( Finset.Icc m M ) ) ) ?_
-    intro
-    intro a_1
+    intro _ a_1
     simp_all only [Set.mem_Icc, one_div, Real.log_inv, Nat.cast_max, Nat.cast_one, and_imp, Set.mem_image,
       Finset.coe_image, Finset.coe_Icc]
     obtain ⟨w, ⟨left, rfl⟩⟩ := a_1
@@ -607,8 +606,7 @@ private lemma f_image_bound (mineig : ℝ) (n : ℕ) (h : 0 < mineig) (hn : 0 < 
   -- Since the interval [(n * log(mineig) - log(3)) / c(n), 0 / c(n)] has length (log(3) - n * log(mineig)) / c(n), and c(n) is positive, the number of distinct integer values that ⌈(log lam) / c(n)⌉ can take is at most n + 1.
   have h_card : Set.ncard (Set.image (fun x => Real.exp (⌈Real.log x / (Real.log (1 / mineig) + Real.log 3 / (max n 1))⌉ * (Real.log (1 / mineig) + Real.log 3 / (max n 1)))) (Set.Icc (mineig^n / 3) 1)) ≤ Set.ncard (Set.image (fun k : ℤ => Real.exp (k * (Real.log (1 / mineig) + Real.log 3 / (max n 1)))) (Set.Icc (⌈(n * Real.log mineig - Real.log 3) / (Real.log (1 / mineig) + Real.log 3 / (max n 1))⌉) 0)) := by
     refine Set.ncard_le_ncard ?_;
-    intro
-    intro a_1
+    intro _ a_1
     simp_all only [one_div, Real.log_inv, Nat.cast_max, Nat.cast_one, Set.mem_image, Set.mem_Icc]
     obtain ⟨w, ⟨⟨left, right_1⟩, rfl⟩⟩ := a_1
     simp_all only [Real.exp_eq_exp, mul_eq_mul_right_iff, Int.cast_inj]
@@ -1700,7 +1698,7 @@ private theorem EquationS62
         apply Filter.Eventually.frequently
         apply Filter.Eventually.of_forall
         intro x
-        rw [add_right_comm, ← ENNReal.sub_add_eq_add_sub (add_le_add_right hR1R2.le _) (by finiteness)]
+        rw [add_right_comm, ← ENNReal.sub_add_eq_add_sub (add_le_add_left hR1R2.le _) (by finiteness)]
         exact le_add_self
       · left
         apply ne_top_of_le_ne_top (b := R2 ρ σ + ENNReal.ofReal ε₀ + 1) (by finiteness)
@@ -2104,3 +2102,12 @@ theorem limit_hypotesting_eq_limit_rel_entropy (ρ : MState (H i)) (ε : Prob) (
   constructor
   · exact GeneralizedQSteinsLemma ρ hε -- Theorem 1 in Hayashi & Yamasaki
   · exact RelativeEntResource.tendsto_ennreal ρ -- The regularized relative entropy of resource is not infinity
+
+/--
+info: 'SteinsLemma.limit_hypotesting_eq_limit_rel_entropy' depends on axioms: [propext,
+ sandwichedRenyiEntropy_DPI_ax,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs in
+#print axioms limit_hypotesting_eq_limit_rel_entropy

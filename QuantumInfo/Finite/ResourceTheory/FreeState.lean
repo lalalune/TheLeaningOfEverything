@@ -414,18 +414,10 @@ lemma relativeEntResource_ne_top (ρ : MState (H i)) : ⨅ σ ∈ IsFree, 𝐃(�
   · exact h.2
   · refine ne_of_apply_ne ENNReal.toEReal (qRelativeEnt_ker (ρ := ρ) (?_) ▸ EReal.coe_ne_top _)
     convert @bot_le _ _ (Submodule.instOrderBot) _
-    exact h.1.toLin_ker_eq_bot
-  /-
-  simp only [ne_eq, iInf_eq_top, not_forall]
-  obtain ⟨σ, hσ₁, hσ₂⟩ := FreeStateTheory.free_fullRank i
-  use σ, hσ₂
-  rw [qRelativeEnt]
-  split_ifs with h
-  · simp --should be `finiteness`, TODO debug
-  contrapose! h
-  convert bot_le
-  exact hσ₁.toLin_ker_eq_bot
-  -/
+    have := h.1.toLin_ker_eq_bot
+    simp [LinearMap.ker_eq_bot', HermitianMat.ker] at this ⊢
+    intro m hm
+    simpa only [WithLp.ofLp_eq_zero] using this m congr($hm)
 
 noncomputable def RelativeEntResource : MState (H i) → ℝ≥0 :=
     fun ρ ↦ (⨅ σ ∈ IsFree, 𝐃(ρ‖σ)).untop (relativeEntResource_ne_top ρ)

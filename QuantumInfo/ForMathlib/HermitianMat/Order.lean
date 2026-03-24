@@ -408,9 +408,10 @@ theorem inner_mulVec_nonneg (hA : 0 ≤ A) (v : n → 𝕜) :
   rw [le_iff_mulVec_le_mulVec] at hA
   simpa using hA v
 
--- theorem mem_ker_of_inner_mulVec_zero [DecidableEq n] (hA : 0 ≤ A) (v : n → 𝕜)
---     (h : star v ⬝ᵥ A.mat *ᵥ v = 0) : v ∈ A.ker := by
---   exact ((zero_le_iff.mp hA).dotProduct_mulVec_zero_iff v).mp h
+theorem mem_ker_of_inner_mulVec_zero [DecidableEq n] (hA : 0 ≤ A) (v : EuclideanSpace 𝕜 n)
+    (h : star v ⬝ᵥ A.mat *ᵥ v = 0) : v ∈ A.ker := by
+  have := ((zero_le_iff.mp hA).dotProduct_mulVec_zero_iff v).mp h
+  exact congr(WithLp.toLp 2 $this)
 
 theorem ker_add [DecidableEq n] (hA : 0 ≤ A) (hB : 0 ≤ B) :
     (A + B).ker = A.ker ⊓ B.ker := by
@@ -454,14 +455,14 @@ theorem ker_conj [DecidableEq n] (hA : 0 ≤ A) (B : Matrix n n 𝕜) :
 
   ext v; simp [HermitianMat.conj];
   constructor <;> intro h;
-  ·
-    have := Matrix.PosSemidef.dotProduct_mulVec_zero_iff ( show Matrix.PosSemidef A.mat from zero_le_iff.mp hA );
+  · have := Matrix.PosSemidef.dotProduct_mulVec_zero_iff ( show Matrix.PosSemidef A.mat from zero_le_iff.mp hA );
     convert this ( Bᴴ.mulVec v ) |>.1 _ using 1;
     · rw [ mem_ker_iff_mulVec_zero ];
       congr! 2;
-    · convert congr_arg ( fun x : EuclideanSpace _ _ => star v.ofLp ⬝ᵥ x ) h using 1 ; simp +decide [ Matrix.mulVec_mulVec, Matrix.dotProduct_mulVec, Matrix.vecMul_mulVec, Matrix.conjTranspose_conjTranspose ];
-      · simp +decide [ Matrix.mul_assoc, Matrix.dotProduct_mulVec, Matrix.vecMul_mulVec, Matrix.mulVec_mulVec, Matrix.star_mulVec, Matrix.conjTranspose_conjTranspose, lin ];
-      · simp +decide [ dotProduct ]
+    · convert congr_arg ( fun x : EuclideanSpace _ _ => star v.ofLp ⬝ᵥ x ) h using 1
+      simp [Matrix.mulVec_mulVec, Matrix.dotProduct_mulVec]
+      · simp [Matrix.mul_assoc, Matrix.dotProduct_mulVec, Matrix.mulVec_mulVec, Matrix.star_mulVec, Matrix.conjTranspose_conjTranspose, lin]
+      · simp [dotProduct]
   · simp only [ker, Matrix.mul_assoc, LinearMap.mem_ker]
     convert congr_arg B.toEuclideanLin h using 1
     · simp [HermitianMat.lin, Matrix.toEuclideanLin]

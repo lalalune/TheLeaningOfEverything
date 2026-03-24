@@ -110,7 +110,7 @@ theorem Sᵥₙ_eq_neg_trace_log (ρ : MState d) : Sᵥₙ ρ = -⟪ρ.M.log, ρ
   rw [← trace_eq_re_trace, ← sum_eigenvalues_eq_trace]
   obtain ⟨e, he⟩ := ρ.M.cfc_eigenvalues (Real.log * id)
   apply Finset.sum_equiv e.symm (by simp)
-  simp [MState.spectrum, Distribution.mk', he, mul_comm]
+  simp [MState.spectrum, ProbDistribution.mk', he, mul_comm]
 
 /-- Von Neumann entropy is the trace of the matrix function `x ↦ -x log x`. -/
 theorem Sᵥₙ_eq_trace_cfc_negMulLog (ρ : MState d) :
@@ -207,7 +207,7 @@ private lemma traceLeft_eq_transpose_conjTranspose_mul (ψ : Ket (d₁ × d₂))
 Shannon entropy is determined by the multiset of non-zero probabilities.
 -/
 private lemma Hₛ_eq_of_nonzero_multiset_eq {α β : Type*} [Fintype α] [Fintype β]
-  (d₁ : Distribution α) (d₂ : Distribution β)
+  (d₁ : ProbDistribution α) (d₂ : ProbDistribution β)
   (h : (Finset.univ.val.map d₁.prob).filter (· ≠ 0) = (Finset.univ.val.map d₂.prob ).filter (· ≠ 0)) :
     Hₛ d₁ = Hₛ d₂ := by
   -- By reindexing the sums, we can show that the Shannon entropies are equal.
@@ -292,12 +292,12 @@ private lemma Sᵥₙ_eq_of_charpoly_roots_eq (ρ₁ : MState d₁) (ρ₂ : MSt
     constructor;
     · convert charpoly_roots_filter_ne_zero_eq_eigenvalues_filter_ne_zero _ _;
       any_goals exact ρ₁.M.isSelfAdjoint;
-      simp [ Distribution.prob, MState.spectrum ];
-      simp [ Multiset.filter_map, Distribution.mk' ];
+      simp [ ProbDistribution.prob, MState.spectrum ];
+      simp [ Multiset.filter_map, ProbDistribution.mk' ];
       simp [ Subtype.ext_iff ];
     · convert charpoly_roots_filter_ne_zero_eq_eigenvalues_filter_ne_zero ρ₂.M.1 (HermitianMat.H ρ₂.M) using 1;
-      simp [ Distribution.prob, MState.spectrum ];
-      simp [ Multiset.filter_map, Distribution.mk' ];
+      simp [ ProbDistribution.prob, MState.spectrum ];
+      simp [ Multiset.filter_map, ProbDistribution.mk' ];
       simp [ Subtype.ext_iff ];
   norm_num +zetaDelta at *;
   rw [ h_spectrum_eq_aux.1, h_spectrum_eq_aux.2 ] at h;
