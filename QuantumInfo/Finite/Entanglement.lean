@@ -222,13 +222,13 @@ theorem traceRight_pure_MES (d : Type*) [Fintype d] [DecidableEq d] [Nonempty d]
     · subst i
       simp only [map_inv₀, Complex.conj_ofReal]
       ring_nf; norm_cast; norm_num;
-    · grind [map_zero]
+    · grind
   unfold MState.pure MState.traceRight MState.uniform
   ext i j
   convert h_partial_trace i j
   simp_all only [Pi.star_apply, RCLike.star_def, one_div, Complex.ofReal_inv,
     Complex.ofReal_natCast, mul_ite, mul_one, mul_zero, HermitianMat.mat_apply,
-    coe_ofClassical, Distribution.uniform_def, Finset.card_univ]
+    coe_ofClassical, ProbDistribution.uniform_def, Finset.card_univ]
   unfold HermitianMat.diagonal
   simp_all only [map_inv₀, map_natCast]
   rfl
@@ -255,7 +255,7 @@ theorem Sᵥₙ_eq_trace_cfc {d : Type*} [Fintype d] [DecidableEq d] (ρ : MStat
 /-
 The von Neumann entropy of a classical state (diagonal in the basis) is equal to the Shannon entropy of the corresponding distribution.
 -/
-theorem Sᵥₙ_ofClassical {d : Type*} [Fintype d] [DecidableEq d] (dist : Distribution d) :
+theorem Sᵥₙ_ofClassical {d : Type*} [Fintype d] [DecidableEq d] (dist : ProbDistribution d) :
     Sᵥₙ (MState.ofClassical dist) = Hₛ dist := by
   -- Let's unfold the definition of `Sᵥₙ` using `Sᵥₙ_eq_trace_cfc`.
   have h_def : Sᵥₙ (MState.ofClassical dist) = (HermitianMat.cfc (MState.ofClassical dist).M Real.negMulLog).trace := by
@@ -284,9 +284,7 @@ theorem EoF_of_MES : EoF (pure <| Ket.MES d) = Real.log (Finset.card Finset.univ
     change convex_roof gE (pure <| Ket.MES d) = gE (Ket.MES d)
     exact convex_roof_of_pure (g := gE) (ψ := Ket.MES d) h_phase
   have h_von_neumann : Sᵥₙ (MState.uniform : MState d) = Real.log (Fintype.card d) := by
-    rw [MState.uniform, Sᵥₙ_ofClassical Distribution.uniform, Hₛ_uniform, Finset.card_univ]
-  have h_mes_entropy : (gE (Ket.MES d) : ℝ) = Real.log (Finset.card Finset.univ (α := d)) := by
-    change Sᵥₙ (pure (Ket.MES d)).traceRight = Real.log (Finset.card Finset.univ (α := d))
-    rw [traceRight_pure_MES d, h_von_neumann, Finset.card_univ]
-  rw [h_eof_pure]
-  exact h_mes_entropy
+    rw [MState.uniform, Sᵥₙ_ofClassical ProbDistribution.uniform, Hₛ_uniform, Finset.card_univ]
+  simp only [NNReal.coe_mk]
+  rw [traceRight_pure_MES]
+  exact h_von_neumann

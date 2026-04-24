@@ -88,12 +88,20 @@ theorem nonSingular_iff_ker_bot : NonSingular A ↔ A.ker = ⊥ := by
       exact invertibleOfNonzero h_det_nonzero
     have h_ker_trivial (x : n → 𝕜) (hx : A.mat.mulVec x = 0) : x = 0 := by
       simpa using congr_arg (h_inv.1.mulVec) hx
-    exact h_ker_trivial
+    intro x hx
+    rw [mem_ker_iff_mulVec_zero] at hx
+    exact PiLp.ext (fun i => congr_fun (h_ker_trivial x.ofLp hx) i)
   refine ⟨h_det_nonzero_to_ker_trivial, fun h h' => ?_⟩
   obtain ⟨x, hx⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr h'
   have h_inj : Function.Injective (Matrix.mulVecLin A.mat) := by
-    rw [← LinearMap.ker_eq_bot]
-    simpa [Submodule.eq_bot_iff] using h
+    rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+    intro y hy
+    rw [LinearMap.mem_ker, Matrix.mulVecLin_apply] at hy
+    have hm : (WithLp.toLp 2 y) ∈ A.ker := (mem_ker_iff_mulVec_zero A _).mpr hy
+    rw [h] at hm
+    have := (Submodule.mem_bot (R := 𝕜)).mp hm
+    simp [WithLp.toLp] at this
+    exact this
   specialize @h_inj x 0
   simp_all
 
@@ -101,13 +109,20 @@ theorem nonSingular_iff_support_top : NonSingular A ↔ A.support = ⊤ := by
   simp only [support, Submodule.eq_top_iff']
   refine ⟨fun hA ↦ ?_, fun hA ↦ ?_⟩
   · intro x
-    have hA_inv : IsUnit A.mat :=  hA.isUnit
-    rcases hA_inv.exists_right_inv with ⟨ y, hy ⟩
-    use y.mulVec x
-    change A.mat.mulVecLin _ = _
-    simp [hy]
+    have hA_inv : IsUnit A.mat := hA.isUnit
+    rcases hA_inv.exists_right_inv with ⟨y, hy⟩
+    exact ⟨WithLp.toLp 2 (y.mulVec x.ofLp), by
+      apply PiLp.ext; intro i
+      simp [lin, Matrix.toLpLin_apply, Matrix.mulVec_mulVec, hy]⟩
   · constructor
-    exact Matrix.mulVec_surjective_iff_isUnit.mp hA
+    have : Function.Surjective A.mat.mulVec := by
+      intro y
+      obtain ⟨x, hx⟩ := hA (WithLp.toLp 2 y)
+      exact ⟨x.ofLp, by
+        have := congr_arg WithLp.ofLp hx
+        simp [lin, Matrix.toLpLin_apply] at this
+        exact this⟩
+    exact Matrix.mulVec_surjective_iff_isUnit.mp this
 
 @[simp]
 theorem nonSingular_iff_neg : NonSingular (-A) ↔ NonSingular A := by

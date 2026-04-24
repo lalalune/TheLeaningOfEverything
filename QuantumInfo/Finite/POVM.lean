@@ -13,7 +13,7 @@ a collection of positive semidefinite (PSD) operators that sum to the identity. 
 but adds learned information.
 
 Developing this theory is important if one wants to discuss classical information across quantum channels, as POVMs
-are the route to get back to classical information (a `Distribution` of outcomes).
+are the route to get back to classical information (a `ProbDistribution` of outcomes).
 
 TODO: They can also evolve under CPTP maps themselves (the Heisenberg picture of quantum evolution), they might commute
 with each other or not, they might be projective or not.
@@ -115,7 +115,7 @@ theorem measurementMap_apply_hermitianMat (Λ : POVM X d) (m : HermitianMat d �
   split_ifs <;> (try grind) <;> norm_num
 
 /-- A POVM leads to a distribution of outcomes on any given mixed state ρ. -/
-def measure (Λ : POVM X d) (ρ : MState d) : Distribution X := .mk'
+def measure (Λ : POVM X d) (ρ : MState d) : ProbDistribution X := .mk'
     (f := fun x ↦ ⟪Λ.mats x, ρ.M⟫)
     (h₁ := fun x ↦ HermitianMat.inner_ge_zero (Λ.zero_le x) ρ.zero_le)
     (hN := by
@@ -139,7 +139,7 @@ theorem traceLeft_measurementMap_eq_measure (Λ : POVM X d) (ρ : MState d) :
   simp only [HermitianMat.diagonal, HermitianMat.mat_mk, diagonal_apply]
   symm; split
   · subst j
-    simp only [measure, Distribution.mk', Distribution.funlike_apply, and_self, Finset.sum_ite_eq',
+    simp only [measure, ProbDistribution.mk', ProbDistribution.funlike_apply, and_self, Finset.sum_ite_eq',
       Finset.mem_univ, ↓reduceIte]
     change _ = Matrix.trace _
     rw [Matrix.trace_mul_cycle, HermitianMat.pow_half_mul (Λ.zero_le i)]

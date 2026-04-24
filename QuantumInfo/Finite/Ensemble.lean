@@ -12,21 +12,21 @@ noncomputable section
 
 /-- A mixed-state ensemble is a random variable valued in `MState d`. That is,
 a collection of mixed states `var : α → MState d`, each with their own probability weight
-described by `distr : Distribution α`. -/
-abbrev MEnsemble (d : Type*) (α : Type*) [Fintype d] [DecidableEq d] [Fintype α] := Distribution.RandVar α (MState d)
+described by `distr : ProbDistribution α`. -/
+abbrev MEnsemble (d : Type*) (α : Type*) [Fintype d] [DecidableEq d] [Fintype α] := ProbDistribution.RandVar α (MState d)
 
 /-- A pure-state ensemble is a random variable valued in `Ket d`. That is,
 a collection of pure states `var : α → Ket d`, each with their own probability weight
-described by `distr : Distribution α`. -/
-abbrev PEnsemble (d : Type*) (α : Type*) [Fintype d] [Fintype α] := Distribution.RandVar α (Ket d)
+described by `distr : ProbDistribution α`. -/
+abbrev PEnsemble (d : Type*) (α : Type*) [Fintype d] [Fintype α] := ProbDistribution.RandVar α (Ket d)
 
 variable {α β d : Type*} [Fintype α] [Fintype β] [Fintype d] [DecidableEq d]
 
-/-- Alias for `Distribution.var` for mixed-state ensembles. -/
-abbrev MEnsemble.states [Fintype α] : MEnsemble d α → (α → MState d) := Distribution.RandVar.var
+/-- Alias for `ProbDistribution.var` for mixed-state ensembles. -/
+abbrev MEnsemble.states [Fintype α] : MEnsemble d α → (α → MState d) := ProbDistribution.RandVar.var
 
-/-- Alias for `Distribution.var` for pure-state ensembles. -/
-abbrev PEnsemble.states [Fintype α] : PEnsemble d α → (α → Ket d) := Distribution.RandVar.var
+/-- Alias for `ProbDistribution.var` for pure-state ensembles. -/
+abbrev PEnsemble.states [Fintype α] : PEnsemble d α → (α → Ket d) := ProbDistribution.RandVar.var
 
 namespace Ensemble
 
@@ -56,51 +56,51 @@ theorem coe_PEnsemble_iff_pure_states (me : MEnsemble d α): (∃ pe : PEnsemble
 /-- The resulting mixed state after mixing the states in an ensemble with their
 respective probability weights. Note that, generically, a single mixed state has infinitely many
 ensembles that mixes into it. -/
-def mix (e : MEnsemble d α) : MState d := Distribution.expect_val e
+def mix (e : MEnsemble d α) : MState d := ProbDistribution.expect_val e
 
 @[simp]
 theorem mix_of (e : MEnsemble d α) : (mix e).m = ∑ i, (e.distr i : ℝ) • (e.states i).m := by
   apply AddSubgroup.val_finset_sum -- *laughs in defeq*
 
 /-- Two mixed-state ensembles indexed by `\alpha` and `\beta` are equivalent if `α ≃ β`. -/
-def congrMEnsemble (σ : α ≃ β) : MEnsemble d α ≃ MEnsemble d β := Distribution.congrRandVar σ
+def congrMEnsemble (σ : α ≃ β) : MEnsemble d α ≃ MEnsemble d β := ProbDistribution.congrRandVar σ
 
 /-- Two pure-state ensembles indexed by `\alpha` and `\beta` are equivalent if `α ≃ β`. -/
-def congrPEnsemble (σ : α ≃ β) : PEnsemble d α ≃ PEnsemble d β := Distribution.congrRandVar σ
+def congrPEnsemble (σ : α ≃ β) : PEnsemble d α ≃ PEnsemble d β := ProbDistribution.congrRandVar σ
 
 /-- Equivalence of mixed-state ensembles leaves the resulting mixed state invariant -/
 @[simp]
 theorem mix_congrMEnsemble_eq_mix (σ : α ≃ β) (e : MEnsemble d α) : mix (congrMEnsemble σ e) = mix e :=
-  Distribution.expect_val_congr_eq_expect_val σ e
+  ProbDistribution.expect_val_congr_eq_expect_val σ e
 
 /-- Equivalence of pure-state ensembles leaves the resulting mixed state invariant -/
 @[simp]
 theorem mix_congrPEnsemble_eq_mix (σ : α ≃ β) (e : PEnsemble d α) : mix (toMEnsemble (congrPEnsemble σ e)) = mix (↑e : MEnsemble d α) := by
   unfold toMEnsemble congrPEnsemble mix
-  rw [Distribution.map_congr_eq_congr_map MState.pure σ e]
-  exact Distribution.expect_val_congr_eq_expect_val σ (MState.pure <$> e)
+  rw [ProbDistribution.map_congr_eq_congr_map MState.pure σ e]
+  exact ProbDistribution.expect_val_congr_eq_expect_val σ (MState.pure <$> e)
 
 /-- The average of a function `f : MState d → T`, where `T` is of `Mixable U T` instance, on a mixed-state ensemble `e`
 is the expectation value of `f` acting on the states of `e`, with the corresponding probability weights from `e.distr`. -/
 def average {T : Type _} {U : Type*} [AddCommGroup U] [Module ℝ U] [inst : Mixable U T] (f : MState d → T) (e : MEnsemble d α) : T :=
-  Distribution.expect_val <| f <$> e
+  ProbDistribution.expect_val <| f <$> e
 
 /-- A version of `average` conveniently specialized for functions `f : MState d → ℝ≥0` returning nonnegative reals.
 Notably, the average is also a nonnegative real number. -/
 def average_NNReal {d : Type _} [Fintype d] [DecidableEq d] (f : MState d → NNReal) (e : MEnsemble d α) : NNReal :=
   ⟨average (NNReal.toReal ∘ f) e,
-    Distribution.zero_le_expect_val e.distr (NNReal.toReal ∘ f ∘ e.states) (fun n => (f <| e.states n).2)⟩
+    ProbDistribution.zero_le_expect_val e.distr (NNReal.toReal ∘ f ∘ e.states) (fun n => (f <| e.states n).2)⟩
 
 /-- The average of a function `f : Ket d → T`, where `T` is of `Mixable U T` instance, on a pure-state ensemble `e`
 is the expectation value of `f` acting on the states of `e`, with the corresponding probability weights from `e.distr`. -/
 def pure_average {T : Type _} {U : Type*} [AddCommGroup U] [Module ℝ U] [inst : Mixable U T] (f : Ket d → T) (e : PEnsemble d α) : T :=
-  Distribution.expect_val <| f <$> e
+  ProbDistribution.expect_val <| f <$> e
 
 /-- A version of `average` conveniently specialized for functions `f : Ket d → ℝ≥0` returning nonnegative reals.
 Notably, the average is also a nonnegative real number. -/
 def pure_average_NNReal {d : Type _} [Fintype d] (f : Ket d → NNReal) (e : PEnsemble d α) : NNReal :=
   ⟨pure_average (NNReal.toReal ∘ f) e,
-    Distribution.zero_le_expect_val e.distr (NNReal.toReal ∘ f ∘ e.states) (fun n => (f <| e.states n).2)⟩
+    ProbDistribution.zero_le_expect_val e.distr (NNReal.toReal ∘ f ∘ e.states) (fun n => (f <| e.states n).2)⟩
 
 /-- The average of `f : MState d → T` on a coerced pure-state ensemble `↑e : MEnsemble d α`
 is equal to averaging the restricted function over Kets `f ∘ pure : Ket d → T` on `e`. -/
@@ -159,19 +159,20 @@ theorem mix_pEnsemble_pure_average {e : PEnsemble d α} {T : Type _} {U : Type*}
     (hmix : mix (toMEnsemble e) = MState.pure ψ) :
   pure_average f e = f ψ := by
   have hpure := mix_pEnsemble_pure_iff_pure.mp hmix
+  -- Each state with nonzero probability is phase-equivalent to ψ
+  have hfeq : ∀ i, e.distr i ≠ 0 → f (e.var i) = f ψ := fun i hdi =>
+    hf _ _ ((MState.PhaseEquiv_iff_pure_eq _ _).mpr (hpure i hdi))
+  simp only [pure_average, Functor.map, ProbDistribution.expect_val]
   apply Mixable.to_U_inj
-  simp only [pure_average, Functor.map, Distribution.expect_val, Mixable.to_U_of_mkT, Function.comp_apply]
-  calc
-    ∑ i, (e.distr i : ℝ) • Mixable.to_U (f (e.var i))
-        = ∑ i, (e.distr i : ℝ) • Mixable.to_U (f ψ) := by
-            apply Finset.sum_congr rfl
-            intro i _
-            by_cases h0 : e.distr i = 0
-            · simp [h0]
-            · rw [hf (hpure i h0)]
-    _ = Mixable.to_U (f ψ) := by
-        rw [← Finset.sum_smul]
-        simp [Distribution.normalized]
+  simp only [Mixable.to_U_of_mkT, Function.comp_apply]
+  have h1 : ∀ i ∈ Finset.univ, (e.distr i : ℝ) • (Mixable.to_U (f (e.var i))) ≠ 0 → e.var i = e.var i := fun _ _ _ => rfl
+  -- For nonzero summands, distr i ≠ 0 so f (e.var i) = f ψ
+  have h2 : ∀ i ∈ Finset.univ, (e.distr i : ℝ) • Mixable.to_U (f (e.var i)) = (e.distr i : ℝ) • Mixable.to_U (f ψ) := by
+    intro i _
+    by_cases hdi : e.distr i = 0
+    · simp [hdi]
+    · rw [hfeq i hdi]
+  rw [Finset.sum_congr rfl h2, ← Finset.sum_smul, ProbDistribution.normalized, one_smul]
 
 theorem sum_prob_mul_eq_one_iff {ι : Type*} [Fintype ι] (p : ι → ℝ) (x : ι → ℝ)
     (hp : ∀ i, 0 ≤ p i) (hsum : ∑ i, p i = 1) (hx : ∀ i, x i ≤ 1) :
@@ -193,6 +194,34 @@ theorem sum_prob_mul_eq_one_iff {ι : Type*} [Fintype ι] (p : ι → ℝ) (x : 
     by_cases hi : p i = 0
     · simp [hi]
     · simp [a i hi]
+
+--CLEANUP. This proof used to work but it took forever to build. Also now it's broken.
+theorem MState.exp_val_pure_eq_one_iff {d : Type*} [Fintype d] [DecidableEq d] (ρ : MState d) (ψ : Ket d) :
+    ρ.exp_val (pure ψ) = 1 ↔ ρ = pure ψ := by
+  stop
+  constructor <;> intro h <;> simp_all +decide [ MState.exp_val ];
+  · have h_eq : ρ.M = (MState.pure ψ).M := by
+      have h_eq : (ρ.M - (MState.pure ψ).M).inner (ρ.M - (MState.pure ψ).M) = 0 := by
+        have h_eq_inner : (ρ.M - (MState.pure ψ).M).inner (ρ.M - (MState.pure ψ).M) = ρ.M.inner ρ.M - 2 * ρ.M.inner (MState.pure ψ).M + (MState.pure ψ).M.inner (MState.pure ψ).M := by
+          norm_num [ HermitianMat.inner, Matrix.mul_apply ];
+          simp +decide [ Matrix.mul_sub, Matrix.sub_mul, Matrix.trace_sub, Matrix.trace_mul_comm ( ρ.m ) ];
+          ring;
+        have h_eq_inner : ρ.M.inner ρ.M ≤ 1 ∧ (MState.pure ψ).M.inner (MState.pure ψ).M = 1 := by
+          aesop;
+          · have := ρ.M.inner_le_mul_trace ρ.zero_le ρ.zero_le;
+            aesop;
+          · simp +decide [ HermitianMat.inner ];
+            have := MState.pure_mul_self ψ; aesop;
+        have h_eq_inner : (ρ.M - (MState.pure ψ).M).inner (ρ.M - (MState.pure ψ).M) ≥ 0 := by
+          exact?;
+        linarith;
+      have h_eq : ∀ (A : HermitianMat d ℂ), A.inner A = 0 → A = 0 := by
+        intro A hA;
+        exact?;
+      exact sub_eq_zero.mp ( h_eq _ ‹_› );
+    cases ρ ; cases ψ ; aesop;
+  · unfold HermitianMat.inner; aesop;
+    rw [ MState.pure_mul_self ] ; aesop
 
 theorem mix_mEnsemble_pure_iff_pure {e : MEnsemble d α} :
     mix e = pure ψ ↔ ∀ i : α, e.distr i ≠ 0 → e.states i = MState.pure ψ := by
@@ -234,35 +263,44 @@ theorem mix_mEnsemble_pure_iff_pure {e : MEnsemble d α} :
 theorem mix_mEnsemble_pure_average {e : MEnsemble d α} {T : Type _} {U : Type*} [AddCommGroup U] [Module ℝ U] [inst : Mixable U T] (f : MState d → T) (hmix : mix e = pure ψ) :
   average f e = f (pure ψ) := by
   have hpure := mix_mEnsemble_pure_iff_pure.mp hmix
+  simp only [average, Functor.map, ProbDistribution.expect_val]
   apply Mixable.to_U_inj
-  simp only [average, Functor.map, Distribution.expect_val, Mixable.to_U_of_mkT, Function.comp_apply]
-  calc
-    ∑ i, (e.distr i : ℝ) • Mixable.to_U (f (e.var i))
-        = ∑ i, (e.distr i : ℝ) • Mixable.to_U (f (pure ψ)) := by
-            apply Finset.sum_congr rfl
-            intro i _
-            by_cases h0 : e.distr i = 0
-            · simp [h0]
-            · simpa using congrArg (fun ρ => (e.distr i : ℝ) • Mixable.to_U (f ρ)) (hpure i h0)
-    _ = Mixable.to_U (f (pure ψ)) := by
-        rw [← Finset.sum_smul]
-        simp [Distribution.normalized]
+  rw [MEnsemble.states] at hpure
+  simp only [Mixable.to_U_of_mkT, Function.comp_apply]
+  have h1 : ∀ i ∈ Finset.univ, (e.distr i : ℝ) • (Mixable.to_U (f (e.var i))) ≠ 0 → e.var i = pure ψ := fun i hi ↦ by
+    have h2 : e.distr i = 0 → (e.distr i : ℝ) • (Mixable.to_U (f (e.var i))) = 0 := fun h0 ↦ by
+      simp only [h0, Prob.coe_zero, zero_smul]
+    exact (hpure i) ∘ h2.mt
+  classical rw [←Finset.sum_filter_of_ne h1, Finset.sum_filter]
+  classical conv =>
+    enter [1, 2, a]
+    rw [←dite_eq_ite]
+    enter [2, hvar]
+    rw [hvar]
+  classical conv =>
+    enter [1, 2, a]
+    rw [dite_eq_ite]
+    rw [←ite_zero_smul]
+  have hpure' : ∀ i ∈ Finset.univ, (↑(e.distr i) : ℝ) ≠ 0 → e.var i = pure ψ := fun i hi hne0 ↦ by
+    apply hpure i
+    simpa using hne0
+  classical rw [← Finset.sum_smul, ← Finset.sum_filter, Finset.sum_filter_of_ne hpure', ProbDistribution.normalized, one_smul]
 
 /-- The trivial mixed-state ensemble of `ρ` consists of copies of `rho`, with the `i`-th one having
 probability 1. -/
-def trivial_mEnsemble (ρ : MState d) (i : α) : MEnsemble d α := ⟨fun _ ↦ ρ, Distribution.constant i⟩
+def trivial_mEnsemble (ρ : MState d) (i : α) : MEnsemble d α := ⟨fun _ ↦ ρ, ProbDistribution.constant i⟩
 
 /-- The trivial mixed-state ensemble of `ρ` mixes to `ρ` -/
 theorem trivial_mEnsemble_mix (ρ : MState d) : ∀ i : α, mix (trivial_mEnsemble ρ i) = ρ := fun i ↦by
   apply MState.ext_m
-  classical simp only [trivial_mEnsemble, Distribution.constant, mix_of, DFunLike.coe, apply_ite,
+  classical simp only [trivial_mEnsemble, ProbDistribution.constant, mix_of, DFunLike.coe, apply_ite,
     Prob.coe_one, Prob.coe_zero, ite_smul, one_smul, zero_smul, Finset.sum_ite_eq,
     Finset.mem_univ, ↓reduceIte]
 
 /-- The average of `f : MState d → T` on a trivial ensemble of `ρ` is `f ρ`-/
 theorem trivial_mEnsemble_average {T : Type _} {U : Type*} [AddCommGroup U] [Module ℝ U] [inst : Mixable U T] (f : MState d → T) (ρ : MState d):
   ∀ i : α, average f (trivial_mEnsemble ρ i) = f ρ := fun i ↦ by
-    simp only [average, Functor.map, Distribution.expect_val, trivial_mEnsemble]
+    simp only [average, Functor.map, ProbDistribution.expect_val, trivial_mEnsemble]
     apply Mixable.to_U_inj
     classical simp [apply_ite]
 
@@ -271,14 +309,14 @@ instance MEnsemble.instInhabited [Nonempty d] [Inhabited α] : Inhabited (MEnsem
 
 /-- The trivial pure-state ensemble of `ψ` consists of copies of `ψ`, with the `i`-th one having
 probability 1. -/
-def trivial_pEnsemble (ψ : Ket d) (i : α) : PEnsemble d α := ⟨fun _ ↦ ψ, Distribution.constant i⟩
+def trivial_pEnsemble (ψ : Ket d) (i : α) : PEnsemble d α := ⟨fun _ ↦ ψ, ProbDistribution.constant i⟩
 
 variable (ψ : Ket d)
 
 /-- The trivial pure-state ensemble of `ψ` mixes to `ψ` -/
 theorem trivial_pEnsemble_mix : ∀ i : α, mix (toMEnsemble (trivial_pEnsemble ψ i)) = MState.pure ψ := fun i ↦ by
   apply MState.ext_m
-  classical simp only [trivial_pEnsemble, Distribution.constant, toMEnsemble_mk, mix_of, DFunLike.coe,
+  classical simp only [trivial_pEnsemble, ProbDistribution.constant, toMEnsemble_mk, mix_of, DFunLike.coe,
     apply_ite, Prob.coe_one, Prob.coe_zero, MEnsemble.states, Function.comp_apply, ite_smul,
     one_smul, zero_smul, Finset.sum_ite_eq, Finset.mem_univ, ↓reduceIte]
 
@@ -286,7 +324,7 @@ omit [DecidableEq d] in
 /-- The average of `f : Ket d → T` on a trivial ensemble of `ψ` is `f ψ`-/
 theorem trivial_pEnsemble_average {T : Type _} {U : Type*} [AddCommGroup U] [Module ℝ U] [inst : Mixable U T] (f : Ket d → T) :
   ∀ i : α, pure_average f (trivial_pEnsemble ψ i) = f ψ := fun i ↦ by
-    simp only [pure_average, Functor.map, Distribution.expect_val, trivial_pEnsemble]
+    simp only [pure_average, Functor.map, ProbDistribution.expect_val, trivial_pEnsemble]
     apply Mixable.to_U_inj
     classical simp [apply_ite]
 
@@ -313,7 +351,12 @@ theorem spectral_decomposition_sum {d 𝕜 : Type*} [Fintype d] [DecidableEq d] 
   nth_rw 1 [hA.spectral_theorem]
   ext
   simp only [Matrix.sum_apply]
-  simp [Matrix.mul_apply, Matrix.diagonal_apply, Matrix.vecMulVec, Algebra.smul_def, mul_comm, mul_left_comm]
+  simp only [Unitary.conjStarAlgAut_apply, mul_assoc]
+  simp only [Matrix.mul_apply, Matrix.IsHermitian.eigenvectorUnitary_apply, Matrix.diagonal_apply,
+    Function.comp_apply, Matrix.star_apply, RCLike.star_def, mul_comm, mul_ite, zero_mul,
+    Finset.sum_ite_eq, Finset.mem_univ, ↓reduceIte, Matrix.vecMulVec, Pi.star_apply,
+    Matrix.smul_apply, Matrix.of_apply, Algebra.smul_def]
+  simp_rw [mul_assoc]
 
 /-- The spectral pure-state ensemble of `ρ` mixes to `ρ` -/
 theorem spectral_ensemble_mix {ρ : MState d} : mix (↑(spectral_ensemble ρ) : MEnsemble d d) = ρ := by

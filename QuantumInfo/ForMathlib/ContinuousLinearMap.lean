@@ -18,16 +18,17 @@ variable [TopologicalSpace M] [AddCommMonoid M] [TopologicalSpace M₂] [AddComm
 variable [Module R M] [Module S M₂]
 
 --These two theorems might look a bit silly as aliases of `LinearMap.____`, but they don't `simp` on their
+--TODO: I think we can remove these now that we've bumped to Lean 4.28.0
 @[simp]
-theorem range_zero [RingHomSurjective σ] : LinearMap.range (0 : M →SL[σ] M₂) = ⊥ :=
-  LinearMap.range_zero
+theorem range_zero [RingHomSurjective σ] : (0 : M →SL[σ] M₂).range = ⊥ := by
+  simp
 
 @[simp]
-theorem ker_zero : LinearMap.ker (0 : M →SL[σ] M₂) = ⊤ :=
-  LinearMap.ker_zero
+theorem ker_zero : (0 : M →SL[σ] M₂).ker = ⊤ := by
+  simp
 
 theorem ker_mk (f : M →ₛₗ[σ] M₂) (hf : Continuous f.toFun) :
-    LinearMap.ker (ContinuousLinearMap.mk f hf) = LinearMap.ker f := by
+    (ContinuousLinearMap.mk f hf).ker = LinearMap.ker f := by
   rfl
 
 end ContinuousLinearMap
@@ -38,7 +39,7 @@ variable {n 𝕜 : Type*} [Fintype n] [RCLike 𝕜]
 
 /-- The support of a Hermitian matrix is the sum of its nonzero eigenspaces. -/
 theorem support_eq_sup_eigenspace_nonzero (A : EuclideanSpace 𝕜 n →L[𝕜] EuclideanSpace 𝕜 n)
-    (hA : A.IsSymmetric) : LinearMap.range A = ⨆ μ ≠ 0, Module.End.eigenspace A μ := by
+    (hA : A.IsSymmetric) : A.range = ⨆ μ ≠ 0, Module.End.eigenspace A μ := by
   apply le_antisymm
   · rintro x ⟨y, hy⟩
     have h_decomp : y ∈ ⨆ (μ : 𝕜), Module.End.eigenspace A.toLinearMap μ := by
@@ -53,7 +54,7 @@ theorem support_eq_sup_eigenspace_nonzero (A : EuclideanSpace 𝕜 n →L[𝕜] 
       exact rfl
     have h_eigen (i) : A (f i) = (i : 𝕜) • f i :=
       Module.End.mem_eigenspace_iff.mp (hf₁ i)
-    rw [← hy, h_apply_A, Finset.sum_congr rfl (fun i _ ↦ h_eigen i)]
+    rw [← hy, coe_coe, h_apply_A, Finset.sum_congr rfl (fun i _ ↦ h_eigen i)]
     refine Submodule.sum_mem _ fun i _ ↦ ?_
     by_cases hi0 : i = 0
     · simp [hi0]

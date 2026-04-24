@@ -79,15 +79,15 @@ theorem H₁_concave : ∀ (x y : Prob), ∀ (p : Prob), p[H₁ x ↔ H₁ y] �
   · linarith (config := {splitNe := true}) [p.coe_le_one]
 
 /-- The Shannon entropy of a discrete distribution, H(X) = ∑ H₁(p_x). -/
-def Hₛ (d : Distribution α) : ℝ :=
+def Hₛ (d : ProbDistribution α) : ℝ :=
   Finset.sum Finset.univ (fun x ↦ H₁ (d.prob x))
 
 /-- Shannon entropy of a distribution is nonnegative. -/
-theorem Hₛ_nonneg (d : Distribution α) : 0 ≤ Hₛ d :=
+theorem Hₛ_nonneg (d : ProbDistribution α) : 0 ≤ Hₛ d :=
   Finset.sum_nonneg' fun _ ↦ H₁_nonneg _
 
 /-- Shannon entropy of a distribution is at most ln d. -/
-theorem Hₛ_le_log_d (d : Distribution α) : Hₛ d ≤ Real.log (Fintype.card α) := by
+theorem Hₛ_le_log_d (d : ProbDistribution α) : Hₛ d ≤ Real.log (Fintype.card α) := by
   --Thanks Aristotle
   by_cases h : Fintype.card α = 0
   · simp_all [Hₛ, Fintype.card_eq_zero_iff.mp h]
@@ -107,19 +107,19 @@ theorem Hₛ_le_log_d (d : Distribution α) : Hₛ d ≤ Real.log (Fintype.card 
 
 /-- The shannon entropy of a constant variable is zero. -/
 @[simp]
-theorem Hₛ_constant_eq_zero {i : α} : Hₛ (Distribution.constant i) = 0 := by
+theorem Hₛ_constant_eq_zero {i : α} : Hₛ (ProbDistribution.constant i) = 0 := by
   simp [Hₛ, apply_ite]
 
 /-- Shannon entropy of a uniform distribution is ln d. -/
 theorem Hₛ_uniform [Nonempty α] :
-    Hₛ (Distribution.uniform (α := α)) = Real.log (Finset.univ.card (α := α)) := by
-  simp [Hₛ, Distribution.prob, H₁, Real.negMulLog]
+    Hₛ (ProbDistribution.uniform (α := α)) = Real.log (Finset.univ.card (α := α)) := by
+  simp [Hₛ, ProbDistribution.prob, H₁, Real.negMulLog]
 
 /-- Shannon entropy of two-event distribution. -/
-theorem Hₛ_coin (p : Prob) : Hₛ (Distribution.coin p) = Real.binEntropy p := by
-  simp [Hₛ, H₁, Distribution.coin, Real.binEntropy_eq_negMulLog_add_negMulLog_one_sub]
+theorem Hₛ_coin (p : Prob) : Hₛ (ProbDistribution.coin p) = Real.binEntropy p := by
+  simp [Hₛ, H₁, ProbDistribution.coin, Real.binEntropy_eq_negMulLog_add_negMulLog_one_sub]
 
-lemma Hₛ_eq_of_multiset_map_eq (d₁ : Distribution α) (d₂ : Distribution β)
+lemma Hₛ_eq_of_multiset_map_eq (d₁ : ProbDistribution α) (d₂ : ProbDistribution β)
     (h : Multiset.map d₁.prob Finset.univ.val = Multiset.map d₂.prob Finset.univ.val) :
     Hₛ d₁ = Hₛ d₂ := by
   convert congr_arg (fun m ↦ m.map (fun x ↦ -Real.log x.1 * x.1 ) |> Multiset.sum ) h using 1

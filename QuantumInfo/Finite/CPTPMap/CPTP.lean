@@ -641,8 +641,62 @@ private theorem embed_mul_mul_embed_conjTranspose_eq_kron_pure
   · simp [Matrix.mul_apply, Matrix.submatrix, Matrix.one_apply, Matrix.kroneckerMap,
       hpure, hi]
 
-private theorem traceLeft_traceLeft_stinespring_eq_of_kraus
-    (K : (dOut × dIn) → Matrix dOut dIn ℂ) (X : Matrix dIn dIn ℂ) :
+Concretely, define the column vectors of V as an orthonormal family in EuclideanSpace ℂ m,
+indexed by the range of emb. Then use `Orthonormal.exists_orthonormalBasis_extension_of_card_eq`
+to extend this to a full OrthonormalBasis. The matrix of this basis is unitary.
+
+Alternatively, use V to define a linear isometry on the subspace spanned by the image
+of emb, then use `LinearIsometry.extend` to extend to the full space. Since in finite
+dimensions a linear isometry from a space to itself is surjective, this gives a
+LinearIsometryEquiv, hence a unitary matrix.
+-/
+set_option maxHeartbeats 1600000 in
+private lemma exists_unitary_extending_isometry
+    {m n : Type*} [Fintype m] [Fintype n] [DecidableEq m] [DecidableEq n]
+    (V : Matrix m n ℂ) (hV : V.conjTranspose * V = 1)
+    (emb : n ↪ m) :
+    ∃ U : 𝐔[m], ∀ i j, U.val i (emb j) = V i j := by
+  -- Let $u_i$ be the $i$-th column of $V$.
+  set u : n → EuclideanSpace ℂ m := fun j => WithLp.toLp 2 (fun i => V i j)
+  -- Since $u$ is an orthonormal set, we can extend it to an orthonormal basis of $\mathbb{C}^m$.
+  obtain ⟨b, hb⟩ : ∃ b : OrthonormalBasis m ℂ (EuclideanSpace ℂ m), ∀ j, b (emb j) = u j := by
+    have h_orthonormal : Orthonormal ℂ (fun j => u j) := by
+      rw [ orthonormal_iff_ite ];
+      intro i j
+      replace hV := congr_fun (congr_fun hV i) j
+      simpa only [ mul_comm, Matrix.mul_apply ] using hV
+    have := Orthonormal.exists_orthonormalBasis_extension_of_card_eq (𝕜 := ℂ) (E := EuclideanSpace ℂ m) (ι := m)
+    simp only [finrank_euclideanSpace, forall_const] at this
+    contrapose! this
+    · refine ⟨fun i => if hi : i ∈ Set.range emb then u (Classical.choose hi) else 0, Set.range emb, ?_, ?_ ⟩
+      · simp +contextual only [Orthonormal, h_orthonormal.1, implies_true, true_and,
+          Set.mem_range, Set.restrict_apply, Subtype.forall, ↓reduceDIte]
+        intro i j hij
+        split_ifs with h₁ h₂
+        · apply h_orthonormal.2
+          have := Classical.choose_spec ‹∃ y, emb y = ↑i›
+          have := Classical.choose_spec ‹∃ y, emb y = ↑j›
+          grind
+        · simp
+        · simp
+        · simp
+      · simp_all only [Orthonormal, ne_eq, Set.mem_range, exists_exists_eq_and,
+          EmbeddingLike.apply_eq_iff_eq, exists_eq, ↓reduceDIte, Classical.choose_eq, implies_true];
+  refine ⟨⟨Matrix.of (fun i j ↦ b j i), ?_⟩, ?_⟩
+  · simp only [Matrix.mem_unitaryGroup_iff]
+    ext1 i j
+    simpa [inner] using b.sum_inner_mul_inner (EuclideanSpace.single i 1) (EuclideanSpace.single j 1)
+  · simp [hb, u]
+
+omit [DecidableEq dOut] [Inhabited dOut] in
+/--
+Given Kraus operators K indexed by (dOut × dIn), define the isometry matrix
+V : Matrix (dIn × dOut × dOut) dIn ℂ by V_{(a, b, d), a'} = (K (b, a))_{d, a'}.
+Then V†V = 1.
+-/
+private lemma purify_isometry_condition
+    {K : (dOut × dIn) → Matrix dOut dIn ℂ}
+    (hTP : ∑ k, (K k).conjTranspose * (K k) = 1) :
     let V : Matrix (dIn × dOut × dOut) dIn ℂ :=
       fun (aEnv, bEnv, bOut) aIn => K (bEnv, aEnv) bOut aIn
     (Matrix.traceLeft (d := dOut)) ((Matrix.traceLeft (d := dIn)) (V * X * Vᴴ)) =

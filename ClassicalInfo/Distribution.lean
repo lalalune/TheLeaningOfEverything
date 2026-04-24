@@ -28,36 +28,36 @@ write the statement that they sum to 1, since NNReals can be added. (Probabiliti
 on their own, cannot.) But the FunLike instance gives `Prob` out, which carry the
 information that they are all in the range [0,1].
 -/
-def Distribution (α : Type u) [Fintype α] : Type u :=
+def ProbDistribution (α : Type u) [Fintype α] : Type u :=
   { f : α → Prob // Finset.sum Finset.univ (fun i ↦ (f i : ℝ)) = 1 }
 
-namespace Distribution
+namespace ProbDistribution
 
 variable {α β : Type*} [Fintype α] [Fintype β]
 
 /-- Make a distribution, proving only that the values are nonnegative and that the
 sum is 1. The fact that the values are at most 1 is derived as a consequence. -/
-def mk' (f : α → ℝ) (h₁ : ∀i, 0 ≤ f i) (hN : ∑ i, f i = 1) : Distribution α :=
+def mk' (f : α → ℝ) (h₁ : ∀i, 0 ≤ f i) (hN : ∑ i, f i = 1) : ProbDistribution α :=
   have h₃ : ∀x, f x ≤ 1 := by
     intro x
     simp [← hN, Fintype.sum_eq_sum_compl_add x]
     exact Finset.sum_nonneg' h₁
   ⟨ fun i ↦ ⟨f i, ⟨h₁ i, h₃ i⟩⟩, hN⟩
 
-instance instFunLikeProb : FunLike (Distribution α) α Prob where
+instance instFunLikeProb : FunLike (ProbDistribution α) α Prob where
   coe p a := p.1 a
   coe_injective' _ _ h :=
     Subtype.ext <| funext fun v ↦ by
       simpa only [Subtype.mk.injEq, coe_inj] using congrFun h v
 
 @[simp]
-theorem normalized (d : Distribution α) : Finset.sum Finset.univ (fun i ↦ (d i : ℝ)) = 1 :=
+theorem normalized (d : ProbDistribution α) : Finset.sum Finset.univ (fun i ↦ (d i : ℝ)) = 1 :=
   d.2
 
-abbrev prob (d : Distribution α) := (d : α → Prob)
+abbrev prob (d : ProbDistribution α) := (d : α → Prob)
 
 @[simp]
-theorem fun_eq_val (d : Distribution α) : d.val = d :=
+theorem fun_eq_val (d : ProbDistribution α) : d.val = d :=
   rfl
 
 @[simp]
@@ -66,18 +66,18 @@ theorem funlike_apply (d : α → Prob) (h : _) (x : α) :
   rfl
 
 @[ext]
-theorem ext {p q : Distribution α} (h : ∀ x, p x = q x) : p = q :=
+theorem ext {p q : ProbDistribution α} (h : ∀ x, p x = q x) : p = q :=
   DFunLike.ext p q h
 
-/-- A distribution is a witness that d is nonempty. -/
-instance nonempty (d : Distribution α) : Nonempty α := by
+/-- A distribution provides a witness that d is nonempty. -/
+theorem nonempty (d : ProbDistribution α) : Nonempty α := by
   by_contra h
   simpa [not_nonempty_iff.mp h] using d.2
 
 /-- Make an constant distribution: supported on a single element. This is also called, variously, a
  "One-point distribution", a "Degenerate distribution", a "Deterministic distribution", a
  "Delta function", or a "Point mass distribution". -/
-def constant (x : α) : Distribution α :=
+def constant (x : α) : ProbDistribution α :=
   ⟨fun y ↦ if x = y then 1 else 0,
     by simp [apply_ite]⟩
 
@@ -97,7 +97,7 @@ theorem constant_def' (x y : α) : (constant x : α → Prob) y = if x = y then 
   <;> simp [h]
 
 /-- If a distribution has an element with probability 1, the distribution has a constant. -/
-theorem constant_of_exists_one {D : Distribution α} {x : α} (h : D x = 1) : D = Distribution.constant x := by
+theorem constant_of_exists_one {D : ProbDistribution α} {x : α} (h : D x = 1) : D = ProbDistribution.constant x := by
   ext y
   by_cases h₂ : x = y
   · simp [h, ← h₂]
@@ -113,7 +113,7 @@ theorem constant_of_exists_one {D : Distribution α} {x : α} (h : D x = 1) : D 
     linarith
 
 /-- Make an uniform distribution. -/
-def uniform [n : Nonempty α] : Distribution α :=
+def uniform [n : Nonempty α] : ProbDistribution α :=
   ⟨fun _ ↦ ⟨1 / (Finset.univ.card (α := α)), by
     have : 0 < Finset.univ.card (α := α) :=
       Finset.Nonempty.card_pos (Finset.univ_nonempty_iff.mpr n)
@@ -124,7 +124,7 @@ theorem uniform_def [Nonempty α] (y : α) : ((uniform y) : ℝ) = 1 / (Finset.u
   rfl
 
 /-- Make a distribution on a product of two Fintypes. -/
-def prod (d1 : Distribution α) (d2 : Distribution β) : Distribution (Prod α β) :=
+def prod (d1 : ProbDistribution α) (d2 : ProbDistribution β) : ProbDistribution (Prod α β) :=
   ⟨fun x ↦ (d1 x.1) * (d2 x.2), by
     simp [← Finset.mul_sum, Fintype.sum_prod_type]⟩
 
@@ -133,29 +133,29 @@ theorem prod_def (x : α) (y : β) : prod d1 d2 ⟨x, y⟩ = (d1 x) * (d2 y) :=
   rfl
 
 /-- Given a distribution on α, extend it to a distribution on `Sum α β` by giving it no support on `β`. -/
-def extend_right (d : Distribution α) : Distribution (α ⊕ β) :=
+def extend_right (d : ProbDistribution α) : ProbDistribution (α ⊕ β) :=
   ⟨fun x ↦ Sum.casesOn x d.val (Function.const _ 0), by simp⟩
 
 /-- Given a distribution on α, extend it to a distribution on `Sum β α` by giving it no support on `β`. -/
-def extend_left (d : Distribution α) : Distribution (β ⊕ α) :=
+def extend_left (d : ProbDistribution α) : ProbDistribution (β ⊕ α) :=
   ⟨fun x ↦ Sum.casesOn x (Function.const _ 0) d.val, by simp⟩
 
 /-- Make a convex mixture of two distributions on the same set. -/
-instance instMixable : Mixable (α → ℝ) (Distribution α) :=
+instance instMixable : Mixable (α → ℝ) (ProbDistribution α) :=
   Mixable.instSubtype (inferInstance) (fun _ _ hab hx hy ↦ by
     simp [Mixable.mix_ab, Finset.sum_add_distrib, ← Finset.mul_sum, hab, hx, hy]
   )
 
 /-- Given a distribution on type α and an equivalence to type β, get the corresponding
 distribution on type β. -/
-def relabel (d : Distribution α) (σ : β ≃ α) : Distribution β :=
+def relabel (d : ProbDistribution α) (σ : β ≃ α) : ProbDistribution β :=
   ⟨fun b ↦ d (σ b),
    by rw [Equiv.sum_comp σ (fun a ↦ (d a : ℝ))]; exact d.prop⟩
 
 -- The two properties below (and congrRandVar) follow from the fact that Distribution is a contravariant functor.
 -- However, mathlib does not seem to support that outside of the CategoryTheory namespace
-/-- Distributions on α and β are equivalent for equivalent types α ≃ β. -/
-def congr (σ : α ≃ β) : Distribution α ≃ Distribution β := by
+/-- ProbDistribution on α and β are equivalent for equivalent types α ≃ β. -/
+def congr (σ : α ≃ β) : ProbDistribution α ≃ ProbDistribution β := by
   constructor
   case toFun => exact fun d ↦ relabel d σ.symm
   case invFun => exact fun d ↦ relabel d σ
@@ -171,16 +171,16 @@ def congr (σ : α ≃ β) : Distribution α ≃ Distribution β := by
     simp only [← fun_eq_val, Equiv.apply_symm_apply, Subtype.coe_eta]
 
 @[simp]
-theorem congr_apply (σ : α ≃ β) (d : Distribution α) (j : β): (congr σ d) j = d (σ.symm j) := by
+theorem congr_apply (σ : α ≃ β) (d : ProbDistribution α) (j : β): (congr σ d) j = d (σ.symm j) := by
   rfl
 
 /-- The inverse and congruence operations for distributions commute -/
 @[simp]
-theorem congr_symm_apply (σ : α ≃ β) : (Distribution.congr σ).symm = Distribution.congr σ.symm := by
+theorem congr_symm_apply (σ : α ≃ β) : (ProbDistribution.congr σ).symm = ProbDistribution.congr σ.symm := by
   rfl
 
 /-- The distribution on Fin 2 corresponding to a coin with probability p. Chance p of 1, 1-p of 0. -/
-def coin (p : Prob) : Distribution (Fin 2) :=
+def coin (p : Prob) : ProbDistribution (Fin 2) :=
   ⟨(if · = 0 then p else 1 - p), by simp⟩
 
 @[simp]
@@ -192,21 +192,21 @@ theorem coin_val_one (p : Prob) : coin p 1 = 1 - p := by
   simp [coin]
 
 /-- Every distribution on two variable is some coin. -/
-theorem fin_two_eq_coin (d : Distribution (Fin 2)) : d = coin (d 0) := by
+theorem fin_two_eq_coin (d : ProbDistribution (Fin 2)) : d = coin (d 0) := by
   ext i
   fin_cases i
   · simp [coin]
   · simpa only [coin, Fin.mk_one, funlike_apply, one_ne_zero, ↓reduceIte,
-    Prob.coe_one_minus, Subtype.eq_iff, Prob.coe_one_minus, eq_sub_iff_add_eq, add_comm,
+    Prob.coe_one_minus, Subtype.ext_iff, Prob.coe_one_minus, eq_sub_iff_add_eq, add_comm,
         fun_eq_val, Fin.sum_univ_two] using d.property
 
-theorem coin_eq_iff (p : Prob) (f : Distribution (Fin 2)) :
-    Distribution.coin p = f ↔ p = f 0 := by
+theorem coin_eq_iff (p : Prob) (f : ProbDistribution (Fin 2)) :
+    ProbDistribution.coin p = f ↔ p = f 0 := by
   constructor
   · rintro rfl
     rfl
   · rintro rfl
-    rw [← Distribution.fin_two_eq_coin f]
+    rw [← ProbDistribution.fin_two_eq_coin f]
 
 section randvar
 
@@ -214,7 +214,7 @@ section randvar
 with a probability distribution `distr : Distribution α`. -/
 structure RandVar (α : Type*) [Fintype α] (T : Type*) where
   var : α → T
-  distr : Distribution α
+  distr : ProbDistribution α
 
 instance instFunctor : Functor (RandVar α) where map f e := ⟨f ∘ e.1, e.2⟩
 
@@ -241,7 +241,7 @@ def expect_val (X : RandVar α T) : T := by
 
 /-- The expectation value of a random variable over `α = Fin 2` is the same as `Mixable.mix`
 with probabiliy weight `X.distr 0` -/
-theorem expect_val_eq_mixable_mix (d : Distribution (Fin 2)) (x₁ x₂ : T) : expect_val ⟨![x₁, x₂], d⟩ = Mixable.mix (d 0) x₁ x₂ := by
+theorem expect_val_eq_mixable_mix (d : ProbDistribution (Fin 2)) (x₁ x₂ : T) : expect_val ⟨![x₁, x₂], d⟩ = Mixable.mix (d 0) x₁ x₂ := by
   apply Mixable.to_U_inj
   simp only [Mixable.mix, expect_val, DFunLike.coe, Mixable.to_U_of_mkT]
   calc
@@ -251,7 +251,7 @@ theorem expect_val_eq_mixable_mix (d : Distribution (Fin 2)) (x₁ x₂ : T) : e
       simp
     _ = (d 0 : ℝ) • Mixable.to_U x₁ + (1 - d 0).val • Mixable.to_U x₂ := by
       congr
-      simpa only [Subtype.eq_iff, Prob.coe_one_minus, eq_sub_iff_add_eq, add_comm,
+      simpa only [Subtype.ext_iff, Prob.coe_one_minus, eq_sub_iff_add_eq, add_comm,
         fun_eq_val, Fin.sum_univ_two] using d.property
 
 /-- The expectation value of a random variable with constant probability distribution `constant x` is its value at `x` -/
@@ -261,7 +261,7 @@ theorem expect_val_constant (x : α) (f : α → T) : expect_val ⟨f, (constant
     Prob.coe_zero, ite_smul, one_smul, zero_smul, Finset.sum_ite_eq, Finset.mem_univ, ↓reduceIte]
 
 /-- The expectation value of a nonnegative real random variable is also nonnegative -/
-theorem zero_le_expect_val (d : Distribution α) (f : α → ℝ) (hpos : 0 ≤ f) : 0 ≤ expect_val ⟨f, d⟩ := by
+theorem zero_le_expect_val (d : ProbDistribution α) (f : α → ℝ) (hpos : 0 ≤ f) : 0 ≤ expect_val ⟨f, d⟩ := by
   simp only [expect_val, Mixable.mkT, Mixable.to_U, id]
   apply Fintype.sum_nonneg
   intro x
@@ -271,20 +271,20 @@ theorem zero_le_expect_val (d : Distribution α) (f : α → ℝ) (hpos : 0 ≤ 
 /-- `T`-valued random variables on `α` and `β` are equivalent if `α ≃ β` -/
 def congrRandVar (σ : α ≃ β) : RandVar α T ≃ RandVar β T := by
   constructor
-  case toFun => exact fun X ↦ { var := X.var ∘ σ.symm, distr := Distribution.congr σ X.distr }
-  case invFun => exact fun X ↦ { var := X.var ∘ σ, distr := Distribution.congr σ.symm X.distr }
+  case toFun => exact fun X ↦ { var := X.var ∘ σ.symm, distr := ProbDistribution.congr σ X.distr }
+  case invFun => exact fun X ↦ { var := X.var ∘ σ, distr := ProbDistribution.congr σ.symm X.distr }
   case left_inv =>
     intro e
     dsimp
     congr
     · simp [Function.comp_assoc]
-    · rw [← Distribution.congr_symm_apply, Equiv.symm_apply_apply]
+    · rw [← ProbDistribution.congr_symm_apply, Equiv.symm_apply_apply]
   case right_inv =>
     intro e
     dsimp
     congr
     · simp [Function.comp_assoc]
-    · rw [← Distribution.congr_symm_apply, Equiv.apply_symm_apply]
+    · rw [← ProbDistribution.congr_symm_apply, Equiv.apply_symm_apply]
 
 /-- Given a `T`-valued random variable `X` over `α`, mapping over `T` commutes with the equivalence over `α` -/
 def map_congr_eq_congr_map {S : Type _} [Mixable U S] (f : T → S) (σ : α ≃ β) (X : RandVar α T) :
@@ -300,4 +300,4 @@ theorem expect_val_congr_eq_expect_val (σ : α ≃ β) (X : RandVar α T) : exp
 
 end randvar
 
-end Distribution
+end ProbDistribution

@@ -92,11 +92,10 @@ theorem reindex_eq_conj [DecidableEq d] (e : d ≃ d₂) : A.reindex e = A.conj 
 variable [Fintype d₂] [DecidableEq d] [DecidableEq d₂]
 
 theorem ker_reindex :
-    (A.reindex e).ker = A.ker.comap (LinearEquiv.euclidean_of_relabel 𝕜 e) := by
+    (A.reindex e).ker = A.ker.comap (LinearEquiv.euclidean_of_relabel 𝕜 e).toLinearMap := by
   dsimp only [reindex, ker, lin]
-  simp only [ContinuousLinearMap.ker_mk, mat_mk]
+  simp only [mat_mk]
   rw [Matrix.reindex_toEuclideanLin, LinearEquiv.ker_comp, LinearMap.ker_comp]
-  rfl
 
 @[simp]
 theorem ker_reindex_le_iff :

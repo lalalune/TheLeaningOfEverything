@@ -12,13 +12,10 @@ variable {m n : Type*} [Fintype m] [Fintype n] {q r : ℝ}
 noncomputable section
 open ComplexOrder
 open Classical
+open RealInnerProductSpace
 
-theorem LiebConcavity (K : Matrix n m ℂ) (hq : 0 ≤ q) (hr : 0 ≤ r) (hqr : q + r ≤ 1)
-    (hconc :
-      let F : (HermitianMat m ℂ × HermitianMat n ℂ) → ℝ :=
-        fun p ↦ RCLike.re ((((p.1 ^ q).conj K).mat * (p.2 ^ r).mat).trace);
-      ConcaveOn ℝ .univ F) :
-    let F : (HermitianMat m ℂ × HermitianMat n ℂ) → ℝ :=
-      fun p ↦ RCLike.re ((((p.1 ^ q).conj K).mat * (p.2 ^ r).mat).trace);
+theorem LiebConcavity (K : Matrix n m ℂ) (hq : 0 ≤ q) (hr : 0 ≤ r) (hqr : q + r ≤ 1) :
+  let F : (HermitianMat m ℂ × HermitianMat n ℂ) → ℝ :=
+      fun (x,y) ↦ ⟪(x ^ q).conj K, y ^ r⟫;
     ConcaveOn ℝ .univ F := by
   exact hconc

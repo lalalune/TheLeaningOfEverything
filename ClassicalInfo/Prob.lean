@@ -85,11 +85,11 @@ instance instInhabited : Inhabited Prob where
   default := 0
 
 instance : LinearOrderedCommMonoidWithZero Prob where
-  mul_le_mul_left := by
-    intros a b h c
-    rw [← Subtype.coe_le_coe]
-    exact mul_le_mul_of_nonneg_left h c.2.1
-  zero_le_one := (0 : Prob).2.2
+  mul_lt_mul_of_pos_left := by
+    intros a ha b h hb
+    rw [← Subtype.coe_lt_coe]
+    exact mul_lt_mul_of_pos_left hb ha
+  zero_le a := a.2.1
 
 @[simp]
 theorem zero_le_coe {p : Prob} : 0 ≤ (p : ℝ) :=
@@ -107,11 +107,11 @@ theorem zero_le {p : Prob} : 0 ≤ p :=
 theorem le_one {p : Prob} : p ≤ 1 :=
   coe_le_one
 
-@[ext] protected theorem eq {n m : Prob} : (n : ℝ) = (m : ℝ) → n = m :=
-  Subtype.eq
+@[ext] protected theorem ext {n m : Prob} : (n : ℝ) = (m : ℝ) → n = m :=
+  Subtype.ext
 
 theorem ne_iff {x y : Prob} : (x : ℝ) ≠ (y : ℝ) ↔ x ≠ y :=
-  not_congr <| Prob.eq_iff.symm
+  not_congr <| Prob.ext_iff.symm
 
 @[simp, norm_cast]
 theorem toReal_mul (x y : Prob) : (x * y : Prob) = (x : ℝ) * (y : ℝ) := by
@@ -209,7 +209,7 @@ theorem mul_eq_one_iff (p q : Prob) : p * q = 1 ↔ p = 1 ∧ q = 1 := by
   cases p
   cases q
   refine ⟨fun h ↦ ?_, fun h ↦ by simp [h]⟩
-  simp [Prob.eq_iff] at h ⊢
+  simp [Prob.ext_iff] at h ⊢
   constructor <;> nlinarith
 
 end Prob
@@ -351,7 +351,7 @@ namespace Prob
 /-- Probabilities `Prob` themselves are convex. -/
 instance instMixable : Mixable ℝ Prob where
   to_U := Subtype.val
-  to_U_inj := Prob.eq
+  to_U_inj := Prob.ext
   mkT := fun h ↦ ⟨⟨_, Exists.casesOn h fun t ht => ht ▸ t.prop⟩, rfl⟩
   convex := by
     simp [Convex, StarConvex]
@@ -440,7 +440,7 @@ theorem le_negLog_of_le_exp {p : Prob} {x : ℝ} (h : p ≤ Real.exp (-x)) : ENN
         rw [← ENNReal.toReal_lt_toReal ofReal_ne_top coe_ne_top, toReal_ofReal hx]
         simpa using lt_neg_of_lt_neg h
       · apply le_of_eq
-        rw [← ENNReal.toReal_eq_toReal ofReal_ne_top coe_ne_top,
+        rw [← ENNReal.toReal_eq_toReal_iff' ofReal_ne_top coe_ne_top,
           coe_toReal, coe_mk, h, Real.log_exp, neg_neg, toReal_ofReal hx]
   · trans 0
     · simp only [nonpos_iff_eq_zero, ofReal_eq_zero, le_of_not_ge hx]

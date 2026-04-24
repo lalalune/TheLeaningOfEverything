@@ -124,7 +124,7 @@ theorem of_kraus_isTracePreserving
   (hTP : (∑ k, (N k).conjTranspose * (M k)) = 1) :
   (MatrixMap.of_kraus M N).IsTracePreserving := by
   intro x
-  simp only [of_kraus, LinearMap.coeFn_sum, LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply,
+  simp only [of_kraus, LinearMap.coe_sum, LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply,
     Matrix.trace_sum]
   conv =>
     enter [1,2,i]
@@ -416,7 +416,7 @@ theorem IsPositive_sum {ι : Type*} [Fintype ι] (f : ι → MatrixMap A B ℂ) 
     (∑ i, f i).IsPositive := by
   intro X hX;
   replace hX : ∀ i, ((f i) X).PosSemidef := fun i => h i hX;
-  simp [Matrix.PosSemidef, Matrix.IsHermitian] at hX ⊢
+  simp [Matrix.posSemidef_iff_dotProduct_mulVec, Matrix.IsHermitian] at hX ⊢
   simp [Matrix.conjTranspose_sum, Matrix.mulVec, dotProduct] at hX ⊢
   simp [Matrix.sum_apply, Finset.mul_sum, Finset.sum_mul] at hX ⊢
   constructor
@@ -445,7 +445,8 @@ theorem conj_kron (M : Matrix B A 𝕜) (N : Matrix D C 𝕜) [DecidableEq C] :
     ext ⟨ b₁, d₁ ⟩ ⟨ b₂, d₂ ⟩
     simp only [Matrix.kroneckerMap]
     ring_nf
-    simp [conj, Matrix.mul_apply]
+    simp only [conj, LinearMap.coe_mk, AddHom.coe_mk, Matrix.mul_apply, Matrix.of_apply,
+      Matrix.conjTranspose_apply, star_mul', RCLike.star_def]
     simp only [mul_left_comm, mul_comm, Finset.mul_sum, mul_assoc]
     simp only [← Finset.univ_product_univ, ← Finset.sum_product'];
     apply Finset.sum_bij (fun x _ ↦ (x.1.2, x.2.2, x.1.1, x.2.1)) <;> simp
@@ -568,17 +569,27 @@ theorem conj_isCompletelyPositive (M : Matrix B A R) : (conj M).IsCompletelyPosi
     rw [ MatrixMap.kron_def ];
     simp [Matrix.mul_apply, Matrix.single];
     have h_split : ∑ x, ∑ x_1, ∑ x_2, ∑ x_3, (if x_2 = c₁ ∧ x_3 = c₂ then (∑ x_4, (∑ x_5, if x = x_5 ∧ x_1 = x_4 then M b₁ x_5 else 0) * (starRingEnd R) (M b₂ x_4)) * m (x, x_2) (x_1, x_3) else 0) = ∑ x, ∑ x_1, (∑ x_4, (∑ x_5, if x = x_5 ∧ x_1 = x_4 then M b₁ x_5 else 0) * (starRingEnd R) (M b₂ x_4)) * m (x, c₁) (x_1, c₂) := by
-      exact Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => by rw [ Finset.sum_eq_single c₁ ] <;> aesop;
+      refine Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => ?_
+      rw [ Finset.sum_eq_single c₁ ]
+      · simp_all only [Finset.mem_univ, true_and, Finset.sum_ite_eq', ↓reduceIte]
+      · intro b a a_1
+        simp_all only [Finset.mem_univ, ne_eq, false_and, ↓reduceIte, Finset.sum_const_zero]
+      · intro a
+        simp_all only [Finset.mem_univ, not_true_eq_false]
     convert h_split using 1;
     rw [ Matrix.mul_assoc ];
-    simp [ Matrix.mul_apply, Finset.mul_sum _ _ _, Finset.sum_mul ];
+    simp only [Matrix.mul_apply, Matrix.kroneckerMap_apply, Matrix.conjTranspose_apply,
+      RCLike.star_def, Finset.mul_sum _ _ _, Finset.sum_mul, ite_mul, zero_mul];
     simp [ Matrix.one_apply, Finset.sum_ite, Finset.filter_eq, Finset.filter_and ];
     have h_reindex : ∑ x ∈ {x | c₁ = x.2}, ∑ x_1 ∈ {x | x.2 = c₂}, M b₁ x.1 * (m x x_1 * (starRingEnd R) (M b₂ x_1.1)) = ∑ x ∈ Finset.univ, ∑ x_1 ∈ Finset.univ, M b₁ x * (m (x, c₁) (x_1, c₂) * (starRingEnd R) (M b₂ x_1)) := by
       rw [ show ( Finset.univ.filter fun x : A × Fin n => c₁ = x.2 ) = Finset.image ( fun x : A => ( x, c₁ ) ) Finset.univ from ?_, show ( Finset.univ.filter fun x : A × Fin n => x.2 = c₂ ) = Finset.image ( fun x : A => ( x, c₂ ) ) Finset.univ from ?_ ];
-      · simp [ Finset.sum_image ];
-      · ext ⟨ x, y ⟩ ; simp ;
+      · simp [Finset.sum_image, Set.InjOn]
+      · ext ⟨ x, y ⟩
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_image, Prod.mk.injEq,
+          exists_eq_left]
         exact eq_comm;
-      · ext ⟨ x, y ⟩ ; simp [ eq_comm ];
+      · ext ⟨ x, y ⟩
+        simp [ eq_comm ];
     have h_inner : ∀ x x_1, ∑ x_2, ∑ x_3 ∈ {x} ∩ if x_1 = x_2 then Finset.univ else ∅, M b₁ x_3 * (starRingEnd R) (M b₂ x_2) * m (x, c₁) (x_1, c₂) = M b₁ x * (starRingEnd R) (M b₂ x_1) * m (x, c₁) (x_1, c₂) := by
       intro x x_1
       rw [ Finset.sum_eq_single x_1 ] <;> simp +contextual;
@@ -591,7 +602,9 @@ theorem conj_isCompletelyPositive (M : Matrix B A R) : (conj M).IsCompletelyPosi
   rw [Matrix.mul_assoc, Matrix.mul_assoc]
   congr
   ext
-  simp +contextual [Matrix.one_apply, apply_ite]
+  simp +contextual only [Matrix.kroneckerMap_apply, Matrix.conjTranspose_apply, RCLike.star_def,
+    Matrix.one_apply, apply_ite, mul_one, mul_zero, star_zero, ↓reduceIte, ite_eq_right_iff,
+    map_eq_zero, if_true_left]
   tauto
 
 /-- `MatrixMap.submatrix` is completely positive -/
@@ -615,11 +628,14 @@ theorem choi_of_kraus_R [DecidableEq A] (K : κ → Matrix B A 𝕜) :
     (of_kraus K K).choi_matrix = ∑ k, Matrix.vecMulVec (fun (x : B × A) => K k x.1 x.2) (fun (x : B × A) => star (K k x.1 x.2)) := by
   unfold of_kraus choi_matrix
   ext i j : 2
-  simp [ Matrix.sum_apply, Matrix.mul_apply, Matrix.vecMulVec ]
-  simp [ Matrix.single]
-  simp +contextual [ Finset.sum_ite, Finset.filter_and ];
+  simp only [LinearMap.coe_sum, LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply,
+    Matrix.sum_apply, Matrix.mul_apply, Matrix.conjTranspose_apply, RCLike.star_def,
+    Matrix.vecMulVec, Matrix.of_apply]
+  simp only [Matrix.single, Matrix.of_apply, mul_ite, mul_one, mul_zero]
+  simp +contextual only [Finset.sum_ite, Finset.filter_and, Finset.filter_const, not_and,
+    Finset.sum_const_zero, add_zero];
   congr! with k
-  simp_all [Finset.filter_eq]
+  simp_all only [Finset.mem_univ, Finset.filter_eq, ↓reduceIte]
   rw [Finset.sum_eq_single j.2]
   · simp
   · aesop
@@ -634,19 +650,23 @@ theorem choi_eq_kron_id_apply_choi_id (M : MatrixMap A B R) :
     M.choi_matrix = (M ⊗ₖₘ MatrixMap.id A R) ((MatrixMap.id A R).choi_matrix) := by
   ext ⟨j₁, a₁⟩ ⟨j₂, a₂⟩ : 2
   rw [ MatrixMap.kron_def ]
-  simp [ MatrixMap.choi_matrix, Matrix.single ]
-  simp [ ← Finset.sum_filter, Finset.filter_eq', Finset.filter_and]
+  simp only [choi_matrix, Matrix.single, LinearMap.id_coe, id_eq, Matrix.of_apply, mul_ite, mul_one,
+    mul_zero]
+  simp only [← Finset.sum_filter, Finset.filter_and, Finset.filter_const, Finset.filter_eq',
+    Finset.mem_univ, ↓reduceIte, Finset.mem_inter, Finset.mem_singleton, Finset.sum_const,
+    nsmul_eq_mul]
   rw [ Finset.sum_eq_single a₁ ]
-  · simp +contextual
-    rw [ Finset.sum_eq_single a₂ ]
-    · rw [ Finset.sum_eq_single a₁ ] <;> aesop
+  · simp +contextual only [↓reduceIte, Finset.inter_singleton_of_mem]
+    rw [ Finset.sum_eq_single a₂, Finset.sum_eq_single a₁ ]
     · simp
-      intro b hb
-      rw [ Finset.sum_eq_zero ]
+    · simp +contextual
+    · intro h
+      simp at h
+    · intro b _ hb
+      rw [Finset.sum_eq_zero]
       aesop
     · simp
   · simp +contextual only
-    rename_i x x_1
     intro b a
     split_ifs with h <;> simp [h]
   · simp +contextual
@@ -661,6 +681,7 @@ theorem choi_id_is_PSD {A R : Type*} [Fintype A] [DecidableEq A] [RCLike R] :
   -- By definition of $C$, we know that $C = v v^*$.
   have hC : (MatrixMap.id A R).choi_matrix = Matrix.of (fun (i j : A × A) => v i * star (v j)) := by
     ext ⟨ i, j ⟩ ⟨ k, l ⟩ ; simp [ MatrixMap.choi_matrix, Matrix.single ] ; aesop;
+  rw [Matrix.posSemidef_iff_dotProduct_mulVec]
   refine' ⟨ _, fun x => _ ⟩;
   · ext i j; aesop;
   · -- By definition of $v$, we know that $star x ⬝ᵥ v v^* x = |star x ⬝ᵥ v|^2$.
@@ -705,9 +726,9 @@ theorem kron_of_kraus {A B C D R : Type*} [Fintype A] [Fintype B] [Fintype C] [F
   apply MatrixMap.choi_matrix_inj
   ext ⟨ b, a ⟩ ⟨ d, c ⟩
   simp only [of_kraus] ;
-  simp only [choi_matrix, LinearMap.coeFn_sum, LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply]
+  simp only [choi_matrix, LinearMap.coe_sum, LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply]
   rw [ MatrixMap.kron_def ]
-  simp only [LinearMap.coeFn_sum, LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply,
+  simp only [LinearMap.coe_sum, LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply,
     Matrix.sum_apply, Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.kroneckerMap_apply,
     star_mul'] ;
   simp only [Matrix.single, Matrix.of_apply, mul_ite, mul_one, mul_zero, Finset.sum_ite, not_and,

@@ -7,10 +7,12 @@ import QuantumInfo.ForMathlib.Matrix
 import QuantumInfo.ForMathlib.IsMaximalSelfAdjoint
 import QuantumInfo.ForMathlib.ContinuousLinearMap
 
-import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.ExpLog
+import Mathlib.Analysis.Matrix.Normed
+import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.ExpLog.Basic
 import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Rpow.Basic
-import Mathlib.LinearAlgebra.Matrix.HermitianFunctionalCalculus
-import Mathlib.Analysis.Matrix
+import Mathlib.Analysis.SpecialFunctions.Bernstein
+import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
+import Mathlib.Tactic.NormNum.GCD
 
 /-- The type of Hermitian matrices, as a `Subtype`. Equivalent to a `Matrix n n α` bundled
 with the fact that `Matrix.IsHermitian`. -/
@@ -53,7 +55,7 @@ theorem H (A : HermitianMat n α) : A.mat.IsHermitian :=
   A.2
 
 @[ext] protected theorem ext {A B : HermitianMat n α} : A.mat = B.mat → A = B :=
-  Subtype.eq
+  Subtype.ext
 
 instance instFun : FunLike (HermitianMat n α) n (n → α) where
   coe M := (M : Matrix n n α)
@@ -420,11 +422,10 @@ noncomputable def eigenspace (μ : 𝕜) : Submodule 𝕜 (EuclideanSpace 𝕜 n
 /-- The kernel of a Hermitian matrix `A` as a submodule of Euclidean space, defined by
 `LinearMap.ker A.toMat.toEuclideanLin`. Equivalently, the zero-eigenspace. -/
 def ker : Submodule 𝕜 (EuclideanSpace 𝕜 n) :=
-  LinearMap.ker A.lin
+  LinearMap.ker A.lin.toLinearMap
 
 theorem mem_ker_iff_mulVec_zero (x : EuclideanSpace 𝕜 n) : x ∈ A.ker ↔ A.mat.mulVec x = 0 := by
-  simp [ker, LinearMap.mem_ker, lin, Matrix.toEuclideanLin_apply]
-  norm_cast
+  simp [ker, LinearMap.mem_ker, lin, Matrix.toLpLin_apply]
 
 /-- The kernel of a Hermitian matrix is its zero eigenspace. -/
 theorem ker_eq_eigenspace_zero : A.ker = A.eigenspace 0 := by
@@ -446,7 +447,7 @@ theorem ker_pos_smul {c : ℝ} (hc : c ≠ 0) : (c • A).ker = A.ker := by
 /-- The support of a Hermitian matrix `A` as a submodule of Euclidean space, defined by
 `LinearMap.range A.toMat.toEuclideanLin`. Equivalently, the sum of all nonzero eigenspaces. -/
 def support : Submodule 𝕜 (EuclideanSpace 𝕜 n) :=
-  LinearMap.range A.lin
+  LinearMap.range A.lin.toLinearMap
 
 /-- The support of a Hermitian matrix is the sum of its nonzero eigenspaces. -/
 theorem support_eq_sup_eigenspace_nonzero : A.support = ⨆ μ ≠ 0, A.eigenspace μ := by
@@ -592,6 +593,130 @@ lemma kronecker_conj [Fintype m] [Fintype n]
   exact Matrix.kronecker_conj_eq A.mat B.mat C D
 
 end kronecker
+
+section more_range_stuff
+
+variable {d d₂ : Type*} [Fintype d] [DecidableEq d] [Fintype d₂] [DecidableEq d₂]
+
+/-
+If the range of a Hermitian matrix is contained in its kernel, the matrix is zero.
+-/
+theorem range_le_ker_imp_zero {A : HermitianMat d 𝕜}
+    (h : LinearMap.range A.mat.toEuclideanLin ≤ LinearMap.ker A.mat.toEuclideanLin) : A = 0 := by
+  rw [HermitianMat.ext_iff, mat_zero]
+  ext i j
+  have hA_sq : (A.mat * A.mat) = 0 := by
+    simp_all only [SetLike.le_def, LinearMap.mem_range, LinearMap.mem_ker, forall_exists_index,
+      forall_apply_eq_imp_iff]
+    simp_all only [← Matrix.ext_iff, Matrix.mul_apply, mat_apply, Matrix.zero_apply]
+    intro i j
+    specialize h ( EuclideanSpace.single j 1 )
+    simpa [ Matrix.mulVec, dotProduct ] using congr(WithLp.ofLp $(h) i)
+  simp_all only [mat_apply, Matrix.zero_apply]
+  replace hA_sq := congr_fun ( congr_fun hA_sq i ) i
+  simp_all only [Matrix.mul_apply, mat_apply, Matrix.zero_apply] ;
+  -- Since $A$ is Hermitian, we have $A i x * A x i = |A i x|^2$.
+  have h_abs : ∀ x, (A i x) * (A x i) = ‖A i x‖ ^ 2 := by
+    intro x; have := A.2
+    simp_all only [val_eq_coe, sq] ;
+    have := congr_fun ( congr_fun this i ) x
+    simp_all only [Matrix.star_apply, mat_apply, RCLike.star_def] ;
+    simp only [← this, mul_comm, RCLike.norm_conj];
+    simp [ ← sq, RCLike.mul_conj ];
+  simp_rw [h_abs] at hA_sq
+  norm_cast at hA_sq
+  simp_all [Finset.sum_eq_zero_iff_of_nonneg]
+
+/--
+If ker M ⊆ ker A, then range (A Mᴴ) = range A.
+-/
+theorem _root_.Matrix.range_mul_conjTranspose_of_ker_le_ker {A : Matrix d d 𝕜} {M : Matrix d₂ d 𝕜}
+    (h : LinearMap.ker M.toEuclideanLin ≤ LinearMap.ker A.toEuclideanLin) :
+    LinearMap.range (A * M.conjTranspose).toEuclideanLin = LinearMap.range A.toEuclideanLin := by
+  apply le_antisymm
+  · rintro x ⟨y, rfl⟩
+    use (M.conjTranspose.toEuclideanLin) y;
+    simp [Matrix.toEuclideanLin]
+  · intro x hx;
+    -- Since $x \in \text{range}(A)$, there exists $y \in \text{range}(Mᴴ)$ such that $A y = x$.
+    obtain ⟨y, hy⟩ : ∃ y ∈ LinearMap.range (Matrix.toEuclideanLin (M.conjTranspose)), A.toEuclideanLin y = x := by
+      have h_range_MH : LinearMap.range (Matrix.toEuclideanLin (M.conjTranspose)) = (LinearMap.ker (Matrix.toEuclideanLin M))ᗮ := by
+        have h_orthogonal : (LinearMap.range (Matrix.toEuclideanLin (M.conjTranspose)))ᗮ = LinearMap.ker (Matrix.toEuclideanLin M) := by
+          ext x
+          rw [Matrix.toEuclideanLin_conjTranspose_eq_adjoint]
+          simp only [Submodule.mem_orthogonal, LinearMap.mem_ker, LinearMap.mem_range]
+          constructor
+          · intro h
+            rw [← inner_self_eq_zero (𝕜 := 𝕜)]
+            have : ∀ y, @inner 𝕜 _ _ y (Matrix.toEuclideanLin M x) = 0 := by
+              intro y
+              rw [← LinearMap.adjoint_inner_left]
+              exact h _ ⟨y, rfl⟩
+            exact this _
+          · intro h y ⟨z, hz⟩
+            rw [← hz, LinearMap.adjoint_inner_left, h, inner_zero_right]
+        rw [← h_orthogonal, Submodule.orthogonal_orthogonal]
+      obtain ⟨ y, rfl ⟩ := hx;
+      -- Since $y$ is in the range of $Mᴴ$, we can write $y$ as $y = y_1 + y_2$ where $y_1 \in \text{range}(Mᴴ)$ and $y_2 \in \text{ker}(M)$.
+      obtain ⟨y1, y2, hy1, hy2, hy⟩ : ∃ y1 y2 : EuclideanSpace 𝕜 d, y1 ∈ LinearMap.range (Matrix.toEuclideanLin (M.conjTranspose)) ∧ y2 ∈ LinearMap.ker (Matrix.toEuclideanLin M) ∧ y = y1 + y2 := by
+        have h_decomp : ∀ y : EuclideanSpace 𝕜 d, ∃ y1 ∈ LinearMap.range (Matrix.toEuclideanLin (M.conjTranspose)), ∃ y2 ∈ LinearMap.ker (Matrix.toEuclideanLin M), y = y1 + y2 := by
+          intro y
+          have h_decomp : y ∈ (LinearMap.range (Matrix.toEuclideanLin (M.conjTranspose))) ⊔ (LinearMap.ker (Matrix.toEuclideanLin M)) := by
+            rw [ h_range_MH ];
+            rw [ sup_comm, Submodule.sup_orthogonal_of_hasOrthogonalProjection ];
+            exact Submodule.mem_top;
+          rw [ Submodule.mem_sup ] at h_decomp ; tauto;
+        exact ⟨ _, _, h_decomp y |> Classical.choose_spec |> And.left, h_decomp y |> Classical.choose_spec |> And.right |> Classical.choose_spec |> And.left, h_decomp y |> Classical.choose_spec |> And.right |> Classical.choose_spec |> And.right ⟩;
+      exact ⟨ y1, hy1, by rw [ hy, map_add, LinearMap.mem_ker.mp ( h hy2 ) ] ; simp ⟩;
+    obtain ⟨ z, rfl ⟩ := hy.1;
+    exact ⟨ z, by simpa [ Matrix.toEuclideanLin ] using hy.2 ⟩
+
+theorem conj_ne_zero {A : HermitianMat d 𝕜} {M : Matrix d₂ d 𝕜} (hA : A ≠ 0)
+    (h : LinearMap.ker M.toEuclideanLin ≤ A.ker) : A.conj M ≠ 0 := by
+  by_contra h_contra
+  have h_range : LinearMap.range A.mat.toEuclideanLin ≤ LinearMap.ker A.mat.toEuclideanLin := by
+    have h_range : LinearMap.range (A.mat * M.conjTranspose).toEuclideanLin ≤ LinearMap.ker M.toEuclideanLin := by
+      rintro x ⟨y, rfl⟩
+      replace h_contra := congr($(h_contra).mat)
+      simp_all [Matrix.toLpLin_apply, Matrix.mul_assoc]
+    rw [← Matrix.range_mul_conjTranspose_of_ker_le_ker h]
+    exact h_range.trans h
+  exact hA (range_le_ker_imp_zero h_range)
+
+theorem conj_ne_zero_iff {A : HermitianMat d 𝕜} {M : Matrix d₂ d 𝕜}
+    (h : LinearMap.ker M.toEuclideanLin ≤ A.ker) : A.conj M ≠ 0 ↔ A ≠ 0  := by
+  refine ⟨?_, (conj_ne_zero · h)⟩
+  intro h rfl; simp at h--should be grind[= map_zero] but I don't know why. TODO.
+
+section spectrum
+
+variable [Fintype n] [DecidableEq n] [Fintype m] [DecidableEq m]
+
+theorem _root_.Matrix.IsHermitian.spectrum_rcLike {A : Matrix n n 𝕜} (hA : A.IsHermitian) :
+    RCLike.ofReal '' spectrum ℝ A = spectrum 𝕜 A := by
+  rw [hA.spectrum_eq_image_range, hA.spectrum_real_eq_range_eigenvalues]
+
+/-- We fix a simp-normal form that, for HermitianMat, we always work in terms
+of the real spectrum. -/
+@[simp]
+theorem spectrum_rcLike (A : HermitianMat n 𝕜) :
+    spectrum 𝕜 A.mat = RCLike.ofReal '' spectrum ℝ A.mat := by
+  exact A.H.spectrum_rcLike.symm
+
+theorem ne_zero_iff_ne_zero_spectrum (A : HermitianMat n 𝕜) :
+    A ≠ 0 ↔ ∃ x ∈ spectrum ℝ A.mat, x ≠ 0 := by
+  constructor;
+  · intro h_nonzero
+    contrapose! h_nonzero
+    simp only [HermitianMat.ext_iff, mat_zero]
+    rw [A.H.spectral_theorem]
+    ext i j
+    simp [Matrix.mul_apply, Matrix.diagonal]
+    refine Finset.sum_eq_zero fun x _ ↦ ?_
+    simp [h_nonzero _ <| A.H.spectrum_real_eq_range_eigenvalues.symm ▸ Set.mem_range_self _]
+  · rintro ⟨x, hx, hx'⟩ h
+    simp [h, spectrum, resolventSet, Algebra.algebraMap_eq_smul_one,
+      hx', Matrix.isUnit_iff_isUnit_det] at hx
 
 open scoped Pointwise in
 theorem spectrum_prod [Fintype m] [DecidableEq m] [Fintype n] [DecidableEq n]

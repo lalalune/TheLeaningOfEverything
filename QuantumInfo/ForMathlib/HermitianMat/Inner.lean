@@ -267,9 +267,12 @@ private theorem inner_zero_iff_aux_lemma [DecidableEq n] (hA₁ : A.mat.PosSemid
       simp [Matrix.conjTranspose_mul]
     have hBA_zero : (B.val * A.val) = 0 := by
       ext i j
-      specialize hAB_zero (Pi.single j 1)
-      convert congr_fun hAB_zero i using 1
-      simp [Matrix.toEuclideanLin, dotProduct, Matrix.mulVec, Matrix.mul_apply, Pi.single_apply]
+      specialize hAB_zero (EuclideanSpace.single j 1)
+      have h1 := hAB_zero
+      simp only [LinearMap.mem_ker, Matrix.toEuclideanLin, Matrix.toLpLin_apply, Matrix.mulVec_mulVec] at h1
+      have h2 := congr_fun (congrArg WithLp.ofLp h1) i
+      simp only [WithLp.ofLp_toLp, WithLp.ofLp_zero, EuclideanSpace.single] at h2
+      simpa [Matrix.mul_apply, Matrix.mulVec, dotProduct, Pi.single_apply] using h2
     rw [h_herm, hBA_zero, Matrix.conjTranspose_zero]
   simp_all only
   obtain ⟨val, property⟩ := A
@@ -283,10 +286,8 @@ private theorem inner_zero_iff_aux_lemma [DecidableEq n] (hA₁ : A.mat.PosSemid
         aesop
       simp [h_conj_transpose, Matrix.conjTranspose_mul, a]
     simp only [LinearMap.mem_ker]
-    convert congr_arg (fun x => Matrix.mulVec x y) h_comm using 1
-    · simp [Matrix.toEuclideanLin_apply, Matrix.mulVec_mulVec]
-      rfl
-    · simp
+    show (Matrix.toEuclideanLin val_1) ((Matrix.toEuclideanLin val) y) = 0
+    simp [Matrix.toEuclideanLin, Matrix.toLpLin_apply, Matrix.mulVec_mulVec, h_comm]
   · grind
 
 /-- The inner product of two PSD matrices is zero iff they have disjoint support, i.e., each lives entirely
@@ -446,6 +447,8 @@ theorem Matrix.IsHermitian_isClosed : IsClosed { A : Matrix n n 𝕜 | A.IsHermi
 open ComplexOrder
 
 theorem Matrix.PosSemiDef_isClosed : IsClosed { A : Matrix n n 𝕜 | A.PosSemidef } := by
+  rw [show { A : Matrix n n 𝕜 | A.PosSemidef } = { A | A.IsHermitian } ∩ { A | ∀ x : n → 𝕜, 0 ≤ star x ⬝ᵥ A.mulVec x } from by
+    ext A; simp [Matrix.posSemidef_iff_dotProduct_mulVec]]
   refine IsHermitian_isClosed.inter ?_
   suffices IsClosed (⋂ x : n → 𝕜, { A : Matrix n n 𝕜 | 0 ≤ star x ⬝ᵥ A.mulVec x }) by
     rwa [← Set.setOf_forall] at this
@@ -489,7 +492,12 @@ theorem unitInterval_IsCompact : IsCompact {m : HermitianMat d 𝕜 | 0 ≤ m �
 
 @[simp]
 theorem norm_one : ‖(1 : HermitianMat d 𝕜)‖ = √(Fintype.card d : ℝ) := by
-  simp [norm_eq_sqrt_real_inner, inner_def]
+  rw [norm_eq_sqrt_real_inner (F := HermitianMat d 𝕜)]
+  congr 1
+  simp only [inner_def, mat_one, Matrix.one_apply, Matrix.trace, Matrix.diag_apply,
+    Matrix.mul_apply, star_one, one_mul, Finset.sum_ite_eq', Finset.mem_univ, ↑reduceIte,
+    map_one, Finset.sum_const, Finset.card_univ, smul_eq_mul, mul_one]
+  simp [selfadjMap]
 
 theorem norm_eq_trace_sq : ‖A‖ ^ 2 = (A.mat ^ 2).trace := by
   rw [norm_eq_frobenius, ← RCLike.ofReal_pow, ← Real.rpow_two, ← Real.rpow_mul (by positivity)]
@@ -501,3 +509,47 @@ theorem norm_eq_trace_sq : ‖A‖ ^ 2 = (A.mat ^ 2).trace := by
   exact RCLike.mul_conj (A.mat i j)
 
 end innerproductspace
+
+--TODO: Cleanup, ew what?
+/--
+The inner product ⟪A, B⟫ equals ∑_{ij} a_i b_j w_{ij} where a_i, b_j are eigenvalues
+and w_{ij} = ‖C_{ij}‖² for C = U_A^* U_B unitary.
+-/
+lemma inner_eq_doubly_stochastic_sum {d : Type*} [Fintype d] [DecidableEq d]
+    (A B : HermitianMat d ℂ) :
+    let C := A.H.eigenvectorUnitary.val.conjTranspose * B.H.eigenvectorUnitary.val
+    ⟪A, B⟫_ℝ = ∑ i, ∑ j,
+      A.H.eigenvalues i * B.H.eigenvalues j * (‖C i j‖^2) := by
+  -- By the properties of the trace and diagonalization, we can rewrite the trace of AB as the sum of the products of the eigenvalues of A and B, multiplied by the squared norms of the entries of the product of their eigenvector matrices.
+  have h_trace_diag : Matrix.trace (A.mat * B.mat) = Matrix.trace ((A.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose * A.mat * (A.H.eigenvectorUnitary : Matrix d d ℂ) * ((A.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose * B.mat * (A.H.eigenvectorUnitary : Matrix d d ℂ))) := by
+    have h_trace_diag : Matrix.trace (A.mat * B.mat) = Matrix.trace ((A.H.eigenvectorUnitary : Matrix d d ℂ) * ((A.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose * A.mat * (A.H.eigenvectorUnitary : Matrix d d ℂ)) * ((A.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose * B.mat * (A.H.eigenvectorUnitary : Matrix d d ℂ)) * (A.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose) := by
+      simp [ Matrix.mul_assoc ];
+      simp [ ← Matrix.mul_assoc, Matrix.IsHermitian.eigenvectorUnitary ];
+    rw [ h_trace_diag, Matrix.trace_mul_comm ];
+    simp [ ← mul_assoc, Matrix.IsHermitian.eigenvectorUnitary ];
+  -- Since $A$ is Hermitian, its eigenvector matrix is unitary, and thus $(A.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose * A.mat * (A.H.eigenvectorUnitary : Matrix d d ℂ)$ is diagonal with the eigenvalues of $A$ on the diagonal.
+  have h_diag_A : (A.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose * A.mat * (A.H.eigenvectorUnitary : Matrix d d ℂ) = Matrix.diagonal (fun i => A.H.eigenvalues i : d → ℂ) := by
+    have := A.H.spectral_theorem;
+    convert congr_arg ( fun x : Matrix d d ℂ => ( A.H.eigenvectorUnitary : Matrix d d ℂ ).conjTranspose * x * ( A.H.eigenvectorUnitary : Matrix d d ℂ ) ) this using 1 ; simp [ Matrix.mul_assoc ];
+    simp [ ← Matrix.mul_assoc, Matrix.IsHermitian.eigenvectorUnitary ];
+  -- Since $B$ is Hermitian, its eigenvector matrix is unitary, and thus $(A.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose * B.mat * (A.H.eigenvectorUnitary : Matrix d d ℂ)$ is diagonal with the eigenvalues of $B$ on the diagonal.
+  have h_diag_B : (A.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose * B.mat * (A.H.eigenvectorUnitary : Matrix d d ℂ) = (A.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose * (B.H.eigenvectorUnitary : Matrix d d ℂ) * Matrix.diagonal (fun i => B.H.eigenvalues i : d → ℂ) * (B.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose * (A.H.eigenvectorUnitary : Matrix d d ℂ) := by
+    have h_diag_B : B.mat = (B.H.eigenvectorUnitary : Matrix d d ℂ) * Matrix.diagonal (fun i => B.H.eigenvalues i : d → ℂ) * (B.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose := by
+      convert B.H.spectral_theorem using 1;
+    grind;
+  -- Since $C = U_A^* U_B$ is unitary, we have $C_{ij} = \langle u_i, v_j \rangle$ where $u_i$ and $v_j$ are the eigenvectors of $A$ and $B$, respectively.
+  set C : Matrix d d ℂ := (A.H.eigenvectorUnitary : Matrix d d ℂ).conjTranspose * (B.H.eigenvectorUnitary : Matrix d d ℂ)
+  have hC_unitary : C * C.conjTranspose = 1 := by
+    simp +zetaDelta at *;
+    simp [ Matrix.mul_assoc ];
+    simp [ ← Matrix.mul_assoc, Matrix.IsHermitian.eigenvectorUnitary ]
+  have hC_norm : ∀ i j, ‖C i j‖ ^ 2 = (C i j) * (star (C i j)) := by
+    simp [ Complex.mul_conj, Complex.normSq_eq_norm_sq ]
+  have hC_trace : Matrix.trace (Matrix.diagonal (fun i => A.H.eigenvalues i : d → ℂ) * C * Matrix.diagonal (fun i => B.H.eigenvalues i : d → ℂ) * C.conjTranspose) = ∑ i, ∑ j, A.H.eigenvalues i * B.H.eigenvalues j * ‖C i j‖ ^ 2 := by
+    simp [ Matrix.trace, Matrix.mul_apply, hC_norm ];
+    simp [ Matrix.diagonal, Finset.sum_ite_eq ];
+    exact Finset.sum_congr rfl fun _ _ => Finset.sum_congr rfl fun _ _ => by ring;
+  convert congr_arg Complex.re hC_trace using 1;
+  convert congr_arg Complex.re h_trace_diag using 1;
+  rw [ h_diag_A, h_diag_B ] ; simp [ Matrix.mul_assoc ] ;
+  simp +zetaDelta at *

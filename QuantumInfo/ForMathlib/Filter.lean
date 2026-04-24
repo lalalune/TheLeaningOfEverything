@@ -31,7 +31,7 @@ theorem Filter.Tendsto_inv_nat_mul_div_real (m : ℕ)
           simpa [ div_eq_inv_mul ] using Nat.floor_le ( by positivity : 0 ≤ ( x : ℝ ) / m );
     -- Apply the squeeze theorem to conclude the proof.
     have h_squeeze : Filter.Tendsto (fun x : ℕ => (1 / m : ℝ) - 1 / x) Filter.atTop (nhds (1 / m)) := by
-      simpa using tendsto_const_nhds.sub ( _root_.tendsto_inverse_atTop_nhds_zero_nat );
+      simpa using tendsto_const_nhds.sub (tendsto_inv_atTop_nhds_zero_nat (𝕜 := ℝ))
     exact tendsto_of_tendsto_of_tendsto_of_le_of_le' h_squeeze tendsto_const_nhds ( Filter.eventually_atTop.mpr ⟨ 1, fun x hx => h_floor_bound x hx |>.1 ⟩ ) ( Filter.eventually_atTop.mpr ⟨ 1, fun x hx => h_floor_bound x hx |>.2 ⟩ );
   -- Apply the hypothesis `h_floor` to conclude the proof.
   convert h_floor using 1;

@@ -1,9 +1,15 @@
 import Mathlib.Algebra.Order.Ring.Star
 import Mathlib.Analysis.Normed.Ring.Lemmas
+import Mathlib.Data.Finset.Attr
 import Mathlib.Data.Int.Star
 import Mathlib.Data.Real.StarOrdered
+import Mathlib.Tactic.Bound
 import Mathlib.Tactic.Peel
-import Mathlib.Topology.Compactness.PseudometrizableLindelof
+import Mathlib.Tactic.Common
+import Mathlib.Tactic.Continuity
+import Mathlib.Tactic.Finiteness.Attr
+import Mathlib.Tactic.SetLike
+import Mathlib.Util.CompileInductive
 import Mathlib.Topology.Instances.ENNReal.Lemmas
 import Mathlib.Topology.Instances.Nat
 
@@ -142,7 +148,9 @@ lemma exists_liminf_zero_of_forall_liminf_le (y : ℝ≥0) (f : ℝ≥0 → ℕ 
         refine' lt_of_le_of_lt _ right;
         convert add_le_add_left ( ENNReal.ofReal_le_ofReal hk.le ) ( y : ℝ≥0∞ ) using 1 ; norm_num [ ENNReal.ofReal ];
         · norm_num [ Real.toNNReal_inv ];
-        · rw [ ENNReal.ofReal_sub ] <;> norm_num [ left.le ];
+          rw [add_comm]
+        · rw [ENNReal.ofReal_sub _ (by positivity)]
+          simp [tsub_add_cancel_of_le, left.le]
       refine' ⟨ n ( Max.max x k ), _, _ ⟩
       · simp_all only [ne_eq, add_eq_zero, Nat.cast_eq_zero, one_ne_zero, and_false, not_false_eq_true, ENNReal.coe_inv,
           ENNReal.coe_add, ENNReal.coe_natCast, ENNReal.coe_one]
@@ -220,7 +228,7 @@ lemma exists_limsup_zero_of_forall_limsup_le (y : ℝ≥0) (f : ℝ≥0 → ℕ 
       have := hM.2 ( Nat.findGreatest ( fun k => M k ≤ n ) n ) n ?_
       · simp_all only [gt_iff_lt, ge_iff_le, one_div]
         obtain ⟨left, right⟩ := hM
-        exact le_trans this ( add_le_add_left ( le_trans ( by gcongr ) hK.le ) _ );
+        refine le_trans this ( add_le_add_right ( le_trans ( by gcongr ) hK.le ) _ );
       · simp_all only [gt_iff_lt, ge_iff_le]
         obtain ⟨left, right⟩ := hM
         have := Nat.findGreatest_eq_iff.mp ( by aesop : Nat.findGreatest ( fun k => M k ≤ n ) n = Nat.findGreatest ( fun k => M k ≤ n ) n )
@@ -353,7 +361,7 @@ lemma limsup_le_of_block_sequence_bound {α : Type*} (y : ℝ≥0) (f : α → �
         exact Set.finite_iff_bddAbove.2 ⟨ b, fun n hn => le_trans ( hT.id_le _ ) hn ⟩;
       exact ⟨ Finset.max' ( h_finite.toFinset ) ⟨ K, h_finite.mem_toFinset.mpr a ⟩, h_finite.mem_toFinset.mp ( Finset.max'_mem _ _ ), not_le.mp fun h => not_lt_of_ge ( Finset.le_max' _ _ ( h_finite.mem_toFinset.mpr h ) ) ( Nat.lt_succ_self _ ) ⟩;
     rw [ hg k b hk.1 hk.2 ];
-    exact le_trans ( hbound k b hk.1 hk.2 ) ( add_le_add_left ( hK k ( le_of_not_gt fun hk' => by linarith [ hT.monotone hk'.nat_succ_le ] ) ) _ )
+    exact le_trans ( hbound k b hk.1 hk.2 ) ( add_le_add_right ( hK k ( le_of_not_gt fun hk' => by linarith [ hT.monotone hk'.nat_succ_le ] ) ) _ )
 
 /- Version of `exists_liminf_zero_of_forall_liminf_le_with_UB` that lets you stipulate it for
 two different functions simultaneously, one with liminf and one with limsup. -/

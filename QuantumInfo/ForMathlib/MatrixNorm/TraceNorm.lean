@@ -102,140 +102,19 @@ theorem traceNorm_smul (A : Matrix m n R) (c : R) : (c • A).traceNorm = ‖c�
     simp [RCLike.smul_re]
     apply Or.inl
     rfl
-  have hAA_nonneg : 0 ≤ (Aᴴ * A : Matrix n n R) :=
-    Matrix.nonneg_iff_posSemidef.mpr (Matrix.posSemidef_conjTranspose_mul_self A)
-  have hscaled_nonneg : 0 ≤ (((‖c‖^2:R) • (Aᴴ * A)) : Matrix n n R) := by
-    refine Matrix.nonneg_iff_posSemidef.mpr ?_
-    exact (Matrix.posSemidef_conjTranspose_mul_self A).smul (by
-      rw [RCLike.nonneg_iff]
-      simpa [pow_two] using sq_nonneg ‖c‖)
-  have hleft : 0 ≤ CFC.sqrt (((‖c‖^2:R) • (Aᴴ * A)) : Matrix n n R) := CFC.sqrt_nonneg _
-  have hright : 0 ≤ (‖c‖ • CFC.sqrt (Aᴴ * A) : Matrix n n R) := by
-    refine Matrix.nonneg_iff_posSemidef.mpr ?_
-    exact (Matrix.nonneg_iff_posSemidef.mp (CFC.sqrt_nonneg (Aᴴ * A))).smul (by
-      rw [RCLike.nonneg_iff]
-      simp)
-  have hsqrt : CFC.sqrt (((‖c‖^2:R) • (Aᴴ * A)) : Matrix n n R) = ‖c‖ • CFC.sqrt (Aᴴ * A) := by
-    refine (CFC.sq_eq_sq_iff _ _ hleft hright).mp ?_
-    have hsq_left :
-        (CFC.sqrt (((‖c‖^2:R) • (Aᴴ * A)) : Matrix n n R)) ^ 2 =
-          (((‖c‖^2:R) • (Aᴴ * A)) : Matrix n n R) := by
-      rw [pow_two, CFC.sqrt_mul_sqrt_self (a := (((‖c‖^2:R) • (Aᴴ * A)) : Matrix n n R)) hscaled_nonneg]
-    have hsq_right :
-        ((‖c‖ • CFC.sqrt (Aᴴ * A) : Matrix n n R)) ^ 2 =
-          (((‖c‖^2:R) • (Aᴴ * A)) : Matrix n n R) := by
-      have hsq_right' :
-          ((‖c‖ • CFC.sqrt (Aᴴ * A) : Matrix n n R)) ^ 2 =
-            ((‖c‖ * ‖c‖ : ℝ) • (Aᴴ * A : Matrix n n R)) := by
-        rw [pow_two, smul_mul_smul]
-        rw [CFC.sqrt_mul_sqrt_self (a := (Aᴴ * A : Matrix n n R)) hAA_nonneg]
-      have hscalar :
-          ((‖c‖ * ‖c‖ : ℝ) • (Aᴴ * A : Matrix n n R)) =
-            (((‖c‖^2:R) • (Aᴴ * A)) : Matrix n n R) := by
-        rw [RCLike.real_smul_eq_coe_smul (K := R)]
-        simp [pow_two]
-      exact hsq_right'.trans hscalar
-    exact hsq_left.trans hsq_right.symm
-  calc
-    RCLike.re (trace (CFC.sqrt (((‖c‖^2:R) • (Aᴴ * A)) : Matrix n n R)))
-      = RCLike.re (trace (‖c‖ • CFC.sqrt (Aᴴ * A))) := by rw [hsqrt]
-    _ = ‖c‖ * traceNorm A := this
-
-private lemma nonzero_roots_eq_of_charpoly_eq_X_pow {S : Type*} [CommRing S] [IsDomain S]
-    [DecidableEq S] (p q : Polynomial S) (k : ℕ) (h : p = Polynomial.X ^ k * q) :
-    p.roots.filter (· ≠ 0) = q.roots.filter (· ≠ 0) := by
-  by_cases hq : q = 0 <;> simp_all [Polynomial.roots_mul, Polynomial.X_ne_zero]
-
-private lemma nonzero_eigenvalues_eq_of_mul_comm {m n : Type*} [Fintype m] [Fintype n]
-    [DecidableEq m] [DecidableEq n] (A : Matrix m n ℂ) (B : Matrix n m ℂ) :
-    (A * B).charpoly.roots.filter (· ≠ 0) = (B * A).charpoly.roots.filter (· ≠ 0) := by
-  have h_roots :
-      (Polynomial.X ^ Fintype.card n * Matrix.charpoly (A * B)).roots.filter (· ≠ 0) =
-        (Polynomial.X ^ Fintype.card m * Matrix.charpoly (B * A)).roots.filter (· ≠ 0) := by
-    rw [A.charpoly_mul_comm' B]
-  convert h_roots using 1
-  · simp [Polynomial.roots_mul, Matrix.charpoly_monic, Polynomial.Monic.ne_zero]
-  · simp [Polynomial.roots_mul, Matrix.charpoly_monic, Polynomial.Monic.ne_zero]
-
-private lemma multiset_filter_map_ofReal_eq (M : Multiset ℝ) :
-    (M.map (RCLike.ofReal : ℝ → ℂ)).filter (· ≠ 0) = (M.filter (· ≠ 0)).map RCLike.ofReal := by
-  simp [Multiset.filter_map]
-
-private lemma charpoly_roots_filter_ne_zero_eq_eigenvalues_filter_ne_zero
-    {d : Type*} [Fintype d] [DecidableEq d] (A : Matrix d d ℂ) (hA : A.IsHermitian) :
-    A.charpoly.roots.filter (· ≠ 0) =
-      ((Finset.univ.val.map hA.eigenvalues).filter (· ≠ 0)).map RCLike.ofReal := by
-  rw [hA.charpoly_roots_eq_eigenvalues]
-  simpa [Multiset.map_map, Function.comp] using
-    multiset_filter_map_ofReal_eq (Finset.univ.val.map hA.eigenvalues)
-
-private lemma multiset_map_ofReal_injective {M N : Multiset ℝ} :
-    M.map (RCLike.ofReal : ℝ → ℂ) = N.map RCLike.ofReal ↔ M = N := by
-  exact ⟨fun h ↦ by simpa using congrArg (fun m => m.map RCLike.re) h, fun h ↦ by rw [h]⟩
-
-private theorem traceNorm_eq_sum_sqrt_eigenvalues (A : Matrix m n ℂ) :
-    A.traceNorm = ∑ i, Real.sqrt ((Matrix.posSemidef_conjTranspose_mul_self A).1.eigenvalues i) := by
-  open MatrixOrder in
-  let M : Matrix n n ℂ := Aᴴ * A
-  have hM_psd : M.PosSemidef := by
-    simpa [M] using Matrix.posSemidef_conjTranspose_mul_self A
-  let S : Matrix n n ℂ := CFC.sqrt M
-  have hS_eq : S = hM_psd.1.cfc Real.sqrt := by
-    show CFC.sqrt M = hM_psd.1.cfc Real.sqrt
-    rw [CFC.sqrt_eq_real_sqrt M
-      (show 0 ≤ M by exact Matrix.nonneg_iff_posSemidef.mpr hM_psd)]
-    rw [cfcₙ_eq_cfc]
-    exact hM_psd.1.cfc_eq Real.sqrt
-  have htrace :
-      A.traceNorm = RCLike.re S.trace := by
-    simp [Matrix.traceNorm, S, M]
-  calc
-    A.traceNorm = RCLike.re S.trace := htrace
-    _ = RCLike.re ((hM_psd.1.cfc Real.sqrt).trace) := by rw [hS_eq]
-    _ = ∑ i, Real.sqrt (hM_psd.1.eigenvalues i) := by
-      rw [Matrix.IsHermitian.cfc, Matrix.trace_mul_cycle, hM_psd.1.eigenvectorUnitary.2.1]
-      simp [Matrix.trace_diagonal]
-
-@[simp]
-theorem traceNorm_conjTranspose (A : Matrix m n ℂ) : Aᴴ.traceNorm = A.traceNorm := by
-  let hLeft : (Aᴴ * A).IsHermitian := (Matrix.posSemidef_conjTranspose_mul_self A).1
-  let hRight : (A * Aᴴ).IsHermitian := by
-    simpa using (Matrix.posSemidef_conjTranspose_mul_self Aᴴ).1
-  have h_roots :
-      (Finset.univ.val.map hLeft.eigenvalues).filter (· ≠ 0) =
-        (Finset.univ.val.map hRight.eigenvalues).filter (· ≠ 0) := by
-    have h :=
-      nonzero_eigenvalues_eq_of_mul_comm (A := Aᴴ) (B := A)
-    rw [charpoly_roots_filter_ne_zero_eq_eigenvalues_filter_ne_zero (A := Aᴴ * A) hLeft,
-      charpoly_roots_filter_ne_zero_eq_eigenvalues_filter_ne_zero (A := A * Aᴴ) hRight] at h
-    exact (multiset_map_ofReal_injective).1 h
-  have h_sum :
-      ∑ i, Real.sqrt (hLeft.eigenvalues i) = ∑ i, Real.sqrt (hRight.eigenvalues i) := by
-    have h_sum_eq :
-        Finset.sum (Finset.univ.filter (fun x => hLeft.eigenvalues x ≠ 0))
-            (fun x => Real.sqrt (hLeft.eigenvalues x)) =
-          Finset.sum (Finset.univ.filter (fun x => hRight.eigenvalues x ≠ 0))
-            (fun x => Real.sqrt (hRight.eigenvalues x)) := by
-      convert congrArg (fun m => m.map Real.sqrt |>.sum) h_roots using 1
-      · simp [Finset.sum, Multiset.filter_map]
-      · simp [Finset.sum, Multiset.filter_map]
-    rw [Finset.sum_filter_of_ne, Finset.sum_filter_of_ne] at h_sum_eq
-    · exact h_sum_eq
-    · intro i _ hi
-      contrapose! hi
-      simp [hi]
-    · intro i _ hi
-      contrapose! hi
-      simp [hi]
-  calc
-    Aᴴ.traceNorm = ∑ i, Real.sqrt ((Matrix.posSemidef_conjTranspose_mul_self Aᴴ).1.eigenvalues i) :=
-      traceNorm_eq_sum_sqrt_eigenvalues Aᴴ
-    _ = ∑ i, Real.sqrt (hRight.eigenvalues i) := by
-      simpa [hRight]
-    _ = ∑ i, Real.sqrt (hLeft.eigenvalues i) := h_sum.symm
-    _ = ∑ i, Real.sqrt ((Matrix.posSemidef_conjTranspose_mul_self A).1.eigenvalues i) := by
-      simpa [hLeft]
-    _ = A.traceNorm := (traceNorm_eq_sum_sqrt_eigenvalues A).symm
+  convert this using 3
+  rw [RCLike.real_smul_eq_coe_smul (K := R) ‖c‖]
+  by_cases h : c = 0
+  · subst c
+    simp
+  · have hM_pd : (Aᴴ * A).PosSemidef := by apply posSemidef_conjTranspose_mul_self
+    set M := (Aᴴ * A)
+    rw [sq]
+    simp [SemigroupAction.mul_smul]
+    apply CFC.sqrt_unique;
+    · simp; rw [CFC.sqrt_mul_sqrt_self M hM_pd.nonneg]
+    · exact le_trans ( by norm_num ) (
+        smul_le_smul_of_nonneg_left ( show 0 ≤ CFC.sqrt M from by exact (CFC.sqrt_nonneg M) ) ( norm_nonneg c ) );
 
 /-- For square matrices, the trace norm is max Tr[U * A] over unitaries U.-/
 lemma unitary_diagEntry_norm_le_one (W : unitaryGroup n ℂ) (i : n) :

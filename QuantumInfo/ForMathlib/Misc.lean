@@ -9,6 +9,7 @@ theorem ite_eq_top {α : Type*} [Top α] (h : Prop) [Decidable h] {x y : α} (hx
   split <;> assumption
 
 section subtype_val_iSup
+
 /-
 When
 https://leanprover.zulipchat.com/#narrow/channel/287929-mathlib4/topic/diamond.20in.20ConditionallyCompleteLattice/near/538053239
@@ -41,7 +42,7 @@ theorem subtype_val_iSup (h : ∀ i, f i ∈ Set.Icc a b) :
 theorem subtype_val_iSup' (h : ∀ i, f i ∈ Set.Icc a b) :
     ⨆ i, (⟨f i, h i⟩ : ↑(Set.Icc a b)) =
       ⟨⨆ i, f i, ⟨(h i.some).1.trans (le_ciSup ⟨b, by intro; grind⟩ _), ciSup_le (h ·|>.2)⟩⟩ := by
-  rw [Subtype.eq_iff, subtype_val_iSup]
+  rw [Subtype.ext_iff, subtype_val_iSup]
 
 /- This isn't marked as `simp` because rewriting from a sup over a `CompleteLattice` into a
 `ConditionallyCompleteLattice` would, pretty often, be undesirable. -/
@@ -54,15 +55,9 @@ theorem subtype_val_iInf (h : ∀ i, f i ∈ Set.Icc a b) :
 theorem subtype_val_iInf' (h : ∀ i, f i ∈ Set.Icc a b) :
     ⨅ i, (⟨f i, h i⟩ : ↑(Set.Icc a b)) =
       ⟨⨅ i, f i, ⟨le_ciInf (h ·|>.1), (ciInf_le ⟨a, by intro; grind⟩ _).trans (h i.some).2⟩⟩ := by
-  rw [Subtype.eq_iff, subtype_val_iInf]
+  rw [Subtype.ext_iff, subtype_val_iInf]
 
 end subtype_val_iSup
-
---PR'ed in #33106
-@[simp]
-theorem Real.log_comp_exp : log ∘ exp = _root_.id := by
-  ext
-  simp
 
 open scoped ENNReal Topology in
 /-- Analogous to `bdd_le_mul_tendsto_zero`, for `ENNReal` (which otherwise lacks a continuous

@@ -17,10 +17,12 @@ def of_relabel (e : d ≃ d₂) : (d₂ → R) ≃ₗ[R] (d → R) := by
   refine' { e.symm.piCongrLeft (fun _ ↦ R) with .. }
   <;> (intros; ext; simp [Equiv.piCongrLeft_apply])
 
+variable (e : d ≃ d₂)
+
 variable (𝕜) in
 @[simps!]
 def euclidean_of_relabel (e : d ≃ d₂) : EuclideanSpace 𝕜 d₂ ≃ₗ[𝕜] EuclideanSpace 𝕜 d :=
-  of_relabel 𝕜 e
+  (WithLp.linearEquiv 2 𝕜 _).trans ((of_relabel _ e).trans (WithLp.linearEquiv 2 𝕜 _).symm)
 
 @[simp]
 theorem of_relabel_refl : of_relabel R (.refl d) = LinearEquiv.refl R (d → R) := by
@@ -47,8 +49,9 @@ theorem reindex_toLin' (e : d₁ ≃ d₃) (f : d₂ ≃ d) (M : Matrix d₁ d�
 
 theorem reindex_toEuclideanLin (e : d₁ ≃ d₃) (f : d₂ ≃ d) (M : Matrix d₁ d₂ 𝕜) :
     (M.reindex e f).toEuclideanLin = (LinearEquiv.euclidean_of_relabel 𝕜 e.symm) ∘ₗ
-      M.toEuclideanLin ∘ₗ (LinearEquiv.euclidean_of_relabel 𝕜 f) :=
-  reindex_toLin' e f M
+      M.toEuclideanLin ∘ₗ (LinearEquiv.euclidean_of_relabel 𝕜 f) := by
+  ext
+  simp [mulVec, dotProduct, Equiv.piCongrLeft_apply]
 
 theorem reindex_right_toLin' (e : d ≃ d₂) (M : Matrix d₃ d R) :
     (M.reindex (.refl d₃) e).toLin' = M.toLin' ∘ₗ (LinearEquiv.of_relabel R e) := by
@@ -57,8 +60,9 @@ theorem reindex_right_toLin' (e : d ≃ d₂) (M : Matrix d₃ d R) :
 
 theorem reindex_right_toEuclideanLin (e : d ≃ d₂) (M : Matrix d₃ d 𝕜) :
     (M.reindex (.refl d₃) e).toEuclideanLin =
-      M.toEuclideanLin ∘ₗ (LinearEquiv.euclidean_of_relabel 𝕜 e) :=
-  reindex_right_toLin' e M
+      M.toEuclideanLin ∘ₗ (LinearEquiv.euclidean_of_relabel 𝕜 e) := by
+  ext
+  simp [mulVec, dotProduct, Equiv.piCongrLeft_apply]
 
 theorem reindex_left_toLin' (e : d₁ ≃ d₃) (M : Matrix d₁ d₂ R) :
     (M.reindex e (.refl d₂)).toLin' = (LinearEquiv.of_relabel R e.symm) ∘ M.toLin' := by

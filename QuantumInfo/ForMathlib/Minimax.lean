@@ -13,8 +13,8 @@ import Mathlib.Topology.Algebra.Module.StrongTopology
 import Mathlib.Topology.Algebra.Module.FiniteDimension
 
 --TODO go elsewhere
-attribute [fun_prop] LowerSemicontinuous UpperSemicontinuous
-attribute [fun_prop] LowerSemicontinuousOn UpperSemicontinuousOn
+attribute [fun_prop] LowerSemicontinuous --UpperSemicontinuous
+attribute [fun_prop] LowerSemicontinuousOn --UpperSemicontinuousOn
 attribute [fun_prop] LowerSemicontinuous.lowerSemicontinuousOn
 attribute [fun_prop] UpperSemicontinuous.upperSemicontinuousOn
 attribute [fun_prop] Continuous.lowerSemicontinuous Continuous.upperSemicontinuous
@@ -133,10 +133,12 @@ theorem minimax
   · intro y t
     --Why doesn't fun_prop find this, even though this theorem is marked fun_prop? TODO
     apply LowerSemicontinuous.lowerSemicontinuousOn
+    apply Continuous.lowerSemicontinuous
     fun_prop
   · intro y t
     --Why doesn't fun_prop find this, even though this theorem is marked fun_prop? TODO
     apply UpperSemicontinuous.upperSemicontinuousOn
+    apply Continuous.upperSemicontinuous
     fun_prop
   · intro y hy
     exact LinearMap.quasiconvexOn (f := LinearMap.flip {
