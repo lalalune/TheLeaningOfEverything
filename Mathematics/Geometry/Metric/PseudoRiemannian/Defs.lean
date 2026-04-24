@@ -309,9 +309,15 @@ lemma toBilinForm_isSymm (g : PseudoRiemannianMetric E H M n I) (x : M) :
 @[simp]
 lemma toBilinForm_nondegenerate (g : PseudoRiemannianMetric E H M n I) (x : M) :
     (toBilinForm g x).Nondegenerate := by
-  intro v hv
-  simp_rw [toBilinForm_apply] at hv
-  exact g.nondegenerate x v hv
+  constructor
+  · intro v hv
+    simp_rw [toBilinForm_apply] at hv
+    exact g.nondegenerate x v hv
+  · intro v hv
+    apply g.nondegenerate x v
+    intro w
+    rw [g.symm x v w]
+    exact hv w
 
 /-- The inner product (or scalar product) on the tangent space at point `x`
   induced by the pseudo-Riemannian metric `g`. This is `gₓ(v, w)`. -/
@@ -610,10 +616,16 @@ lemma cotangentMetricVal_nondegenerate (g : PseudoRiemannianMetric E H M n I) (x
 @[simp]
 lemma cotangentToBilinForm_nondegenerate (g : PseudoRiemannianMetric E H M n I) (x : M) :
     (cotangentToBilinForm g x).Nondegenerate := by
-  intro ω hω
-  apply cotangentMetricVal_nondegenerate g x ω
-  intro v
-  exact hω v
+  constructor
+  · intro ω hω
+    apply cotangentMetricVal_nondegenerate g x ω
+    intro v
+    exact hω v
+  · intro ω hω
+    apply cotangentMetricVal_nondegenerate g x ω
+    intro v
+    rw [cotangentMetricVal_symm g x ω v]
+    exact hω v
 
 end Cotangent
 

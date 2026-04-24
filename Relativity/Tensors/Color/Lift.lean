@@ -722,7 +722,7 @@ noncomputable def lift : (Discrete C ⥤ Rep k G) ⥤ LaxBraidedFunctor (OverCol
     refine LaxBraidedFunctor.hom_ext ?_
     ext X : 2
     simp only [LaxBraidedFunctor.toLaxMonoidalFunctor_toFunctor, LaxBraidedFunctor.of_toFunctor,
-      LaxBraidedFunctor.homMk_hom, LaxBraidedFunctor.id_hom, NatTrans.id_app]
+      LaxBraidedFunctor.homMk_hom_hom, LaxBraidedFunctor.id_hom, NatTrans.id_app]
     ext x
     refine PiTensorProduct.induction_on' x ?_ (by
         intro x y hx hy
@@ -737,15 +737,14 @@ noncomputable def lift : (Discrete C ⥤ Rep k G) ⥤ LaxBraidedFunctor (OverCol
     refine LaxBraidedFunctor.hom_ext ?_
     ext X : 2
     simp only [LaxBraidedFunctor.toLaxMonoidalFunctor_toFunctor, LaxBraidedFunctor.of_toFunctor,
-      LaxBraidedFunctor.homMk_hom, LaxBraidedFunctor.comp_hom, NatTrans.comp_app]
+      LaxBraidedFunctor.homMk_hom_hom, LaxBraidedFunctor.comp_hom]
     ext x
     refine PiTensorProduct.induction_on' x ?_ (by
         intro x y hx hy
         simp only [map_add]
         rw [hx, hy])
     intro r y
-    simp only [PiTensorProduct.tprodCoeff_eq_smul_tprod, map_smul, Action.comp_hom,
-      ModuleCat.hom_comp]
+    simp only [PiTensorProduct.tprodCoeff_eq_smul_tprod, map_smul]
     apply congrArg
     simp only [repNatTransOfColor]
     erw [repNatTransOfColorApp_tprod]
@@ -828,7 +827,7 @@ noncomputable section
   built on the inclusion `incl` and forgetting the monoidal structure. -/
 def forget : LaxBraidedFunctor (OverColor C) (Rep k G) ⥤ (Discrete C ⥤ Rep k G) where
   obj F := Discrete.functor fun c => F.obj (incl.obj (Discrete.mk c))
-  map η := Discrete.natTrans fun c => η.hom.app (incl.obj c)
+  map η := Discrete.natTrans fun c => η.hom.hom.app (incl.obj c)
 
 variable (F F' : Discrete C ⥤ Rep k G) (η : F ⟶ F')
 
@@ -848,7 +847,8 @@ def forgetLiftAppV (c : C) : ((lift.obj F).obj (OverColor.mk (fun (_ : Fin 1) =>
 lemma forgetLiftAppV_symm_apply (c : C) (x : (F.obj (Discrete.mk c)).V) :
     (forgetLiftAppV F c).symm x = PiTensorProduct.tprod k (fun _ => x) := by
   simp [forgetLiftAppV]
-  erw [PiTensorProduct.subsingletonEquiv_symm_apply]
+  erw [PiTensorProduct.subsingletonEquiv_symm_apply']
+  rfl
 
 /-- The `forgetLiftAppV` function takes an object `c` of type `C` and returns a isomorphism
 between the objects obtained by applying the lift of `F` and that obtained by applying
@@ -934,19 +934,19 @@ lemma forgetLiftAppCon_naturality_eqToHom_apply (c c1 : C) (h : c = c1)
 
 /-- Naturality of `forgetLiftApp` with respect to a natural transformation on singleton colors. -/
 lemma forgetLiftApp_naturality {F F' : Discrete C ⥤ Rep k G} (η : F ⟶ F') (c : C) :
-    ((lift.map η).hom.app (incl.obj (Discrete.mk c))) ≫ (forgetLiftApp F' c).hom =
+    ((lift.map η).hom.hom.app (incl.obj (Discrete.mk c))) ≫ (forgetLiftApp F' c).hom =
     (forgetLiftApp F c).hom ≫ η.app (Discrete.mk c) := by
   ext x
   refine PiTensorProduct.induction_on' x ?_ (by
     intro x y hx hy
     simp only [Action.comp_hom, ModuleCat.hom_comp, map_add]
     have hx' : (ModuleCat.Hom.hom (forgetLiftApp F' c).hom.hom ∘ₗ
-          ModuleCat.Hom.hom ((lift.map η).hom.app (incl.obj (Discrete.mk c))).hom) x =
+          ModuleCat.Hom.hom ((lift.map η).hom.hom.app (incl.obj (Discrete.mk c))).hom) x =
         (ModuleCat.Hom.hom (η.app (Discrete.mk c)).hom ∘ₗ
           ModuleCat.Hom.hom (forgetLiftApp F c).hom.hom) x := by
       simpa [Action.comp_hom, ModuleCat.hom_comp] using hx
     have hy' : (ModuleCat.Hom.hom (forgetLiftApp F' c).hom.hom ∘ₗ
-          ModuleCat.Hom.hom ((lift.map η).hom.app (incl.obj (Discrete.mk c))).hom) y =
+          ModuleCat.Hom.hom ((lift.map η).hom.hom.app (incl.obj (Discrete.mk c))).hom) y =
         (ModuleCat.Hom.hom (η.app (Discrete.mk c)).hom ∘ₗ
           ModuleCat.Hom.hom (forgetLiftApp F c).hom.hom) y := by
       simpa [Action.comp_hom, ModuleCat.hom_comp] using hy
@@ -957,11 +957,11 @@ lemma forgetLiftApp_naturality {F F' : Discrete C ⥤ Rep k G} (η : F ⟶ F') (
     map_smul]
   apply congrArg (fun z => r • z)
   change (forgetLiftApp F' c).hom.hom
-      (((lift.map η).hom.app (incl.obj (Discrete.mk c))).hom.hom ((PiTensorProduct.tprod k) p)) =
+      (((lift.map η).hom.hom.app (incl.obj (Discrete.mk c))).hom.hom ((PiTensorProduct.tprod k) p)) =
     (η.app (Discrete.mk c)).hom.hom
       ((forgetLiftApp F c).hom.hom ((PiTensorProduct.tprod k) p))
   simp only [forgetLiftApp]
-  rw [show ((lift.map η).hom.app (incl.obj (Discrete.mk c))).hom.hom ((PiTensorProduct.tprod k) p) =
+  rw [show ((lift.map η).hom.hom.app (incl.obj (Discrete.mk c))).hom.hom ((PiTensorProduct.tprod k) p) =
       (lift.repNatTransOfColorApp η (incl.obj (Discrete.mk c))).hom ((PiTensorProduct.tprod k) p) by
       rfl]
   rw [lift.repNatTransOfColorApp_tprod]

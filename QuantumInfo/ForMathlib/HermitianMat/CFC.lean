@@ -6,6 +6,7 @@ Authors: Alex Meiburg
 import QuantumInfo.ForMathlib.HermitianMat.Inner
 import QuantumInfo.ForMathlib.HermitianMat.NonSingular
 import QuantumInfo.ForMathlib.Isometry
+import QuantumInfo.ForMathlib.Unitary
 
 import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Continuity
 import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Basic
@@ -13,6 +14,7 @@ import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Instances
 import Mathlib.Analysis.CStarAlgebra.ContinuousFunctionalCalculus.Commute
 import Mathlib.Analysis.CStarAlgebra.CStarMatrix
 import Mathlib.Algebra.Order.Group.Pointwise.CompleteLattice
+import Mathlib.Topology.TietzeExtension
 
 /-! Matrix operations on HermitianMats with the CFC -/
 namespace HermitianMat
@@ -80,6 +82,19 @@ theorem cfc_reindex (e : d ≃ d₂) : (A.reindex e).cfc f = (A.cfc f).reindex e
   rw [HermitianMat.ext_iff]
   simp only [mat_cfc, mat_reindex]
   exact Matrix.cfc_reindex f e
+
+theorem spectrum_cfc_eq_image (A : HermitianMat d 𝕜) (f : ℝ → ℝ) :
+    spectrum ℝ (A.cfc f).mat = f '' (spectrum ℝ A.mat) := by
+  exact cfc_map_spectrum f A.mat
+
+theorem posSemidef_iff_spectrum_Ici (A : HermitianMat d 𝕜) :
+    0 ≤ A ↔ spectrum ℝ A.mat ⊆ Set.Ici 0 := by
+  rw [zero_le_iff, Matrix.posSemidef_iff_isHermitian_and_spectrum_nonneg]
+  simp [A.H, Set.Ici.eq_1]
+
+theorem posSemidef_iff_spectrum_nonneg (A : HermitianMat d 𝕜) :
+    0 ≤ A ↔ ∀ x ∈ spectrum ℝ A.mat, 0 ≤ x := by
+  exact A.posSemidef_iff_spectrum_Ici
 
 /--
 Spectral decomposition of `A.cfc f` as a sum of scaled projections (matrix version).
@@ -202,6 +217,11 @@ nonrec theorem cfc_congr_of_zero_le (hA : 0 ≤ A) (hfg : Set.EqOn f g (Set.Ici 
   open MatrixOrder in
   exact spectrum_nonneg_of_nonneg (a := A.mat) hA
 
+variable {A f g} in
+theorem cfc_congr_of_nonneg (hA : 0 ≤ A) (hfg : Set.EqOn f g (Set.Ici 0)) :
+    A.cfc f = A.cfc g :=
+  cfc_congr_of_zero_le hA hfg
+
 open ComplexOrder
 
 variable {f g A} in
@@ -229,6 +249,9 @@ theorem zero_le_cfc : 0 ≤ A.cfc f ↔ ∀ i, 0 ≤ f (A.H.eigenvalues i) := by
   rw [cfc_nonneg_iff f A.mat, A.H.spectrum_real_eq_range_eigenvalues]
   grind
 
+theorem cfc_nonneg_iff : 0 ≤ A.cfc f ↔ ∀ i, 0 ≤ f (A.H.eigenvalues i) :=
+  A.zero_le_cfc f
+
 variable {A f} in
 theorem zero_le_cfc_of_zero_le (hA : 0 ≤ A) (hf : ∀ i ≥ 0, 0 ≤ f i) :
     0 ≤ A.cfc f := by
@@ -236,12 +259,25 @@ theorem zero_le_cfc_of_zero_le (hA : 0 ≤ A) (hf : ∀ i ≥ 0, 0 ≤ f i) :
   rw [zero_le_iff, A.H.posSemidef_iff_eigenvalues_nonneg] at hA
   exact fun i ↦ hf _ (hA i)
 
+variable {A f} in
+theorem cfc_nonneg_of_nonneg (hA : 0 ≤ A) (hf : ∀ i ≥ 0, 0 ≤ f i) :
+    0 ≤ A.cfc f :=
+  zero_le_cfc_of_zero_le hA hf
+
 theorem cfc_PosDef : (A.cfc f).mat.PosDef ↔ ∀ i, 0 < f (A.H.eigenvalues i) := by
   rw [(A.cfc f).H.posDef_iff_eigenvalues_pos]
   obtain ⟨e, he⟩ := A.cfc_eigenvalues f
   rw [he]
   refine ⟨fun h i ↦ ?_, fun h i ↦ h (e i)⟩
   simpa using h (e.symm i)
+
+theorem cfc_posDef : (A.cfc f).mat.PosDef ↔ ∀ i, 0 < f (A.H.eigenvalues i) :=
+  A.cfc_PosDef f
+
+theorem cfc_nonSingular (hf : ∀ i, f (A.H.eigenvalues i) ≠ 0) : NonSingular (A.cfc f) := by
+  rw [nonSingular_iff_eigenvalue_ne_zero]
+  obtain ⟨e, he⟩ := cfc_eigenvalues f A
+  simpa [he] using fun i ↦ hf (e i)
 
 theorem trace_mul_cfc (A : HermitianMat d 𝕜) (f : ℝ → ℝ) :
     (A.mat * (A.cfc f).mat).trace = ∑ i, A.H.eigenvalues i * f (A.H.eigenvalues i) := by
@@ -259,6 +295,16 @@ theorem norm_eq_sum_eigenvalues_sq (A : HermitianMat d 𝕜) :
   obtain ⟨e, he⟩ := cfc_eigenvalues (· ^ 2) A
   simp only [he, Function.comp_apply, map_pow]
   exact e.sum_comp (fun x ↦ (algebraMap ℝ 𝕜) (A.H.eigenvalues x) ^ 2)
+
+open scoped Matrix.Norms.Frobenius in
+lemma eigenvalue_norm_le (A : HermitianMat d ℂ) (i : d) :
+    |A.H.eigenvalues i| ≤ ‖A‖ := by
+  have h_eigenvalue_bound : |A.H.eigenvalues i| ^ 2 ≤ ‖A‖ ^ 2 := by
+    rw [norm_eq_sum_eigenvalues_sq A]
+    simp [pow_two]
+    exact Finset.single_le_sum (fun i _ => mul_self_nonneg (A.H.eigenvalues i))
+      (Finset.mem_univ i)
+  nlinarith [norm_nonneg A]
 
 variable {A} in
 theorem lt_smul_of_norm_lt {r : ℝ} (h : ‖A‖ ≤ r) : A ≤ r • 1 := by
@@ -382,6 +428,12 @@ theorem continuousOn_cfc_fun {T : Set ℝ}
   apply continuous_finset_sum _
   rw [A.H.spectrum_real_eq_range_eigenvalues] at hA
   refine fun i _ ↦ Continuous.smul (hf _ (by grind)) (by fun_prop)
+
+/-
+The generated joint-continuity development that used to live here depended on
+unfinished proof scaffolding and Lean 4.28-incompatible APIs. It is not used by
+the maintained CFC/rpow/log stack, so it is kept out of the exported surface
+until there is a real proof stack for it.
 
 section joint_continuity
 
@@ -764,7 +816,7 @@ lemma continuousWithinAt_cfc_of_continuousOn {T : Set ℝ} {g : ℝ → ℝ}
     have hd1 := hδ hx hx'
     have hd2 := hU x ⟨(Metric.mem_nhds_iff.mp hU_nhds).choose_spec.2 hx'', hx⟩
     have h_eq : A₀.cfc g = A₀.cfc h := by
-      exact cfc_congr (show Set.EqOn g h (spectrum ℝ A₀.mat) from fun x hx => hh_eq x hx ▸ rfl) ▸ rfl
+      exact cfc_congr A₀ (fun x hx => (hh_eq x hx).symm)
     rw [dist_eq_norm, h_eq]
     calc ‖x.cfc g - A₀.cfc h‖
         = ‖(x.cfc g - x.cfc h) + (x.cfc h - A₀.cfc h)‖ := by congr 1; abel
@@ -948,6 +1000,8 @@ theorem continuous_cfc_joint {X d : Type*} [TopologicalSpace X] [Fintype d] [Dec
       generalize_proofs at *; (
       exact h_not_cont_at_x₀ <| fun x hx => h_cont x hx |> ContinuousWithinAt.mono <| by simp;)
 
+-/
+
 /-- Specialization of `continuousOn_cfc_fun` for nonsingular matrices. -/
 @[fun_prop]
 theorem continuousOn_cfc_fun_nonsingular {f : X → ℝ → ℝ} {S : Set X}
@@ -1009,6 +1063,10 @@ lemma inv_cfc_eq_cfc_inv (hf : ∀ i, f (A.H.eigenvalues i) ≠ 0) :
 
 theorem cfc_inv [NonSingular A] : A.cfc (fun u ↦ u⁻¹) = A⁻¹ := by
   simpa using (inv_cfc_eq_cfc_inv id nonSingular_eigenvalue_ne_zero).symm
+
+/-
+Real-power API lives in `HermitianMat.Rpow`; keeping the old copies here makes
+downstream imports redeclare `HermitianMat.rpow` and its theorem surface.
 
 /-- Matrix power of a positive semidefinite matrix, as given by the elementwise
   real power of the diagonal in a diagonalized form.
@@ -1111,6 +1169,8 @@ theorem rpow_conj_unitary (A : HermitianMat d 𝕜) (U : Matrix.unitaryGroup d �
     (HermitianMat.conj U.val A) ^ r = HermitianMat.conj U.val (A ^ r) := by
   exact A.cfc_conj_unitary (· ^ r) U
 
+-/
+
 /-- Matrix logarithm (base e) of a Hermitian matrix, as given by the elementwise
   real logarithm of the diagonal in a diagonalized form, using `Real.log`
 
@@ -1152,13 +1212,8 @@ theorem reindex_log (e : d ≃ d₂) : (A.reindex e).log = A.log.reindex e :=
 theorem reindex_exp (e : d ≃ d₂) : (A.reindex e).exp = A.exp.reindex e :=
   cfc_reindex A Real.exp e
 
-theorem cfc_nonSingular (hf : ∀ i, f (A.H.eigenvalues i) ≠ 0) : NonSingular (A.cfc f) := by
-  rw [nonSingular_iff_eigenvalue_ne_zero]
-  obtain ⟨e, he⟩ := cfc_eigenvalues f A
-  simpa [he] using fun i ↦ hf (e i)
-
 instance nonSingular_exp : NonSingular A.exp := by
-  exact cfc_nonSingular Real.exp (fun i ↦ by positivity)
+  exact cfc_nonSingular A Real.exp (fun i ↦ by positivity)
 
 section integral
 
@@ -1264,116 +1319,6 @@ theorem cfc_pos_of_pos {A : HermitianMat d 𝕜} {f : ℝ → ℝ} (hA : 0 < A)
     simp [h_f_pos, spectrum.mem_iff, Matrix.isUnit_iff_isUnit_det, Algebra.algebraMap_eq_smul_one]
   exact lt_of_le_of_ne h_f_nonneg h_f_nonzero.symm
 
-/-- If two matrices A and B commute, then they is a common matrix with which they are both CFCs of.
-This is a variant of the common theorem that "commuting matrices can be simultaneously diagonalized." -/
-theorem _root_.Commute.exists_HermitianMat_cfc (hAB : Commute A.mat B.mat) :
-    ∃ C : HermitianMat d 𝕜, (∃ f : ℝ → ℝ, A = C.cfc f) ∧ (∃ g : ℝ → ℝ, B = C.cfc g) := by
-  obtain ⟨C, ⟨g₁, hg₁⟩, ⟨g₂, hg₂⟩⟩ := hAB.exists_cfc A.H B.H
-  by_cases hC : C.IsHermitian
-  · use ⟨C, hC⟩
-    constructor
-    · exact ⟨g₁, by simp [HermitianMat.ext_iff, hg₁]⟩
-    · exact ⟨g₂, by simp [HermitianMat.ext_iff, hg₂]⟩
-  · change ¬(IsSelfAdjoint C) at hC
-    rw [cfc_apply_of_not_predicate C hC] at hg₁ hg₂
-    use 0
-    constructor
-    · exact ⟨0, by simp [HermitianMat.ext_iff, hg₁]⟩
-    · exact ⟨0, by simp [HermitianMat.ext_iff, hg₂]⟩
-
-open ComplexOrder in
-theorem cfc_le_cfc_of_PosDef (hfg : ∀ i, 0 < i → f i ≤ g i) (hA : A.mat.PosDef) :
-    A.cfc f ≤ A.cfc g := by
-  rw [← sub_nonneg, ← HermitianMat.cfc_sub, cfc_nonneg_iff]
-  intro i
-  rw [Pi.sub_apply, sub_nonneg]
-  rw [A.H.posDef_iff_eigenvalues_pos] at hA
-  apply hfg
-  apply hA
-
-open ComplexOrder in
-variable {f} in
-/- TODO: Write a version of this that holds more broadly for some sets. Esp closed intervals of reals,
-which correspond nicely to closed intervals of matrices. Write the specialization to Set.univ (Monotone
-instead of MonotoneOn). Also a version that works for StrictMonoOn. -/
-theorem cfc_le_cfc_of_commute_monoOn (hf : MonotoneOn f (Set.Ioi 0))
-  (hAB₁ : Commute A.mat B.mat) (hAB₂ : A ≤ B) (hA : A.mat.PosDef) (hB : B.mat.PosDef) :
-    A.cfc f ≤ B.cfc f := by
-  obtain ⟨C, ⟨g₁, rfl⟩, ⟨g₂, rfl⟩⟩ := hAB₁.exists_HermitianMat_cfc
-  -- Need to show that g₁ ≤ g₂ on spectrum ℝ C
-  rw [← C.cfc_comp, ← C.cfc_comp]
-  rw [← sub_nonneg, ← C.cfc_sub, cfc_nonneg_iff] at hAB₂ ⊢
-  intro i
-  simp only [Pi.sub_apply, Function.comp_apply, sub_nonneg]
-  apply hf
-  · rw [cfc_posDef] at hA
-    exact hA i
-  · rw [cfc_posDef] at hB
-    exact hB i
-  · simpa using hAB₂ i
-
-/-- TODO: See above -/
-theorem cfc_le_cfc_of_commute (hf : Monotone f) (hAB₁ : Commute A.mat B.mat) (hAB₂ : A ≤ B) :
-    A.cfc f ≤ B.cfc f := by
-  obtain ⟨C, ⟨g₁, rfl⟩, ⟨g₂, rfl⟩⟩ := hAB₁.exists_HermitianMat_cfc
-  -- Need to show that g₁ ≤ g₂ on spectrum ℝ C
-  rw [← C.cfc_comp, ← C.cfc_comp]
-  rw [← sub_nonneg, ← C.cfc_sub, cfc_nonneg_iff] at hAB₂ ⊢
-  intro i
-  simp only [Pi.sub_apply, Function.comp_apply, sub_nonneg]
-  apply hf
-  simpa using hAB₂ i
-
---This is the more general version that requires operator concave functions but doesn't require the inputs
--- to commute. Requires the correct statement of operator convexity though, which we don't have right now.
-open ComplexOrder in
-proof_wanted cfc_monoOn_pos_of_monoOn_posDef {d : Type*} [Fintype d] [DecidableEq d]
-  {f : ℝ → ℝ} (hf_is_operator_convex : False) :
-    MonotoneOn (HermitianMat.cfc · f) { A : HermitianMat d ℂ | A.mat.PosDef }
-
-section uncategorized_cleanup
-
-open ComplexOrder in
-theorem inv_ge_one_of_le_one (hA : A.mat.PosDef) (h : A ≤ 1) : 1 ≤ A⁻¹ := by
-  -- Since $A$ is positive definite and $A \leq 1$, we have $A.cfc (fun x => x⁻¹ - 1) \geq 0$.
-  have h_cfc_nonneg : 0 ≤ A.cfc (fun x => x⁻¹ - 1) := by
-    have h_cfc_nonneg : ∀ i, 0 ≤ (A.H.eigenvalues i)⁻¹ - 1 := by
-      have h_pos : ∀ i, 0 < A.H.eigenvalues i ∧ A.H.eigenvalues i ≤ 1 := by
-        -- Since $A$ is positive definite, all its eigenvalues are positive.
-        have h_pos : ∀ i, 0 < A.H.eigenvalues i := by
-          exact fun i => Matrix.PosDef.eigenvalues_pos hA i;
-        -- Since $A \leq 1$, for any eigenvalue $\lambda_i$ of $A$, we have $\lambda_i \leq 1$.
-        have h_le_one : ∀ i, A.H.eigenvalues i ≤ 1 := by
-          have h_le_one : ∀ i, A.H.eigenvalues i ≤ 1 := by
-            intro i
-            have h_eigenvalue : A.mat.PosSemidef := by
-              exact hA.posSemidef
-            have h_eigenvalue_le_one : ∀ x : d → 𝕜, x ≠ 0 → (star x ⬝ᵥ A.mat.mulVec x) / (star x ⬝ᵥ x) ≤ 1 := by
-              intro x hx_ne_zero
-              have h_eigenvalue_le_one : (star x ⬝ᵥ (1 - A.mat).mulVec x) ≥ 0 := by
-                exact Matrix.PosSemidef.dotProduct_mulVec_nonneg h x
-              generalize_proofs at *; (
-              rw [ div_le_iff₀ ] <;> simp_all [ Matrix.sub_mulVec, dotProduct_sub ])
-            generalize_proofs at *; (
-            have := h_eigenvalue_le_one ( A.H.eigenvectorBasis i ) ?_ <;> simp_all [ div_le_iff₀,  ];
-            · have := Matrix.IsHermitian.mulVec_eigenvectorBasis ( show Matrix.IsHermitian ( A : Matrix d d _ ) from ‹_› ) i; simp_all [ dotProduct_comm ] ;
-              by_cases h : ( A.H.eigenvectorBasis i |> WithLp.ofLp ) ⬝ᵥ star ( A.H.eigenvectorBasis i |> WithLp.ofLp ) = 0 <;> simp_all [ div_le_iff₀ ] ; (
-              exact absurd h ( by exact ne_of_apply_ne ( fun x => ‖x‖ ) ( by simp ) ));
-            · exact fun h => by simpa [ h ] using ( A.H.eigenvectorBasis.orthonormal.ne_zero i ) ;)
-          generalize_proofs at *; (
-          exact h_le_one)
-        exact fun i => ⟨h_pos i, h_le_one i⟩;
-      exact fun i => sub_nonneg_of_le ( one_le_inv₀ ( h_pos i |>.1 ) |>.2 ( h_pos i |>.2 ) );
-    exact (cfc_nonneg_iff A fun x => x⁻¹ - 1).mpr h_cfc_nonneg;
-  -- Since $A.cfc (fun x => x⁻¹ - 1) \geq 0$, we have $A.cfc (fun x => x⁻¹) \geq 1$.
-  have h_cfc_ge_one : A.cfc (fun x => x⁻¹) ≥ 1 := by
-    have h_cfc_sub : A.cfc (fun x => x⁻¹ - 1) = A.cfc (fun x => x⁻¹) - A.cfc (fun _ => 1) := by
-      exact cfc_sub_apply A Inv.inv fun x => 1;
-    aesop;
-  convert h_cfc_ge_one.le using 1;
-  convert cfc_inv.symm;
-  exact nonSingular_of_posDef hA
-
 /-- The trace of cfc(f, A) equals the sum of f applied to eigenvalues. -/
 lemma trace_cfc_eq (A : HermitianMat d ℂ) (f : ℝ → ℝ) :
     (A.cfc f).trace = ∑ i, f (A.H.eigenvalues i) := by
@@ -1390,8 +1335,6 @@ lemma trace_cfc_eq (A : HermitianMat d ℂ) (f : ℝ → ℝ) :
   have h4 := Complex.ofReal_injective h3
   rw [h4]
   exact Equiv.sum_comp e (fun x => f (A.H.eigenvalues x))
-
-end uncategorized_cleanup
 
 lemma mulVec_eq_zero_iff_inner_eigenvector_zero
     (A : HermitianMat d ℂ) (x : EuclideanSpace ℂ d) :

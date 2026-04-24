@@ -590,7 +590,7 @@ def calculateEndMembers_F (composition : List (String × WeightPercent_F))
 -- Fe2+/Fe3+ ratio from total Fe
 def calculateFerricFerrous_F (totalFe : WeightPercent_F) (chargeBalance : Float)
     : (WeightPercent_F × WeightPercent_F) :=
-  let ferricFrac := Float.max 0.0 (Float.min 1.0 ((chargeBalance + 1.0) / 2.0))
+  let ferricFrac := max 0.0 (min 1.0 ((chargeBalance + 1.0) / 2.0))
   let ferric := totalFe.val * ferricFrac
   let ferrous := totalFe.val - ferric
   (⟨ferrous⟩, ⟨ferric⟩)
@@ -620,10 +620,10 @@ def garnetBiotiteTemp_F (kd : DistributionCoeff_F) : GeothermometerT_F :=
 -- GASP barometer (simplified)
 def gaspPressure_F (t : Kelvin_F) (activities : List (String × Activity_F)) : GeobarometerP_F :=
   let activityProduct :=
-    activities.foldl (fun acc p => acc * Float.max p.2.val 1e-12) 1.0
+    activities.foldl (fun acc p => acc * max p.2.val 1e-12) 1.0
   let pressureEstimate := Float.abs ((t.val / 1000.0) * Float.log activityProduct)
   { pressure := ⟨pressureEstimate⟩
-    uncertainty := ⟨Float.max 0.1 (0.1 * pressureEstimate)⟩
+    uncertainty := ⟨max 0.1 (0.1 * pressureEstimate)⟩
     method := "GASP-simplified" }
 
 -- Saturation index

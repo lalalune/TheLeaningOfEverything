@@ -209,7 +209,7 @@ lemma spectral_projection_opNorm_le_one (E : Set ℝ → H →L[ℂ] H) (hE : Is
 /-- Range of E(B) is the set of fixed points -/
 lemma spectral_projection_range_eq_fixed (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectralMeasure E)
     (B : Set ℝ) (hB : MeasurableSet B) (ψ : H) :
-    ψ ∈ LinearMap.range (E B) ↔ E B ψ = ψ := by
+    ψ ∈ LinearMap.range (E B).toLinearMap ↔ E B ψ = ψ := by
   constructor
   · rintro ⟨φ, rfl⟩
     exact spectral_projection_apply_twice E hE B hB φ

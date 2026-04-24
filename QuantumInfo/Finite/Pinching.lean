@@ -322,7 +322,8 @@ theorem pinching_map_ker_le (ρ σ : MState d) : (pinching_map σ ρ).M.ker ≤ 
   replace hv_sum := congr(WithLp.toLp 2 $(hv_sum))
   simp only [WithLp.toLp_sum, WithLp.toLp_ofLp] at hv_sum
   rw [← hv_sum]
-  exact Submodule.sum_mem _ fun k _ ↦ by simpa [HermitianMat.ker_conj ρ.nonneg] using hv k
+  exact Submodule.sum_mem _ fun k _ ↦ by
+    simpa [h_ker_conj k, Matrix.toEuclideanLin_apply, (pinching_kraus σ k).H.eq] using hv k
 
 noncomputable section AristotleLemmas
 

@@ -275,8 +275,12 @@ lemma normal_bounded_below_isUnit [Nontrivial H] {T : H →L[ℂ] H}
     have : ‖x - y‖ = 0 := by nlinarith [norm_nonneg (x - y)]
     exact sub_eq_zero.mp (norm_eq_zero.mp this)
   have h_surj := normal_bounded_below_surjective hT c hc_pos hc_bound
-  have h_ker : LinearMap.ker T = ⊥ := LinearMap.ker_eq_bot.mpr h_inj
-  have h_range : LinearMap.range T = ⊤ := LinearMap.range_eq_top.mpr h_surj
+  have h_ker : LinearMap.ker T.toLinearMap = ⊥ := LinearMap.ker_eq_bot.mpr (by
+    intro x y hxy
+    exact h_inj hxy)
+  have h_range : LinearMap.range T.toLinearMap = ⊤ := LinearMap.range_eq_top.mpr (by
+    intro x
+    exact h_surj x)
   let e := ContinuousLinearEquiv.ofBijective T h_ker h_range
   exact ⟨⟨T, e.symm.toContinuousLinearMap,
          by ext x;

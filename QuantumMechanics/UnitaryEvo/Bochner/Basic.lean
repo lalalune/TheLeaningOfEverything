@@ -255,11 +255,11 @@ lemma hasDerivAt_integral_of_exp_decay
   have hM_pos : 0 < M := lt_max_of_lt_right one_pos
   have hC_le_M : |C| ≤ M := le_max_left _ _
   have h := hasDerivAt_integral_of_dominated_loc_of_deriv_le
-    (μ := μ) (ε := 1) (x₀ := t)
+    (μ := μ) (x₀ := t) (s := Metric.ball t 1)
     (F := fun τ s => Real.exp (-s) • f τ s)
     (F' := fun τ s => Real.exp (-s) • deriv (f · s) τ)
     (bound := fun s => M * Real.exp (-s))
-    one_pos ?hF_meas ?hF_int ?hF'_meas ?hF'_bound ?hbound_int ?hF_deriv
+    (Metric.ball_mem_nhds t one_pos) ?hF_meas ?hF_int ?hF'_meas ?hF'_bound ?hbound_int ?hF_deriv
   exact h.2
   case hF_meas =>
     filter_upwards with τ

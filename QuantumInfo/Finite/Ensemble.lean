@@ -134,7 +134,7 @@ theorem mix_pEnsemble_pure_iff_pure {e : PEnsemble d α} :
       intro j _
       exact (e.distr j).2.1
     have h_sum : ∑ j ∈ Finset.univ, (e.distr j : ℝ) = 1 := by
-      simpa using Distribution.normalized (distr := e.distr)
+      simpa using e.distr.normalized
     have hi_pos : 0 < (e.distr i : ℝ) := by
       exact lt_of_le_of_ne' (h_nonneg i (Finset.mem_univ i)) (by simpa using hi)
     simpa using MState.eq_of_sum_eq_pure h_pure hsum h_nonneg h_sum i (Finset.mem_univ i) hi_pos
@@ -150,7 +150,7 @@ theorem mix_pEnsemble_pure_iff_pure {e : PEnsemble d α} :
               · simp [h0]
               · rw [congrArg MState.m (hpure i h0)]
       _ = (∑ i, (e.distr i : ℝ)) • (MState.pure ψ).m := by rw [Finset.sum_smul]
-      _ = (MState.pure ψ).m := by simp [Distribution.normalized]
+      _ = (MState.pure ψ).m := by simp [ProbDistribution.normalized]
 
 /-- The average of `f : Ket d → T` on an ensemble that mixes to a pure state `ψ` is `f ψ` -/
 theorem mix_pEnsemble_pure_average {e : PEnsemble d α} {T : Type _} {U : Type*} [AddCommGroup U] [Module ℝ U]
@@ -161,7 +161,7 @@ theorem mix_pEnsemble_pure_average {e : PEnsemble d α} {T : Type _} {U : Type*}
   have hpure := mix_pEnsemble_pure_iff_pure.mp hmix
   -- Each state with nonzero probability is phase-equivalent to ψ
   have hfeq : ∀ i, e.distr i ≠ 0 → f (e.var i) = f ψ := fun i hdi =>
-    hf _ _ ((MState.PhaseEquiv_iff_pure_eq _ _).mpr (hpure i hdi))
+    hf (hpure i hdi)
   simp only [pure_average, Functor.map, ProbDistribution.expect_val]
   apply Mixable.to_U_inj
   simp only [Mixable.to_U_of_mkT, Function.comp_apply]
@@ -195,34 +195,6 @@ theorem sum_prob_mul_eq_one_iff {ι : Type*} [Fintype ι] (p : ι → ℝ) (x : 
     · simp [hi]
     · simp [a i hi]
 
---CLEANUP. This proof used to work but it took forever to build. Also now it's broken.
-theorem MState.exp_val_pure_eq_one_iff {d : Type*} [Fintype d] [DecidableEq d] (ρ : MState d) (ψ : Ket d) :
-    ρ.exp_val (pure ψ) = 1 ↔ ρ = pure ψ := by
-  stop
-  constructor <;> intro h <;> simp_all +decide [ MState.exp_val ];
-  · have h_eq : ρ.M = (MState.pure ψ).M := by
-      have h_eq : (ρ.M - (MState.pure ψ).M).inner (ρ.M - (MState.pure ψ).M) = 0 := by
-        have h_eq_inner : (ρ.M - (MState.pure ψ).M).inner (ρ.M - (MState.pure ψ).M) = ρ.M.inner ρ.M - 2 * ρ.M.inner (MState.pure ψ).M + (MState.pure ψ).M.inner (MState.pure ψ).M := by
-          norm_num [ HermitianMat.inner, Matrix.mul_apply ];
-          simp +decide [ Matrix.mul_sub, Matrix.sub_mul, Matrix.trace_sub, Matrix.trace_mul_comm ( ρ.m ) ];
-          ring;
-        have h_eq_inner : ρ.M.inner ρ.M ≤ 1 ∧ (MState.pure ψ).M.inner (MState.pure ψ).M = 1 := by
-          aesop;
-          · have := ρ.M.inner_le_mul_trace ρ.zero_le ρ.zero_le;
-            aesop;
-          · simp +decide [ HermitianMat.inner ];
-            have := MState.pure_mul_self ψ; aesop;
-        have h_eq_inner : (ρ.M - (MState.pure ψ).M).inner (ρ.M - (MState.pure ψ).M) ≥ 0 := by
-          exact?;
-        linarith;
-      have h_eq : ∀ (A : HermitianMat d ℂ), A.inner A = 0 → A = 0 := by
-        intro A hA;
-        exact?;
-      exact sub_eq_zero.mp ( h_eq _ ‹_› );
-    cases ρ ; cases ψ ; aesop;
-  · unfold HermitianMat.inner; aesop;
-    rw [ MState.pure_mul_self ] ; aesop
-
 theorem mix_mEnsemble_pure_iff_pure {e : MEnsemble d α} :
     mix e = pure ψ ↔ ∀ i : α, e.distr i ≠ 0 → e.states i = MState.pure ψ := by
   constructor
@@ -241,7 +213,7 @@ theorem mix_mEnsemble_pure_iff_pure {e : MEnsemble d α} :
       intro j _
       exact (e.distr j).2.1
     have h_sum : ∑ j ∈ Finset.univ, (e.distr j : ℝ) = 1 := by
-      simpa using Distribution.normalized (distr := e.distr)
+      simpa using e.distr.normalized
     have hi_pos : 0 < (e.distr i : ℝ) := by
       exact lt_of_le_of_ne' (h_nonneg i (Finset.mem_univ i)) (by simpa using hi)
     simpa using MState.eq_of_sum_eq_pure h_pure hsum h_nonneg h_sum i (Finset.mem_univ i) hi_pos
@@ -257,7 +229,7 @@ theorem mix_mEnsemble_pure_iff_pure {e : MEnsemble d α} :
               · simp [h0]
               · rw [congrArg MState.m (hpure i h0)]
       _ = (∑ i, (e.distr i : ℝ)) • (MState.pure ψ).m := by rw [Finset.sum_smul]
-      _ = (MState.pure ψ).m := by simp [Distribution.normalized]
+      _ = (MState.pure ψ).m := by simp [ProbDistribution.normalized]
 
 /-- The average of `f : MState d → T` on an ensemble that mixes to a pure state `ψ` is `f (pure ψ)` -/
 theorem mix_mEnsemble_pure_average {e : MEnsemble d α} {T : Type _} {U : Type*} [AddCommGroup U] [Module ℝ U] [inst : Mixable U T] (f : MState d → T) (hmix : mix e = pure ψ) :

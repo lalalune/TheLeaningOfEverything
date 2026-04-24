@@ -1,10 +1,10 @@
 # Foundation Backlog
 
-Generated on: 2026-03-02 04:13:50Z
+Generated on: 2026-04-24 03:38:49Z
 
 ## Summary
 
-- sorry tactics: **3**
+- sorry tactics: **0**
 - axiom declarations: **0**
 - True := by trivial stubs: **0**
 - Prop := True stubs: **0**
@@ -15,7 +15,7 @@ _None_
 
 ## Top Files: sorry
 
-   3 ./QuantumInfo/Finite/Entropy/Relative.lean
+_None_
 
 ## Top Files: axiom
 
@@ -33,9 +33,7 @@ _None_
 
 ### sorry
 
-./QuantumInfo/Finite/Entropy/Relative.lean:354:  sorry
-./QuantumInfo/Finite/Entropy/Relative.lean:358:  sorry
-./QuantumInfo/Finite/Entropy/Relative.lean:376:  sorry
+_None_
 
 ### axiom
 

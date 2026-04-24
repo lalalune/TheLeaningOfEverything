@@ -327,138 +327,173 @@ lemma allowsTermForm_subset_allowsTerm_of_allowsTerm {T : PotentialTerm} {x : Ch
     ∃ a b c, allowsTermForm a b c T ⊆ x ∧ (allowsTermForm a b c T).AllowsTerm T := by
   rw [allowsTerm_iff_zero_mem_ofPotentialTerm'] at h
   obtain ⟨qHd, qHu, Q5, Q10⟩ := x
-  cases T <;> cases qHd <;> cases qHu
-  case μ.some.some qHd qHu =>
-    simp only [ofPotentialTerm', Multiset.mem_singleton] at h
-    have heq : qHd = qHu := sub_eq_zero.mp h.symm
-    subst heq
-    exact ⟨qHd, qHd, qHd, by simp [allowsTermForm, subset_def], allowsTermForm_allowsTerm⟩
-  case β.none.some qHu =>
-    simp only [ofPotentialTerm', Multiset.mem_map] at h
-    obtain ⟨a, ha, h0⟩ := h
-    have ha_eq : a = qHu := ((neg_add_eq_zero (a := qHu)).mp h0).symm
-    subst ha_eq
-    exact ⟨a, a, a, by simp [allowsTermForm, subset_def, Finset.singleton_subset_iff,
-      Finset.mem_val.mp ha], allowsTermForm_allowsTerm⟩
-  case β.some.some val qHu =>
-    simp only [ofPotentialTerm', Multiset.mem_map] at h
-    obtain ⟨a, ha, h0⟩ := h
-    have ha_eq : a = qHu := ((neg_add_eq_zero (a := qHu)).mp h0).symm
-    subst ha_eq
-    exact ⟨a, a, a, by simp [allowsTermForm, subset_def, Finset.singleton_subset_iff,
-      Finset.mem_val.mp ha], allowsTermForm_allowsTerm⟩
-  case Λ.none.none =>
+  cases T
+  case μ =>
+    cases qHd <;> cases qHu
+    · simp [ofPotentialTerm'] at h
+    · simp [ofPotentialTerm'] at h
+    · simp [ofPotentialTerm'] at h
+    · rename_i qHd qHu
+      simp only [ofPotentialTerm', Multiset.mem_singleton] at h
+      have heq : qHd = qHu := sub_eq_zero.mp h.symm
+      subst heq
+      exact ⟨qHd, qHd, qHd, by simp [allowsTermForm, subset_def], allowsTermForm_allowsTerm⟩
+  case β =>
+    cases qHu
+    · simp [ofPotentialTerm'] at h
+    · rename_i qHu
+      simp only [ofPotentialTerm', Multiset.mem_map] at h
+      obtain ⟨a, ha, h0⟩ := h
+      have ha_eq : a = qHu := ((neg_add_eq_zero (a := qHu)).mp h0).symm
+      subst ha_eq
+      exact ⟨a, a, a, by simp [allowsTermForm, subset_def, Finset.singleton_subset_iff,
+        Finset.mem_val.mp ha], allowsTermForm_allowsTerm⟩
+  case Λ =>
     simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
-    obtain ⟨⟨a, ⟨b, c⟩⟩, ⟨ha, hb, hc⟩, h0⟩ := h
+    obtain ⟨⟨a, ⟨b, c⟩⟩, ⟨ha, hbc⟩, h0⟩ := h
+    have hb : b ∈ Q5 := (Finset.mem_product.mp hbc).1
+    have hc : c ∈ Q10 := (Finset.mem_product.mp hbc).2
     use a, b, c
     constructor
     · simp [allowsTermForm, subset_def]
-      exact ⟨Finset.mem_insert.mpr (Or.inl ha), Finset.mem_insert.mpr (Or.inl hb),
-        Finset.mem_singleton.mpr (by abel; exact h0)⟩
+      have hc' : -a - b = c := by
+        rw [← sub_eq_zero]
+        abel_nf at h0 ⊢
+        simpa [add_comm, add_left_comm, add_assoc] using congrArg Neg.neg h0
+      have hc_mem : -a - b ∈ Q10 := hc'.symm ▸ hc
+      simp [Finset.insert_subset_iff, Finset.singleton_subset_iff, ha, hb, hc_mem]
     · exact allowsTermForm_allowsTerm
-  case W1.none.none =>
+  case W1 =>
     simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
-    obtain ⟨⟨a, ⟨b, ⟨c, d⟩⟩⟩, ⟨ha, hb, hc, hd⟩, h0⟩ := h
+    obtain ⟨⟨q5, ⟨a, ⟨b, c⟩⟩⟩, ⟨hq5, habc⟩, h0⟩ := h
+    have ha : a ∈ Q10 := (Finset.mem_product.mp habc).1
+    have hbc : (b, c) ∈ Q10.product Q10 := (Finset.mem_product.mp habc).2
+    have hb : b ∈ Q10 := (Finset.mem_product.mp hbc).1
+    have hc : c ∈ Q10 := (Finset.mem_product.mp hbc).2
     use a, b, c
     constructor
     · simp [allowsTermForm, subset_def]
-      exact ⟨Finset.mem_insert.mpr (Or.inl (by abel; exact h0)),
-        Finset.mem_insert.mpr (Or.inl ha), Finset.mem_insert.mpr (Or.inr (Finset.mem_insert.mpr (Or.inl hb))),
-        Finset.mem_insert.mpr (Or.inr (Finset.mem_insert.mpr (Or.inr (Finset.mem_singleton.mpr hc))))⟩
+      have hq5' : -a - b - c = q5 := by
+        rw [← sub_eq_zero]
+        abel_nf at h0 ⊢
+        simpa [add_comm, add_left_comm, add_assoc] using congrArg Neg.neg h0
+      have hq5_mem : -a - b - c ∈ Q5 := hq5'.symm ▸ hq5
+      simp [Finset.insert_subset_iff, Finset.singleton_subset_iff, hq5_mem, ha, hb, hc]
     · exact allowsTermForm_allowsTerm
-  case W2.some.none qHd =>
+  case W2 =>
+    cases qHd
+    · simp [ofPotentialTerm'] at h
+    · rename_i qHd
+      simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
+      obtain ⟨⟨a, ⟨b, c⟩⟩, ⟨ha, hbc⟩, h0⟩ := h
+      have hb : b ∈ Q10 := (Finset.mem_product.mp hbc).1
+      have hc : c ∈ Q10 := (Finset.mem_product.mp hbc).2
+      use a, b, c
+      constructor
+      · simp [allowsTermForm, subset_def]
+        have hqHd : -a - b - c = qHd := by
+          rw [← sub_eq_zero]
+          abel_nf at h0 ⊢
+          simpa [add_comm, add_left_comm, add_assoc] using congrArg Neg.neg h0
+        simp [Finset.insert_subset_iff, Finset.singleton_subset_iff, hqHd, ha, hb, hc]
+      · exact allowsTermForm_allowsTerm
+  case W3 =>
+    cases qHu
+    · simp [ofPotentialTerm'] at h
+    · rename_i qHu
+      simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
+      obtain ⟨⟨u, v⟩, ⟨hu, hv⟩, h0⟩ := h
+      use -qHu, u, u
+      constructor
+      · simp [allowsTermForm, subset_def]
+        have hv' : -u + 2 • qHu = v := by
+          rw [← sub_eq_zero]
+          abel_nf at h0 ⊢
+          simpa [add_comm, add_left_comm, add_assoc] using congrArg Neg.neg h0
+        have hv_mem : -u + 2 • qHu ∈ Q5 := hv'.symm ▸ hv
+        simp [Finset.insert_subset_iff, Finset.singleton_subset_iff, hu, hv_mem]
+      · exact allowsTermForm_allowsTerm
+  case W4 =>
+    cases qHd <;> cases qHu
+    · simp [ofPotentialTerm'] at h
+    · simp [ofPotentialTerm'] at h
+    · simp [ofPotentialTerm'] at h
+    · rename_i qHd qHu
+      simp only [ofPotentialTerm', Multiset.mem_map] at h
+      obtain ⟨a, ha, h0⟩ := h
+      use a, -qHu, a
+      constructor
+      · simp [allowsTermForm, subset_def]
+        have hqHd : -a + 2 • qHu = qHd := by
+          rw [← sub_eq_zero]
+          abel_nf at h0 ⊢
+          simpa [add_comm, add_left_comm, add_assoc] using congrArg Neg.neg h0
+        exact ⟨hqHd, by simpa using ha⟩
+      · exact allowsTermForm_allowsTerm
+  case K1 =>
     simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
-    obtain ⟨⟨a, ⟨b, c⟩⟩, ⟨ha, hb, hc⟩, h0⟩ := h
-    use a, b, c
+    obtain ⟨⟨q5, ⟨a, b⟩⟩, ⟨hq5, hab⟩, h0⟩ := h
+    have ha : a ∈ Q10 := (Finset.mem_product.mp hab).1
+    have hb : b ∈ Q10 := (Finset.mem_product.mp hab).2
+    use -q5, a, b
     constructor
     · simp [allowsTermForm, subset_def]
-      exact ⟨Finset.mem_insert.mpr (Or.inl (by abel; exact h0)),
-        Finset.mem_insert.mpr (Or.inl ha),
-        Finset.mem_insert.mpr (Or.inr (Finset.mem_singleton.mpr hb))⟩
+      have hb' : q5 - a = b := by
+        rw [← sub_eq_zero]
+        abel_nf at h0 ⊢
+        simpa [add_comm, add_left_comm, add_assoc] using congrArg Neg.neg h0
+      have hb_mem : q5 - a ∈ Q10 := hb'.symm ▸ hb
+      simp [Finset.insert_subset_iff, Finset.singleton_subset_iff, hq5, ha, hb_mem]
     · exact allowsTermForm_allowsTerm
-  case W2.some.some qHd qHu =>
-    simp only [ofPotentialTerm'] at h
-  case W2.none qHu =>
-    simp only [ofPotentialTerm'] at h
-  case W3.none.some qHu =>
-    simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
-    obtain ⟨⟨u, v⟩, ⟨hu, hv⟩, h0⟩ := h
-    use -qHu, u, u
-    constructor
-    · simp [allowsTermForm, subset_def]
-      have hv' : -u - 2 • (-qHu) ∈ Q5 := by
-        rw [neg_add_eq_zero, add_comm] at h0
-        simp only [neg_one_zsmul, smul_neg]
-        abel
-        exact hv
-      exact ⟨Finset.mem_insert.mpr (Or.inl hu),
-        Finset.mem_insert.mpr (Or.inr (Finset.mem_singleton.mpr hv'))⟩
-    · exact allowsTermForm_allowsTerm
-  case W3.none.none qHu =>
-    simp only [ofPotentialTerm'] at h
-  case W3.some qHu =>
-    simp only [ofPotentialTerm'] at h
-  case W4.some.some qHd qHu =>
-    simp only [ofPotentialTerm', Multiset.mem_map] at h
-    obtain ⟨a, ha, h0⟩ := h
-    use a, -qHu, a
-    constructor
-    · simp [allowsTermForm, subset_def]
-      exact ⟨by abel at h0 ⊢; exact h0, by simpa using ha⟩
-    · exact allowsTermForm_allowsTerm
-  case W4.some.none qHd =>
-    simp only [ofPotentialTerm'] at h
-  case W4.none qHu =>
-    simp only [ofPotentialTerm'] at h
-  case K1.none.none =>
-    simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
-    obtain ⟨⟨a, ⟨b, c⟩⟩, ⟨ha, hb, hc⟩, h0⟩ := h
-    use a, b, c
-    constructor
-    · simp [allowsTermForm, subset_def]
-      exact ⟨Finset.mem_insert.mpr (Or.inl ha),
-        Finset.mem_insert.mpr (Or.inr (Finset.mem_insert.mpr (Or.inl hb))),
-        Finset.mem_insert.mpr (Or.inr (Finset.mem_singleton.mpr (by abel; exact h0)))⟩
-    · exact allowsTermForm_allowsTerm
-  case K2.some.some qHd qHu =>
-    simp only [ofPotentialTerm', Multiset.mem_map] at h
-    obtain ⟨a, ha, h0⟩ := h
-    use qHd, qHu, a
-    constructor
-    · simp [allowsTermForm, subset_def]
-      exact ⟨by abel; exact h0, by simpa using ha⟩
-    · exact allowsTermForm_allowsTerm
-  case K2.some.none qHd =>
-    simp only [ofPotentialTerm'] at h
-  case K2.none qHu =>
-    simp only [ofPotentialTerm'] at h
-  case topYukawa.none.some qHu =>
-    simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
-    obtain ⟨⟨a, b⟩, ⟨ha, hb⟩, h0⟩ := h
-    use (-qHu), a, b
-    constructor
-    · simp [allowsTermForm, subset_def]
-      exact ⟨Finset.mem_insert.mpr (Or.inl ha),
-        Finset.mem_insert.mpr (Or.inr (Finset.mem_singleton.mpr (by abel; exact h0)))⟩
-    · exact allowsTermForm_allowsTerm
-  case topYukawa.none.none qHu =>
-    simp only [ofPotentialTerm'] at h
-  case topYukawa.some qHu =>
-    simp only [ofPotentialTerm'] at h
-  case bottomYukawa.some qHd =>
-    simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
-    obtain ⟨⟨a, b⟩, ⟨ha, hb⟩, h0⟩ := h
-    use qHd, a, a
-    constructor
-    · simp [allowsTermForm, subset_def]
-      exact ⟨Finset.mem_insert.mpr (Or.inl ha),
-        Finset.mem_insert.mpr (Or.inr (Finset.mem_singleton.mpr (by abel; exact h0)))⟩
-    · exact allowsTermForm_allowsTerm
-  case bottomYukawa.none =>
-    simp only [ofPotentialTerm'] at h
-  all_goals
-    exfalso
-    simpa [ofPotentialTerm'] using h
+  case K2 =>
+    cases qHd <;> cases qHu
+    · simp [ofPotentialTerm'] at h
+    · simp [ofPotentialTerm'] at h
+    · simp [ofPotentialTerm'] at h
+    · rename_i qHd qHu
+      simp only [ofPotentialTerm', Multiset.mem_map] at h
+      obtain ⟨a, ha, h0⟩ := h
+      use qHd, qHu, a
+      constructor
+      · simp [allowsTermForm, subset_def]
+        have ha' : -qHd - qHu = a := by
+          rw [← sub_eq_zero]
+          abel_nf at h0 ⊢
+          simpa [add_comm, add_left_comm, add_assoc] using congrArg Neg.neg h0
+        have ha_mem : -qHd - qHu ∈ Q10 := ha'.symm ▸ Finset.mem_val.mp ha
+        simpa [allowsTermForm, subset_def, ha_mem]
+      · exact allowsTermForm_allowsTerm
+  case topYukawa =>
+    cases qHu
+    · simp [ofPotentialTerm'] at h
+    · rename_i qHu
+      simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
+      obtain ⟨⟨a, b⟩, ⟨ha, hb⟩, h0⟩ := h
+      use -qHu, a, b
+      constructor
+      · simp [allowsTermForm, subset_def]
+        have hb' : qHu - a = b := by
+          rw [← sub_eq_zero]
+          abel_nf at h0 ⊢
+          simpa [add_comm, add_left_comm, add_assoc] using congrArg Neg.neg h0
+        have hb_mem : qHu - a ∈ Q10 := hb'.symm ▸ hb
+        simp [Finset.insert_subset_iff, Finset.singleton_subset_iff, ha, hb_mem]
+      · exact allowsTermForm_allowsTerm
+  case bottomYukawa =>
+    cases qHd
+    · simp [ofPotentialTerm'] at h
+    · rename_i qHd
+      simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
+      obtain ⟨⟨a, b⟩, ⟨ha, hb⟩, h0⟩ := h
+      use qHd, a, a
+      constructor
+      · simp [allowsTermForm, subset_def]
+        have hb' : -qHd - a = b := by
+          rw [← sub_eq_zero]
+          abel_nf at h0 ⊢
+          simpa [add_comm, add_left_comm, add_assoc] using congrArg Neg.neg h0
+        exact ⟨ha, hb'.symm ▸ hb⟩
+      · exact allowsTermForm_allowsTerm
 
 /-!
 
@@ -632,22 +667,90 @@ lemma allowsTerm_insertQ5_of_allowsTermQ5 {qHd qHu : Option 𝓩}
     (h : AllowsTermQ5 ⟨qHd, qHu, Q5, Q10⟩ q5 T) :
     AllowsTerm ⟨qHd, qHu, insert q5 Q5, Q10⟩ T := by
   rw [allowsTerm_iff_zero_mem_ofPotentialTerm']
-  cases T <;> cases qHd <;> cases qHu <;>
-    simp_all [AllowsTermQ5, ofPotentialTerm', Finset.mem_insert, Multiset.mem_map,
-      multiset_mem_finset_product, Multiset.mem_ndinsert,
-      neg_add_eq_zero, add_neg_eq_zero, eq_comm, sub_eq_add_neg] <;>
-    first
-    | aesop (config := { maxRuleApplications := 1500 })
-        (add norm simp [add_comm, add_left_comm, add_assoc, sub_eq_add_neg,
-          neg_add_eq_zero, add_neg_eq_zero, eq_comm])
-    | (refine ⟨q5, q5, ⟨⟨Or.inl rfl, Or.inl rfl⟩, ?_⟩⟩
-       convert ‹_ = (0 : 𝓩)› using 1; abel)
-    | (refine ⟨q5, _, ⟨⟨Or.inl rfl, Or.inr ‹_›⟩, ?_⟩⟩
-       convert ‹_ = (0 : 𝓩)› using 1; abel)
-    | (refine ⟨_, q5, ⟨⟨Or.inr ‹_›, Or.inl rfl⟩, ?_⟩⟩
-       convert ‹_ = (0 : 𝓩)› using 1; abel)
-    | (refine ⟨_, _, ⟨⟨Or.inr ‹_›, Or.inr ‹_›⟩, ?_⟩⟩
-       convert ‹_ = (0 : 𝓩)› using 1; abel)
+  cases T
+  case μ =>
+    simp [AllowsTermQ5] at h
+  case β =>
+    cases qHu with
+    | none =>
+      simp [AllowsTermQ5] at h
+    | some qHu =>
+      simp only [AllowsTermQ5] at h
+      simp only [ofPotentialTerm', Multiset.mem_map]
+      refine ⟨q5, Finset.mem_val.mpr (Finset.mem_insert_self q5 Q5), ?_⟩
+      rw [h]
+      abel
+  case Λ =>
+    simp only [AllowsTermQ5, ofPotentialTerm', Multiset.mem_map,
+      multiset_mem_finset_product] at h ⊢
+    obtain ⟨⟨q1, q2⟩, ⟨hq1, hq2⟩, h0⟩ := h
+    refine ⟨(q1, (q5, q2)), ?_, ?_⟩
+    · exact ⟨hq1, Finset.mem_product.mpr ⟨Finset.mem_insert_self q5 Q5, hq2⟩⟩
+    · abel_nf at h0 ⊢
+      exact h0
+  case W4 =>
+    cases qHd with
+    | none =>
+      simp [AllowsTermQ5] at h
+    | some qHd =>
+      cases qHu with
+      | none =>
+        simp [AllowsTermQ5] at h
+      | some qHu =>
+        simp only [AllowsTermQ5] at h
+        simp only [ofPotentialTerm', Multiset.mem_map]
+        refine ⟨q5, Finset.mem_val.mpr (Finset.mem_insert_self q5 Q5), ?_⟩
+        abel_nf at h ⊢
+        exact h
+  case K1 =>
+    simp only [AllowsTermQ5, ofPotentialTerm', Multiset.mem_map,
+      multiset_mem_finset_product] at h ⊢
+    obtain ⟨⟨q1, q2⟩, ⟨hq1, hq2⟩, h0⟩ := h
+    refine ⟨(q5, (q1, q2)), ?_, ?_⟩
+    · exact ⟨Finset.mem_insert_self q5 Q5, Finset.mem_product.mpr ⟨hq1, hq2⟩⟩
+    · abel_nf at h0 ⊢
+      exact h0
+  case W1 =>
+    simp only [AllowsTermQ5, ofPotentialTerm', Multiset.mem_map,
+      multiset_mem_finset_product] at h ⊢
+    obtain ⟨⟨q1, ⟨q2, q3⟩⟩, ⟨hq1, h23⟩, h0⟩ := h
+    have hq2 : q2 ∈ Q10 := (Finset.mem_product.mp h23).1
+    have hq3 : q3 ∈ Q10 := (Finset.mem_product.mp h23).2
+    refine ⟨(q5, (q1, (q2, q3))), ?_, ?_⟩
+    · exact ⟨Finset.mem_insert_self q5 Q5, Finset.mem_product.mpr
+        ⟨hq1, Finset.mem_product.mpr ⟨hq2, hq3⟩⟩⟩
+    · abel_nf at h0 ⊢
+      exact h0
+  case W2 =>
+    simp [AllowsTermQ5] at h
+  case bottomYukawa =>
+    cases qHd with
+    | none =>
+      simp [AllowsTermQ5] at h
+    | some qHd =>
+      simp only [AllowsTermQ5, ofPotentialTerm', Multiset.mem_map,
+        multiset_mem_finset_product] at h ⊢
+      obtain ⟨q, hq, h0⟩ := h
+      refine ⟨(q5, q), ?_, ?_⟩
+      · exact ⟨Finset.mem_insert_self q5 Q5, Finset.mem_val.mp hq⟩
+      · abel_nf at h0 ⊢
+        exact h0
+  case topYukawa =>
+    simp [AllowsTermQ5] at h
+  case K2 =>
+    simp [AllowsTermQ5] at h
+  case W3 =>
+    cases qHu with
+    | none =>
+      simp [AllowsTermQ5] at h
+    | some qHu =>
+      simp only [AllowsTermQ5, ofPotentialTerm', Multiset.mem_map,
+        multiset_mem_finset_product] at h ⊢
+      obtain ⟨q, hq, h0⟩ := h
+      refine ⟨(q, q5), ?_, ?_⟩
+      · exact ⟨Finset.mem_val.mp hq, Finset.mem_insert_self q5 Q5⟩
+      · abel_nf at h0 ⊢
+        exact h0
 
 /-!
 
@@ -789,13 +892,161 @@ lemma allowsTermQ10_or_allowsTerm_of_allowsTerm_insertQ10 {qHd qHu : Option 𝓩
     AllowsTermQ10 ⟨qHd, qHu, Q5, Q10⟩ q10 T ∨
     AllowsTerm ⟨qHd, qHu, Q5, Q10⟩ T := by
   rw [allowsTerm_iff_zero_mem_ofPotentialTerm'] at h ⊢
-  cases T <;> cases qHd <;> cases qHu <;>
-    simp_all [AllowsTermQ10, ofPotentialTerm', Finset.mem_insert, Multiset.mem_map,
-      multiset_mem_finset_product, Multiset.mem_ndinsert,
-      neg_add_eq_zero, add_neg_eq_zero, eq_comm, sub_eq_add_neg] <;>
-    aesop (config := { maxRuleApplications := 1500 })
-      (add norm simp [add_comm, add_left_comm, add_assoc, sub_eq_add_neg,
-        neg_add_eq_zero, add_neg_eq_zero, eq_comm])
+  cases T
+  case μ =>
+    right
+    simpa [ofPotentialTerm'] using h
+  case β =>
+    right
+    simpa [ofPotentialTerm'] using h
+  case Λ =>
+    simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+      multiset_mem_finset_product] at h ⊢
+    obtain ⟨⟨q5a, ⟨q5b, q⟩⟩, ⟨hq5a, hbq⟩, h0⟩ := h
+    have hq5b : q5b ∈ Q5 := (Finset.mem_product.mp hbq).1
+    have hq : q ∈ insert q10 Q10 := (Finset.mem_product.mp hbq).2
+    rcases Finset.mem_insert.mp hq with rfl | hq
+    · left
+      refine ⟨(q5a, q5b), ⟨hq5a, hq5b⟩, ?_⟩
+      abel_nf at h0 ⊢
+      exact h0
+    · right
+      refine ⟨(q5a, (q5b, q)), ?_, h0⟩
+      exact ⟨hq5a, Finset.mem_product.mpr ⟨hq5b, hq⟩⟩
+  case W4 =>
+    right
+    simpa [ofPotentialTerm'] using h
+  case K1 =>
+    simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+      multiset_mem_finset_product] at h ⊢
+    obtain ⟨⟨q5, ⟨q2, q3⟩⟩, ⟨hq5, h23⟩, h0⟩ := h
+    have hq2i : q2 ∈ insert q10 Q10 := (Finset.mem_product.mp h23).1
+    have hq3i : q3 ∈ insert q10 Q10 := (Finset.mem_product.mp h23).2
+    rcases Finset.mem_insert.mp hq2i with rfl | hq2
+    · left
+      refine ⟨(q5, q3), ⟨hq5, hq3i⟩, ?_⟩
+      abel_nf at h0 ⊢
+      exact h0
+    · rcases Finset.mem_insert.mp hq3i with rfl | hq3
+      · left
+        refine ⟨(q5, q2), ?_, ?_⟩
+        · exact ⟨hq5, Finset.mem_insert.mpr (Or.inr hq2)⟩
+        · abel_nf at h0 ⊢
+          exact h0
+      · right
+        refine ⟨(q5, (q2, q3)), ?_, h0⟩
+        exact ⟨hq5, Finset.mem_product.mpr ⟨hq2, hq3⟩⟩
+  case W1 =>
+    simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+      multiset_mem_finset_product] at h ⊢
+    obtain ⟨⟨q5, ⟨q2, ⟨q3, q4⟩⟩⟩, ⟨hq5, h234⟩, h0⟩ := h
+    have hq2i : q2 ∈ insert q10 Q10 := (Finset.mem_product.mp h234).1
+    have hq34 : (q3, q4) ∈ (insert q10 Q10).product (insert q10 Q10) :=
+      (Finset.mem_product.mp h234).2
+    have hq3i : q3 ∈ insert q10 Q10 := (Finset.mem_product.mp hq34).1
+    have hq4i : q4 ∈ insert q10 Q10 := (Finset.mem_product.mp hq34).2
+    rcases Finset.mem_insert.mp hq2i with rfl | hq2
+    · left
+      refine ⟨(q5, (q3, q4)), ?_, ?_⟩
+      · exact ⟨hq5, Finset.mem_product.mpr ⟨hq3i, hq4i⟩⟩
+      · abel_nf at h0 ⊢
+        exact h0
+    · rcases Finset.mem_insert.mp hq3i with rfl | hq3
+      · left
+        refine ⟨(q5, (q2, q4)), ?_, ?_⟩
+        · exact ⟨hq5, Finset.mem_product.mpr ⟨Finset.mem_insert.mpr (Or.inr hq2), hq4i⟩⟩
+        · abel_nf at h0 ⊢
+          exact h0
+      · rcases Finset.mem_insert.mp hq4i with rfl | hq4
+        · left
+          refine ⟨(q5, (q2, q3)), ?_, ?_⟩
+          · exact ⟨hq5, Finset.mem_product.mpr
+              ⟨Finset.mem_insert.mpr (Or.inr hq2), Finset.mem_insert.mpr (Or.inr hq3)⟩⟩
+          · abel_nf at h0 ⊢
+            exact h0
+        · right
+          refine ⟨(q5, (q2, (q3, q4))), ?_, h0⟩
+          exact ⟨hq5, Finset.mem_product.mpr
+            ⟨hq2, Finset.mem_product.mpr ⟨hq3, hq4⟩⟩⟩
+  case W2 =>
+    cases qHd
+    · simp [ofPotentialTerm'] at h
+    · rename_i qHd
+      simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+        multiset_mem_finset_product] at h ⊢
+      obtain ⟨⟨q2, ⟨q3, q4⟩⟩, ⟨hq2i, h34⟩, h0⟩ := h
+      have hq3i : q3 ∈ insert q10 Q10 := (Finset.mem_product.mp h34).1
+      have hq4i : q4 ∈ insert q10 Q10 := (Finset.mem_product.mp h34).2
+      rcases Finset.mem_insert.mp hq2i with rfl | hq2
+      · left
+        refine ⟨(q3, q4), ⟨hq3i, hq4i⟩, ?_⟩
+        abel_nf at h0 ⊢
+        exact h0
+      · rcases Finset.mem_insert.mp hq3i with rfl | hq3
+        · left
+          refine ⟨(q2, q4), ?_, ?_⟩
+          · exact ⟨Finset.mem_insert.mpr (Or.inr hq2), hq4i⟩
+          · abel_nf at h0 ⊢
+            exact h0
+        · rcases Finset.mem_insert.mp hq4i with rfl | hq4
+          · left
+            refine ⟨(q2, q3), ?_, ?_⟩
+            · exact ⟨Finset.mem_insert.mpr (Or.inr hq2),
+                Finset.mem_insert.mpr (Or.inr hq3)⟩
+            · abel_nf at h0 ⊢
+              exact h0
+          · right
+            refine ⟨(q2, (q3, q4)), ?_, h0⟩
+            exact ⟨hq2, Finset.mem_product.mpr ⟨hq3, hq4⟩⟩
+  case bottomYukawa =>
+    cases qHd
+    · simp [ofPotentialTerm'] at h
+    · rename_i qHd
+      simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+        multiset_mem_finset_product] at h ⊢
+      obtain ⟨⟨q5, q⟩, ⟨hq5, hq⟩, h0⟩ := h
+      rcases Finset.mem_insert.mp hq with rfl | hq
+      · left
+        refine ⟨q5, hq5, ?_⟩
+        abel_nf at h0 ⊢
+        exact h0
+      · right
+        exact ⟨(q5, q), ⟨hq5, hq⟩, h0⟩
+  case topYukawa =>
+    cases qHu
+    · simp [ofPotentialTerm'] at h
+    · rename_i qHu
+      simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+        multiset_mem_finset_product] at h ⊢
+      obtain ⟨⟨q2, q3⟩, ⟨hq2i, hq3i⟩, h0⟩ := h
+      rcases Finset.mem_insert.mp hq2i with rfl | hq2
+      · left
+        refine ⟨q3, hq3i, ?_⟩
+        abel_nf at h0 ⊢
+        exact h0
+      · rcases Finset.mem_insert.mp hq3i with rfl | hq3
+        · left
+          refine ⟨q2, Finset.mem_insert.mpr (Or.inr hq2), ?_⟩
+          abel_nf at h0 ⊢
+          exact h0
+        · right
+          exact ⟨(q2, q3), ⟨hq2, hq3⟩, h0⟩
+  case K2 =>
+    cases qHd
+    · simp [ofPotentialTerm'] at h
+    · cases qHu
+      · simp [ofPotentialTerm'] at h
+      · rename_i qHu qHd
+        simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map] at h ⊢
+        obtain ⟨q, hq, h0⟩ := h
+        rcases Finset.mem_insert.mp (Finset.mem_val.mp hq) with rfl | hq
+        · left
+          exact h0
+        · right
+          exact ⟨q, Finset.mem_val.mpr hq, h0⟩
+  case W3 =>
+    right
+    simpa [ofPotentialTerm'] using h
 
 /-!
 
@@ -813,13 +1064,74 @@ lemma allowsTerm_insertQ10_of_allowsTermQ10 {qHd qHu : Option 𝓩}
     (h : AllowsTermQ10 ⟨qHd, qHu, Q5, Q10⟩ q10 T) :
     AllowsTerm ⟨qHd, qHu, Q5, insert q10 Q10⟩ T := by
   rw [allowsTerm_iff_zero_mem_ofPotentialTerm']
-  cases T <;> cases qHd <;> cases qHu <;>
-    simp_all [AllowsTermQ10, ofPotentialTerm', Finset.mem_insert, Multiset.mem_map,
-      multiset_mem_finset_product, Multiset.mem_ndinsert,
-      neg_add_eq_zero, add_neg_eq_zero, eq_comm, sub_eq_add_neg] <;>
-    aesop (config := { maxRuleApplications := 1500 })
-      (add norm simp [add_comm, add_left_comm, add_assoc, sub_eq_add_neg,
-        neg_add_eq_zero, add_neg_eq_zero, eq_comm])
+  cases T
+  case μ => simp [AllowsTermQ10] at h
+  case β => simp [AllowsTermQ10] at h
+  case Λ =>
+    simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+      multiset_mem_finset_product] at h ⊢
+    obtain ⟨⟨a, b⟩, ⟨ha, hb⟩, h0⟩ := h
+    refine ⟨(a, (b, q10)), ?_, ?_⟩
+    · exact ⟨ha, Finset.mem_product.mpr ⟨hb, Finset.mem_insert_self q10 Q10⟩⟩
+    · convert h0 using 1 <;> abel
+  case W4 => simp [AllowsTermQ10] at h
+  case K1 =>
+    simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+      multiset_mem_finset_product] at h ⊢
+    obtain ⟨⟨q5, q2⟩, ⟨hq5, hq2⟩, h0⟩ := h
+    refine ⟨(q5, (q2, q10)), ?_, ?_⟩
+    · exact ⟨hq5, Finset.mem_product.mpr ⟨hq2, Finset.mem_insert_self q10 Q10⟩⟩
+    · convert h0 using 1 <;> abel
+  case W1 =>
+    simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+      multiset_mem_finset_product] at h ⊢
+    obtain ⟨⟨q5, ⟨q2, q3⟩⟩, ⟨hq5, h23⟩, h0⟩ := h
+    have hq2 : q2 ∈ insert q10 Q10 := (Finset.mem_product.mp h23).1
+    have hq3 : q3 ∈ insert q10 Q10 := (Finset.mem_product.mp h23).2
+    refine ⟨(q5, (q2, (q3, q10))), ?_, ?_⟩
+    · exact ⟨hq5, Finset.mem_product.mpr ⟨hq2,
+        Finset.mem_product.mpr ⟨hq3, Finset.mem_insert_self q10 Q10⟩⟩⟩
+    · convert h0 using 1 <;> abel
+  case W2 =>
+    cases qHd
+    · simp [AllowsTermQ10] at h
+    · rename_i qHd
+      simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+        multiset_mem_finset_product] at h ⊢
+      obtain ⟨⟨q2, q3⟩, ⟨hq2, hq3⟩, h0⟩ := h
+      refine ⟨(q2, (q3, q10)), ?_, ?_⟩
+      · exact ⟨hq2, Finset.mem_product.mpr ⟨hq3, Finset.mem_insert_self q10 Q10⟩⟩
+      · convert h0 using 1 <;> abel
+  case bottomYukawa =>
+    cases qHd
+    · simp [AllowsTermQ10] at h
+    · rename_i qHd
+      simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+        multiset_mem_finset_product] at h ⊢
+      obtain ⟨q5, hq5, h0⟩ := h
+      refine ⟨(q5, q10), ?_, ?_⟩
+      · exact ⟨hq5, Finset.mem_insert_self q10 Q10⟩
+      · convert h0 using 1 <;> abel
+  case topYukawa =>
+    cases qHu
+    · simp [AllowsTermQ10] at h
+    · rename_i qHu
+      simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map,
+        multiset_mem_finset_product] at h ⊢
+      obtain ⟨q2, hq2, h0⟩ := h
+      refine ⟨(q10, q2), ?_, ?_⟩
+      · exact ⟨Finset.mem_insert_self q10 Q10, hq2⟩
+      · convert h0 using 1 <;> abel
+  case K2 =>
+    cases qHd <;> cases qHu
+    · simp [AllowsTermQ10] at h
+    · simp [AllowsTermQ10] at h
+    · simp [AllowsTermQ10] at h
+    · simp only [AllowsTermQ10, ofPotentialTerm', Multiset.mem_map] at h ⊢
+      refine ⟨q10, ?_, ?_⟩
+      · exact Finset.mem_val.mpr (Finset.mem_insert_self q10 Q10)
+      · exact h
+  case W3 => simp [AllowsTermQ10] at h
 
 /-!
 

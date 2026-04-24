@@ -75,8 +75,6 @@ lemma ofRat_basis_repr_apply {n : ℕ} {c : Fin n → complexLorentzTensor.Color
   let e := Finsupp.linearEquivFunOnFinite ℂ ℂ
     ((j : Fin n) → Fin (complexLorentzTensor.repDim (c j)))
   simp [ofRat]
-  exact congrArg (fun h : ComponentIdx c → ℂ => h b)
-    (LinearEquiv.apply_symm_apply e (fun j => toComplexNum (f j)))
 
 lemma basis_eq_ofRat {n : ℕ} {c : Fin n → complexLorentzTensor.Color}
     (b : (ComponentIdx c)) :

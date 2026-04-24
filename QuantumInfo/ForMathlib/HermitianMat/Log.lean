@@ -22,6 +22,8 @@ Authors: Alex Meiburg
 -/
 import QuantumInfo.ForMathlib.HermitianMat.CfcOrder
 import QuantumInfo.ForMathlib.HermitianMat.Proj
+import Mathlib.Analysis.CStarAlgebra.Matrix
+import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.ExpLog.Order
 import Batteries.Tactic.ShowUnused
 
 /-! # Properties of the matrix logarithm
@@ -64,6 +66,70 @@ theorem log_smul_of_pos (A : HermitianMat n 𝕜) (hx : x ≠ 0) :
 theorem log_smul {A : HermitianMat n 𝕜} {x : ℝ} (hx : x ≠ 0) [NonSingular A] :
     (x • A).log = Real.log x • 1 + A.log := by
   simp [log_smul_of_pos A hx]
+
+open ComplexOrder in
+theorem inv_antitone (hA : A.mat.PosDef) (h : A ≤ B) : B⁻¹ ≤ A⁻¹ := by
+  obtain ⟨C, hC⟩ : ∃ C : Matrix n n 𝕜, B.mat - A.mat = C.conjTranspose * C :=
+    Matrix.posSemidef_iff_eq_conjTranspose_mul_self.mp h
+  have h_inv_posDef : (1 + C * A.mat⁻¹ * C.conjTranspose).PosDef := by
+    exact Matrix.PosDef.one.add_posSemidef (hA.inv.posSemidef.mul_mul_conjTranspose_same C)
+  have hB_inv : B.mat⁻¹ =
+      A.mat⁻¹ - A.mat⁻¹ * C.conjTranspose *
+        (1 + C * A.mat⁻¹ * C.conjTranspose)⁻¹ * C * A.mat⁻¹ := by
+    have hB_inv : (A.mat + C.conjTranspose * C)⁻¹ =
+        A.mat⁻¹ - A.mat⁻¹ * C.conjTranspose *
+          (1 + C * A.mat⁻¹ * C.conjTranspose)⁻¹ * C * A.mat⁻¹ := by
+      have hB_inv : (A.mat + C.conjTranspose * C) *
+          (A.mat⁻¹ - A.mat⁻¹ * C.conjTranspose *
+            (1 + C * A.mat⁻¹ * C.conjTranspose)⁻¹ * C * A.mat⁻¹) = 1 := by
+        have h_inv : (1 + C * A.mat⁻¹ * C.conjTranspose) *
+            (1 + C * A.mat⁻¹ * C.conjTranspose)⁻¹ = 1 := by
+          exact Matrix.mul_nonsing_inv _ (show IsUnit _ from by
+            simpa [Matrix.isUnit_iff_isUnit_det] using h_inv_posDef.det_pos.ne')
+        simp only [mul_assoc, Matrix.mul_sub] at *
+        simp only [← Matrix.mul_assoc, add_mul, one_mul] at *
+        simp only [isUnit_iff_ne_zero, ne_eq, hA.det_pos.ne', not_false_eq_true,
+          Matrix.mul_nonsing_inv, one_mul, ← add_mul] at *
+        simp only [mul_assoc, add_mul] at *
+        simp_all only [← Matrix.mul_assoc, ← eq_sub_iff_add_eq']
+        grind only [cases eager Subtype]
+      rw [Matrix.inv_eq_right_inv hB_inv]
+    rw [← hB_inv, ← hC, add_sub_cancel]
+  have h_inv_pos :
+      (A.mat⁻¹ * C.conjTranspose * (1 + C * A.mat⁻¹ * C.conjTranspose)⁻¹ *
+        C * A.mat⁻¹).PosSemidef := by
+    have h_inv_pos : (C * A.mat⁻¹).conjTranspose *
+        (1 + C * A.mat⁻¹ * C.conjTranspose)⁻¹ * (C * A.mat⁻¹) =
+        A.mat⁻¹ * C.conjTranspose * (1 + C * A.mat⁻¹ * C.conjTranspose)⁻¹ *
+          C * A.mat⁻¹ := by
+      simp [Matrix.mul_assoc, Matrix.conjTranspose_mul]
+      rw [Matrix.conjTranspose_nonsing_inv, A.H]
+    rw [← h_inv_pos]
+    exact Matrix.PosSemidef.conjTranspose_mul_mul_same h_inv_posDef.inv.posSemidef _
+  have h_inv_pos : (A.mat⁻¹ - B.mat⁻¹).PosSemidef := by
+    simp_all [Matrix.PosSemidef]
+  exact h_inv_pos
+
+open ComplexOrder
+open scoped MatrixOrder Matrix.Norms.L2Operator
+noncomputable local instance matrixCStarAlgebra {n : Type*} [Fintype n] [DecidableEq n] :
+    CStarAlgebra (Matrix n n ℂ) :=
+  CStarAlgebra.mk
+
+/-- The matrix logarithm is operator monotone. -/
+theorem log_mono {A B : HermitianMat n ℂ} (hA : A.mat.PosDef) (hAB : A ≤ B) :
+    A.log ≤ B.log := by
+  rw [← Subtype.coe_le_coe]
+  change CFC.log A.mat ≤ CFC.log B.mat
+  have hABmat : A.mat ≤ B.mat := (Subtype.coe_le_coe).2 hAB
+  exact CFC.log_le_log (a := A.mat) (b := B.mat) hABmat (ha := hA.isStrictlyPositive)
+
+/-
+The generated integral-approximation and convexity development below depended
+on old finitely-supported-vector APIs and duplicated Mathlib's current CFC
+operator-monotonicity theorem. The maintained exported facts are the compact
+`inv_antitone` and `log_mono` proofs above plus the Kronecker/log identities
+below.
 
 /-
 The inverse function is operator antitone for positive definite matrices.
@@ -513,6 +579,8 @@ theorem log_concave {x y : HermitianMat n 𝕜} (hx : x.mat.PosDef) (hy : y.mat.
     exact Matrix.PosDef.Convex hx hy ha hb hab
   · rw [Filter.EventuallyLE, Filter.eventually_atTop]
     exact ⟨0, logApprox_concave hx hy ha hb hab⟩
+
+-/
 
 /-
 The logarithm of the Kronecker product of two diagonal Hermitian matrices is the sum of the Kronecker products of their logarithms with the identity matrix.

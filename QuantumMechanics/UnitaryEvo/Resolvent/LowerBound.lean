@@ -103,10 +103,13 @@ lemma lower_bound_estimate {U_grp : OneParameterUnitaryGroup (H := H)}
       have h_xreal : (⟪x • ψ, ψ⟫_ℂ).im = 0 := by
         have h_eq : x • ψ = (x : ℂ) • ψ := (RCLike.real_smul_eq_coe_smul x ψ).symm
         rw [h_eq, inner_smul_left]
+        simp only [Complex.conj_ofReal, Complex.im_ofReal_mul]
         have h_inner_real : (⟪ψ, ψ⟫_ℂ).im = 0 := by
           have := inner_self_eq_norm_sq_to_K (𝕜 := ℂ) ψ
-          rw [this]; norm_cast
-        simp [h_inner_real]
+          rw [this]
+          norm_cast
+        rw [h_inner_real]
+        ring
       simp [h_Areal, h_xreal]
     have h_as_real : ⟪gen.op ⟨ψ, hψ⟩ - x • ψ, ψ⟫_ℂ =
         ((⟪gen.op ⟨ψ, hψ⟩ - x • ψ, ψ⟫_ℂ).re : ℂ) := by

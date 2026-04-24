@@ -5,6 +5,7 @@ Authors: Alex Meiburg
 -/
 import QuantumInfo.Finite.Entropy.Relative
 import QuantumInfo.ForMathlib.HermitianMat.CfcOrder
+import QuantumInfo.ForMathlib.HermitianMat.Rpow
 
 noncomputable section
 

@@ -182,4 +182,4 @@ class Entropy (f : ∀ {d : Type u} [Fintype d] [DecidableEq d], MState d → �
   of_kron {d₁ d₂ : Type u} [Fintype d₁] [Fintype d₂] [DecidableEq d₁] [DecidableEq d₂] :
     ∀ (ρ : MState d₁) (σ : MState d₂), f (ρ ⊗ᴹ σ) = f ρ + f σ
   -- /-- Entropy is convex. TODO def? Or do we even need this? -/
-  -- convex : True := by trivial
+  -- convexity law to be specified if needed

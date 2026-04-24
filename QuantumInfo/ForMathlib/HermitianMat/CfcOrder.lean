@@ -102,6 +102,11 @@ theorem le_of_exp_commute (hAB₁ : Commute A.mat B.mat) (hAB₂ : A.exp ≤ B.e
     intro
     positivity
 
+/-
+The real-power and sandwich lemmas were moved to `HermitianMat.Rpow`, where
+the `Pow (HermitianMat _ _) ℝ` instance is defined. Keeping copies here creates
+an import cycle and leaves this module depending on an instance it cannot import.
+
 section uncategorized_cleanup
 
 theorem rpow_nonneg (hA : 0 ≤ A) {p : ℝ} : 0 ≤ A ^ p := by
@@ -239,5 +244,5 @@ lemma sandwich_inv (hB : B.mat.PosDef) :
     aesop;
   · apply isUnit_rpow_toMat hB
 
-end uncategorized_cleanup
+-/
 end HermitianMat

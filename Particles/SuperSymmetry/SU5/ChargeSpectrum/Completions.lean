@@ -461,30 +461,13 @@ lemma completions_eq_completionsTopYukawa_of_mem_minimallyAllowsTermsOfFinset [A
     simpa [hQ10zero] using hQ10card
   apply (Multiset.Nodup.ext (completions_nodup S5 S10 _) (completionsTopYukawa_nodup _)).2
   intro z
-  simp [completions, completionsTopYukawa, hQ10ne, toProd]
+  cases z
+  simp [mem_completions_iff, completionsTopYukawa, hQ10ne]
   constructor
-  · rintro ⟨a, a1, a2, b, hmem, hz⟩
-    rcases Multiset.mem_product.mp hmem with ⟨ha, hrest⟩
-    rcases Multiset.mem_product.mp hrest with ⟨ha1, hrest⟩
-    rcases Multiset.mem_product.mp hrest with ⟨ha2, hb⟩
-    rcases Multiset.mem_map.mp ha with ⟨a0, ha0, rfl⟩
-    have ha1' : a1 = some qHu := by simpa using (Multiset.mem_singleton.mp ha1)
-    subst ha1'
-    rcases Multiset.mem_map.mp ha2 with ⟨b0, hb0, rfl⟩
-    have hb' : b = Q10.toFinset := by simpa using (Multiset.mem_singleton.mp hb)
-    subst hb'
-    refine ⟨a0, b0, Multiset.mem_product.mpr ⟨ha0, hb0⟩, ?_⟩
-    simpa using hz
-  · rintro ⟨a, b, hab, hz⟩
-    rcases Multiset.mem_product.mp hab with ⟨ha, hb⟩
-    refine ⟨some a, some qHu, {b}, Q10.toFinset, ?_, ?_⟩
-    · refine Multiset.mem_product.mpr ?_
-      refine ⟨Multiset.mem_map.mpr ⟨a, ha, rfl⟩, ?_⟩
-      refine Multiset.mem_product.mpr ?_
-      refine ⟨by simp, ?_⟩
-      refine Multiset.mem_product.mpr ?_
-      refine ⟨Multiset.mem_map.mpr ⟨b, hb, rfl⟩, by simp⟩
-    · simpa using hz
+  · rintro ⟨⟨qHd, hqHdS5, hqHd⟩, hqHu, ⟨q5, hq5S5, hQ5⟩, hQ10'⟩
+    exact ⟨qHd, q5, ⟨hqHdS5, hq5S5⟩, hqHd, hqHu.symm, hQ5, hQ10'.symm⟩
+  · rintro ⟨qHd, q5, ⟨hqHdS5, hq5S5⟩, hqHd, hqHu, hQ5, hQ10'⟩
+    exact ⟨⟨qHd, hqHdS5, hqHd⟩, hqHu.symm, ⟨q5, hq5S5, hQ5⟩, hQ10'.symm⟩
 end ChargeSpectrum
 
 end SU5

@@ -354,7 +354,8 @@ instance {d} : InnerProductSpace ℝ (Space d) where
     exact norm_smul_le a v
   norm_sq_eq_re_inner x := by
     obtain ⟨v, rfl⟩ := eq_vadd_zero x
-    simp [← real_inner_self_eq_norm_sq]
+    simpa only [norm_vadd_zero, inner_vadd_zero, RCLike.re_to_real] using
+      (real_inner_self_eq_norm_sq v).symm
   conj_inner_symm x y := by
     simp [inner_apply]
     congr

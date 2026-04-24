@@ -704,8 +704,8 @@ lemma eraseIdx_insertionSort {I : Type} (le1 : I → I → Prop) [DecidableRel l
     intro i j hij hn
     have hx : le1 ((List.insertionSort le1 r).get i) ((List.insertionSort le1 r).get j) := by
       haveI : IsTotal I le1 := ⟨Std.Total.total⟩
-      have hsorted : (List.insertionSort le1 r).Sorted le1 :=
-        List.sorted_insertionSort le1 r
+      have hsorted : (List.insertionSort le1 r).Pairwise le1 :=
+        List.pairwise_insertionSort le1 r
       exact hsorted.rel_get_of_lt hij
     have ht (i j k : I) (hij : le1 i j) (hjk : ¬ le1 k j) : ¬ le1 k i := by
       intro hik

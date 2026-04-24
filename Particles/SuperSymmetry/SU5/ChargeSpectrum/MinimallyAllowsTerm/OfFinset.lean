@@ -338,71 +338,71 @@ lemma mem_ofFinset_of_mem_minimallyAllowsTermOfFinset {S5 S10 : Finset 𝓩} {T 
   cases T <;> simp [minimallyAllowsTermsOfFinset] at hx ⊢
   case μ =>
     rcases hx with ⟨a, b, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨ha, hb⟩
+    rcases hmem.1 with ⟨ha, hb⟩
     exact ⟨by simpa using ha, by simpa using hb⟩
   case β =>
     rcases hx with ⟨a, b, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨ha, hb⟩
+    rcases hmem.1 with ⟨ha, hb⟩
     have hasub : (a : Option 𝓩).toFinset ⊆ S5 := by simpa [Finset.mem_val] using ha
-    have hbsub : b.toFinset ⊆ S5 := (mem_toMultisetsOne_iff (s := S5) b).mp hb |>.1
+    have hbsub : b.toFinset ⊆ S5 := hb.1
     simpa [hasub, hbsub]
   case Λ =>
     rcases hx with ⟨a, b, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨ha, hb⟩
-    have hasub : a.toFinset ⊆ S5 := (mem_toMultisetsTwo_iff (s := S5) a).mp ha |>.1
-    have hbsub : b.toFinset ⊆ S10 := (mem_toMultisetsOne_iff (s := S10) b).mp hb |>.1
+    rcases hmem.1 with ⟨ha, hb⟩
+    have hasub : a.toFinset ⊆ S5 := ha.1
+    have hbsub : b.toFinset ⊆ S10 := hb.1
     simp [hasub, hbsub]
   case W1 =>
     rcases hx with ⟨hx, _⟩
     rcases hx with ⟨a, b, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨ha, hb⟩
-    have hasub : a.toFinset ⊆ S5 := (mem_toMultisetsOne_iff (s := S5) a).mp ha |>.1
-    have hbsub : b.toFinset ⊆ S10 := (mem_toMultisetsThree_iff (s := S10) b).mp hb |>.1
+    rcases hmem.1 with ⟨ha, hb⟩
+    have hasub : a.toFinset ⊆ S5 := ha.1
+    have hbsub : b.toFinset ⊆ S10 := hb.1
     simp [hasub, hbsub]
   case W2 =>
     rcases hx with ⟨hx, _⟩
     rcases hx with ⟨a, b, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨ha, hb⟩
+    rcases hmem.1 with ⟨ha, hb⟩
     have hasub : (a : Option 𝓩).toFinset ⊆ S5 := by simpa [Finset.mem_val] using ha
-    have hbsub : b.toFinset ⊆ S10 := (mem_toMultisetsThree_iff (s := S10) b).mp hb |>.1
+    have hbsub : b.toFinset ⊆ S10 := hb.1
     simpa [hasub, hbsub]
   case W3 =>
     rcases hx with ⟨a, b, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨ha, hb⟩
+    rcases hmem.1 with ⟨ha, hb⟩
     have hasub : (a : Option 𝓩).toFinset ⊆ S5 := by simpa [Finset.mem_val] using ha
-    have hbsub : b.toFinset ⊆ S5 := (mem_toMultisetsTwo_iff (s := S5) b).mp hb |>.1
+    have hbsub : b.toFinset ⊆ S5 := hb.1
     simpa [hasub, hbsub]
   case W4 =>
     rcases hx with ⟨a, a1, b, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨ha, hrest⟩
-    rcases Multiset.mem_product.mp hrest with ⟨ha1, hb⟩
-    have hbsub : b.toFinset ⊆ S5 := (mem_toMultisetsOne_iff (s := S5) b).mp hb |>.1
+    rcases hmem.1 with ⟨ha, hrest⟩
+    rcases hrest with ⟨ha1, hb⟩
+    have hbsub : b.toFinset ⊆ S5 := hb.1
     exact ⟨by simpa [Finset.mem_val] using ha, by simpa [Finset.mem_val] using ha1, hbsub, by simp⟩
   case K1 =>
     rcases hx with ⟨a, b, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨ha, hb⟩
-    have hasub : a.toFinset ⊆ S5 := (mem_toMultisetsOne_iff (s := S5) a).mp ha |>.1
-    have hbsub : b.toFinset ⊆ S10 := (mem_toMultisetsTwo_iff (s := S10) b).mp hb |>.1
+    rcases hmem.1 with ⟨ha, hb⟩
+    have hasub : a.toFinset ⊆ S5 := ha.1
+    have hbsub : b.toFinset ⊆ S10 := hb.1
     simp [hasub, hbsub]
   case K2 =>
     rcases hx with ⟨a, a1, b, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨ha, hrest⟩
-    rcases Multiset.mem_product.mp hrest with ⟨ha1, hb⟩
-    have hbsub : b.toFinset ⊆ S10 := (mem_toMultisetsOne_iff (s := S10) b).mp hb |>.1
+    rcases hmem.1 with ⟨ha, hrest⟩
+    rcases hrest with ⟨ha1, hb⟩
+    have hbsub : b.toFinset ⊆ S10 := hb.1
     exact ⟨by simpa [Finset.mem_val] using ha, by simpa [Finset.mem_val] using ha1, by simp, hbsub⟩
   case topYukawa =>
     rcases hx with ⟨a, b, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨ha, hb⟩
+    rcases hmem.1 with ⟨ha, hb⟩
     have hasub : (a : Option 𝓩).toFinset ⊆ S5 := by simpa [Finset.mem_val] using ha
-    have hbsub : b.toFinset ⊆ S10 := (mem_toMultisetsTwo_iff (s := S10) b).mp hb |>.1
+    have hbsub : b.toFinset ⊆ S10 := hb.1
     simpa [hasub, hbsub]
   case bottomYukawa =>
     rcases hx with ⟨a, a1, b, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨ha, hrest⟩
-    rcases Multiset.mem_product.mp hrest with ⟨ha1, hb⟩
+    rcases hmem.1 with ⟨ha, hrest⟩
+    rcases hrest with ⟨ha1, hb⟩
     have hasub : (a : Option 𝓩).toFinset ⊆ S5 := by simpa [Finset.mem_val] using ha
-    have ha1sub : a1.toFinset ⊆ S5 := (mem_toMultisetsOne_iff (s := S5) a1).mp ha1 |>.1
-    have hbsub : b.toFinset ⊆ S10 := (mem_toMultisetsOne_iff (s := S10) b).mp hb |>.1
+    have ha1sub : a1.toFinset ⊆ S5 := ha1.1
+    have hbsub : b.toFinset ⊆ S10 := hb.1
     simpa [hasub, ha1sub, hbsub]
 lemma minimallyAllowsTermOfFinset_subset_ofFinset {S5 S10 : Finset 𝓩} {T : PotentialTerm} :
     minimallyAllowsTermsOfFinset S5 S10 T ⊆ (ofFinset S5 S10).val := by
@@ -444,8 +444,8 @@ lemma eq_allowsTermForm_of_mem_minimallyAllowsTermOfFinset {S5 S10 : Finset 𝓩
     simpa [allowsTermForm, hqHu]
   case β =>
     rcases hx with ⟨a, Q5, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨_, hQ5⟩
-    have hcard : Q5.card = 1 := (mem_toMultisetsOne_iff (s := S5) Q5).mp hQ5 |>.2
+    rcases hmem.1 with ⟨_, hQ5⟩
+    have hcard : Q5.card = 1 := hQ5.2
     rcases Multiset.card_eq_one.mp hcard with ⟨q5, rfl⟩
     have hEq : -a + q5 = 0 := by simpa using hmem.2
     have hq5 : q5 = a := by
@@ -456,9 +456,9 @@ lemma eq_allowsTermForm_of_mem_minimallyAllowsTermOfFinset {S5 S10 : Finset 𝓩
     simpa [allowsTermForm, hq5]
   case Λ =>
     rcases hx with ⟨Q5, Q10, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨hQ5, hQ10⟩
-    have hQ5card : Q5.card = 2 := (mem_toMultisetsTwo_iff (s := S5) Q5).mp hQ5 |>.2
-    have hQ10card : Q10.card = 1 := (mem_toMultisetsOne_iff (s := S10) Q10).mp hQ10 |>.2
+    rcases hmem.1 with ⟨hQ5, hQ10⟩
+    have hQ5card : Q5.card = 2 := hQ5.2
+    have hQ10card : Q10.card = 1 := hQ10.2
     rcases Multiset.card_eq_two.mp hQ5card with ⟨q5a, q5b, rfl⟩
     rcases Multiset.card_eq_one.mp hQ10card with ⟨q10, rfl⟩
     have hEq : q5a + q5b + q10 = 0 := by
@@ -473,9 +473,9 @@ lemma eq_allowsTermForm_of_mem_minimallyAllowsTermOfFinset {S5 S10 : Finset 𝓩
   case W1 =>
     rcases hx with ⟨hx, _⟩
     rcases hx with ⟨Q5, Q10, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨hQ5, hQ10⟩
-    have hQ5card : Q5.card = 1 := (mem_toMultisetsOne_iff (s := S5) Q5).mp hQ5 |>.2
-    have hQ10card : Q10.card = 3 := (mem_toMultisetsThree_iff (s := S10) Q10).mp hQ10 |>.2
+    rcases hmem.1 with ⟨hQ5, hQ10⟩
+    have hQ5card : Q5.card = 1 := hQ5.2
+    have hQ10card : Q10.card = 3 := hQ10.2
     rcases Multiset.card_eq_one.mp hQ5card with ⟨q5, rfl⟩
     rcases Multiset.card_eq_three.mp hQ10card with ⟨q10a, q10b, q10c, rfl⟩
     have hEq : q5 + (q10a + q10b + q10c) = 0 := by
@@ -490,8 +490,8 @@ lemma eq_allowsTermForm_of_mem_minimallyAllowsTermOfFinset {S5 S10 : Finset 𝓩
   case W2 =>
     rcases hx with ⟨hx, _⟩
     rcases hx with ⟨qHd, Q10, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨_, hQ10⟩
-    have hQ10card : Q10.card = 3 := (mem_toMultisetsThree_iff (s := S10) Q10).mp hQ10 |>.2
+    rcases hmem.1 with ⟨_, hQ10⟩
+    have hQ10card : Q10.card = 3 := hQ10.2
     rcases Multiset.card_eq_three.mp hQ10card with ⟨q10a, q10b, q10c, rfl⟩
     have hEq : qHd + (q10a + q10b + q10c) = 0 := by
       simpa [Multiset.sum_cons, add_assoc] using hmem.2
@@ -504,8 +504,8 @@ lemma eq_allowsTermForm_of_mem_minimallyAllowsTermOfFinset {S5 S10 : Finset 𝓩
     simp [allowsTermForm]
   case W3 =>
     rcases hx with ⟨qHu, Q5, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨_, hQ5⟩
-    have hQ5card : Q5.card = 2 := (mem_toMultisetsTwo_iff (s := S5) Q5).mp hQ5 |>.2
+    rcases hmem.1 with ⟨_, hQ5⟩
+    have hQ5card : Q5.card = 2 := hQ5.2
     rcases Multiset.card_eq_two.mp hQ5card with ⟨q5a, q5b, rfl⟩
     have hEq : -((2 : ℤ) • qHu) + (q5a + q5b) = 0 := by
       simpa [Multiset.sum_cons, add_assoc] using hmem.2
@@ -523,9 +523,9 @@ lemma eq_allowsTermForm_of_mem_minimallyAllowsTermOfFinset {S5 S10 : Finset 𝓩
     simp [hzsmul]
   case W4 =>
     rcases hx with ⟨qHd, qHu, Q5, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨_, hrest⟩
-    rcases Multiset.mem_product.mp hrest with ⟨_, hQ5⟩
-    have hQ5card : Q5.card = 1 := (mem_toMultisetsOne_iff (s := S5) Q5).mp hQ5 |>.2
+    rcases hmem.1 with ⟨_, hrest⟩
+    rcases hrest with ⟨_, hQ5⟩
+    have hQ5card : Q5.card = 1 := hQ5.2
     rcases Multiset.card_eq_one.mp hQ5card with ⟨q5, rfl⟩
     have hEq : qHd - 2 • qHu + q5 = 0 := by simpa using hmem.2
     have hqHd : qHd = -q5 - 2 • (-qHu) := by
@@ -537,9 +537,9 @@ lemma eq_allowsTermForm_of_mem_minimallyAllowsTermOfFinset {S5 S10 : Finset 𝓩
     simp [allowsTermForm]
   case K1 =>
     rcases hx with ⟨Q5, Q10, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨hQ5, hQ10⟩
-    have hQ5card : Q5.card = 1 := (mem_toMultisetsOne_iff (s := S5) Q5).mp hQ5 |>.2
-    have hQ10card : Q10.card = 2 := (mem_toMultisetsTwo_iff (s := S10) Q10).mp hQ10 |>.2
+    rcases hmem.1 with ⟨hQ5, hQ10⟩
+    have hQ5card : Q5.card = 1 := hQ5.2
+    have hQ10card : Q10.card = 2 := hQ10.2
     rcases Multiset.card_eq_one.mp hQ5card with ⟨q5, rfl⟩
     rcases Multiset.card_eq_two.mp hQ10card with ⟨q10a, q10b, rfl⟩
     have hEq : -q5 + (q10a + q10b) = 0 := by
@@ -553,9 +553,9 @@ lemma eq_allowsTermForm_of_mem_minimallyAllowsTermOfFinset {S5 S10 : Finset 𝓩
     simp [allowsTermForm]
   case K2 =>
     rcases hx with ⟨qHd, qHu, Q10, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨_, hrest⟩
-    rcases Multiset.mem_product.mp hrest with ⟨_, hQ10⟩
-    have hQ10card : Q10.card = 1 := (mem_toMultisetsOne_iff (s := S10) Q10).mp hQ10 |>.2
+    rcases hmem.1 with ⟨_, hrest⟩
+    rcases hrest with ⟨_, hQ10⟩
+    have hQ10card : Q10.card = 1 := hQ10.2
     rcases Multiset.card_eq_one.mp hQ10card with ⟨q10, rfl⟩
     have hEq : qHd + qHu + q10 = 0 := by simpa using hmem.2
     have hq10 : q10 = -qHd - qHu := by
@@ -567,8 +567,8 @@ lemma eq_allowsTermForm_of_mem_minimallyAllowsTermOfFinset {S5 S10 : Finset 𝓩
     simp [allowsTermForm]
   case topYukawa =>
     rcases hx with ⟨qHu, Q10, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨_, hQ10⟩
-    have hQ10card : Q10.card = 2 := (mem_toMultisetsTwo_iff (s := S10) Q10).mp hQ10 |>.2
+    rcases hmem.1 with ⟨_, hQ10⟩
+    have hQ10card : Q10.card = 2 := hQ10.2
     rcases Multiset.card_eq_two.mp hQ10card with ⟨q10a, q10b, rfl⟩
     have hEq : -qHu + (q10a + q10b) = 0 := by
       simpa [Multiset.sum_cons, add_assoc] using hmem.2
@@ -581,10 +581,10 @@ lemma eq_allowsTermForm_of_mem_minimallyAllowsTermOfFinset {S5 S10 : Finset 𝓩
     simp [allowsTermForm]
   case bottomYukawa =>
     rcases hx with ⟨qHd, Q5, Q10, hmem, rfl⟩
-    rcases Multiset.mem_product.mp hmem.1 with ⟨_, hrest⟩
-    rcases Multiset.mem_product.mp hrest with ⟨hQ5, hQ10⟩
-    have hQ5card : Q5.card = 1 := (mem_toMultisetsOne_iff (s := S5) Q5).mp hQ5 |>.2
-    have hQ10card : Q10.card = 1 := (mem_toMultisetsOne_iff (s := S10) Q10).mp hQ10 |>.2
+    rcases hmem.1 with ⟨_, hrest⟩
+    rcases hrest with ⟨hQ5, hQ10⟩
+    have hQ5card : Q5.card = 1 := hQ5.2
+    have hQ10card : Q10.card = 1 := hQ10.2
     rcases Multiset.card_eq_one.mp hQ5card with ⟨q5, rfl⟩
     rcases Multiset.card_eq_one.mp hQ10card with ⟨q10, rfl⟩
     have hEq : qHd + q5 + q10 = 0 := by simpa [Multiset.sum_cons, add_assoc] using hmem.2
@@ -683,10 +683,10 @@ lemma mem_minimallyAllowsTermOfFinset_of_minimallyAllowsTerm {S5 S10 : Finset �
   rw [mem_ofFinset_iff] at hx
   cases T <;> simp [minimallyAllowsTermsOfFinset, allowsTermForm] at hx ⊢
   case μ =>
-    exact Multiset.mem_product.mpr ⟨Finset.mem_val.mpr hx, Finset.mem_val.mpr hx⟩
+    exact hx
   case β =>
     refine ⟨(({a} : Finset 𝓩).val), ?_⟩
-    refine ⟨⟨Multiset.mem_product.mpr ⟨Finset.mem_val.mpr hx, mem_toMultisetsOne_singleton hx⟩, ?_⟩,
+    refine ⟨⟨⟨hx, by simpa using (mem_toMultisetsOne_singleton (S := S5) (z := a) hx)⟩, ?_⟩,
       by simp⟩
     simp [Multiset.sum_singleton]
   case Λ =>
@@ -694,7 +694,8 @@ lemma mem_minimallyAllowsTermOfFinset_of_minimallyAllowsTerm {S5 S10 : Finset �
     have ha : a ∈ S5 := h5 (by simp)
     have hb : b ∈ S5 := h5 (by simp)
     refine ⟨(a ::ₘ b ::ₘ 0), (({-a - b} : Finset 𝓩).val), ?_⟩
-    refine ⟨⟨Multiset.mem_product.mpr ⟨mem_toMultisetsTwo_pair ha hb, mem_toMultisetsOne_singleton h10⟩,
+    refine ⟨⟨⟨by simpa using (mem_toMultisetsTwo_pair (S := S5) ha hb),
+      by simpa using (mem_toMultisetsOne_singleton (S := S10) (z := -a - b) h10)⟩,
       ?_⟩, by simp, by simp⟩
     simp [Multiset.sum_cons]
   case W1 =>
@@ -704,8 +705,9 @@ lemma mem_minimallyAllowsTermOfFinset_of_minimallyAllowsTerm {S5 S10 : Finset �
     have hc : c ∈ S10 := h10 (by simp)
     refine ⟨?_, ?_⟩
     · refine ⟨(({-a - b - c} : Finset 𝓩).val), (a ::ₘ b ::ₘ c ::ₘ 0), ?_⟩
-      refine ⟨⟨Multiset.mem_product.mpr
-        ⟨mem_toMultisetsOne_singleton h5, mem_toMultisetsThree_triple ha hb hc⟩, ?_⟩, by simp,
+      refine ⟨⟨⟨by simpa using
+          (mem_toMultisetsOne_singleton (S := S5) (z := -a - b - c) h5),
+        by simpa using (mem_toMultisetsThree_triple (S := S10) ha hb hc)⟩, ?_⟩, by simp,
         by simp⟩
       simp [Multiset.sum_cons]
       abel
@@ -717,8 +719,8 @@ lemma mem_minimallyAllowsTermOfFinset_of_minimallyAllowsTerm {S5 S10 : Finset �
     have hc : c ∈ S10 := h10 (by simp)
     refine ⟨?_, ?_⟩
     · refine ⟨(a ::ₘ b ::ₘ c ::ₘ 0), ?_⟩
-      refine ⟨⟨Multiset.mem_product.mpr
-        ⟨Finset.mem_val.mpr h5, mem_toMultisetsThree_triple ha hb hc⟩, ?_⟩, by simp⟩
+      refine ⟨⟨⟨h5, by simpa using (mem_toMultisetsThree_triple (S := S10) ha hb hc)⟩,
+        ?_⟩, by simp⟩
       simp [Multiset.sum_cons]
       abel
     · simpa [allowsTermForm] using h
@@ -727,16 +729,15 @@ lemma mem_minimallyAllowsTermOfFinset_of_minimallyAllowsTerm {S5 S10 : Finset �
     have hb : b ∈ S5 := h5 (by simp)
     have hb2 : -b - 2 • a ∈ S5 := h5 (by simp)
     refine ⟨(b ::ₘ (-b - 2 • a) ::ₘ 0), ?_⟩
-    refine ⟨⟨Multiset.mem_product.mpr ⟨Finset.mem_val.mpr hHu, mem_toMultisetsTwo_pair hb hb2⟩,
+    refine ⟨⟨⟨hHu, by simpa using (mem_toMultisetsTwo_pair (S := S5) hb hb2)⟩,
       ?_⟩, by simp⟩
     simp [Multiset.sum_cons]
     abel
   case W4 =>
     rcases hx with ⟨hHd, hHu, h5⟩
     refine ⟨(({c} : Finset 𝓩).val), ?_⟩
-    refine ⟨⟨Multiset.mem_product.mpr
-      ⟨Finset.mem_val.mpr hHd,
-        Multiset.mem_product.mpr ⟨Finset.mem_val.mpr hHu, mem_toMultisetsOne_singleton h5⟩⟩,
+    refine ⟨⟨⟨hHd, hHu,
+        by simpa using (mem_toMultisetsOne_singleton (S := S5) (z := c) h5)⟩,
       ?_⟩, by simp⟩
     simp [Multiset.sum_singleton]
   case K1 =>
@@ -744,15 +745,14 @@ lemma mem_minimallyAllowsTermOfFinset_of_minimallyAllowsTerm {S5 S10 : Finset �
     have hb : b ∈ S10 := h10 (by simp)
     have hab : -a - b ∈ S10 := h10 (by simp)
     refine ⟨(({-a} : Finset 𝓩).val), (b ::ₘ (-a - b) ::ₘ 0), ?_⟩
-    refine ⟨⟨Multiset.mem_product.mpr
-      ⟨mem_toMultisetsOne_singleton h5, mem_toMultisetsTwo_pair hb hab⟩, ?_⟩, by simp, by simp⟩
+    refine ⟨⟨⟨by simpa using (mem_toMultisetsOne_singleton (S := S5) (z := -a) h5),
+      by simpa using (mem_toMultisetsTwo_pair (S := S10) hb hab)⟩, ?_⟩, by simp, by simp⟩
     simp [Multiset.sum_cons]
   case K2 =>
     rcases hx with ⟨ha, hb, hab⟩
     refine ⟨(({-a - b} : Finset 𝓩).val), ?_⟩
-    refine ⟨⟨Multiset.mem_product.mpr
-      ⟨Finset.mem_val.mpr ha,
-        Multiset.mem_product.mpr ⟨Finset.mem_val.mpr hb, mem_toMultisetsOne_singleton hab⟩⟩,
+    refine ⟨⟨⟨ha, hb,
+        by simpa using (mem_toMultisetsOne_singleton (S := S10) (z := -a - b) hab)⟩,
       ?_⟩, by simp⟩
     simp [Multiset.sum_singleton]
   case topYukawa =>
@@ -760,16 +760,15 @@ lemma mem_minimallyAllowsTermOfFinset_of_minimallyAllowsTerm {S5 S10 : Finset �
     have hb : b ∈ S10 := h10 (by simp)
     have hab : -a - b ∈ S10 := h10 (by simp)
     refine ⟨(b ::ₘ (-a - b) ::ₘ 0), ?_⟩
-    refine ⟨⟨Multiset.mem_product.mpr
-      ⟨Finset.mem_val.mpr hHu, mem_toMultisetsTwo_pair hb hab⟩, ?_⟩, by simp⟩
+    refine ⟨⟨⟨hHu, by simpa using (mem_toMultisetsTwo_pair (S := S10) hb hab)⟩,
+      ?_⟩, by simp⟩
     simp [Multiset.sum_cons]
   case bottomYukawa =>
     rcases hx with ⟨ha, hb, hab⟩
     refine ⟨(({b} : Finset 𝓩).val), (({-a - b} : Finset 𝓩).val), ?_⟩
-    refine ⟨⟨Multiset.mem_product.mpr
-      ⟨Finset.mem_val.mpr ha,
-        Multiset.mem_product.mpr
-          ⟨mem_toMultisetsOne_singleton hb, mem_toMultisetsOne_singleton hab⟩⟩, ?_⟩, by simp,
+    refine ⟨⟨⟨ha,
+        by simpa using (mem_toMultisetsOne_singleton (S := S5) (z := b) hb),
+        by simpa using (mem_toMultisetsOne_singleton (S := S10) (z := -a - b) hab)⟩, ?_⟩, by simp,
       by simp⟩
     simp [Multiset.sum_singleton]
 /-!

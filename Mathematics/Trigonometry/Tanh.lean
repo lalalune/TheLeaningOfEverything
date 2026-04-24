@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Afiq Hatta
 -/
 import Mathlib.Topology.Algebra.Polynomial
--- import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp  -- not built in this Mathlib version
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.DerivHyp
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Deriv
 import Mathlib.Analysis.Calculus.Deriv.Polynomial
 -- import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv  -- not built in this Mathlib version
@@ -46,8 +46,8 @@ lemma deriv_tanh : deriv Real.tanh = fun x => 1 - Real.tanh x ^ 2 := by
 lemma contDiff_tanh {n : ℕ} : ContDiff ℝ n tanh := by
   have hdiv : ContDiff ℝ n (fun x => Real.sinh x / Real.cosh x) := by
     apply ContDiff.div
-    · exact contDiff_sinh
-    · exact contDiff_cosh
+    · exact Real.contDiff_sinh
+    · exact Real.contDiff_cosh
     · intro x
       exact ne_of_gt (Real.cosh_pos x)
   conv =>
@@ -79,7 +79,7 @@ lemma iteratedDeriv_tanh_is_polynomial_of_tanh (n : ℕ) : ∃ P : Polynomial �
       P.hasDerivAt (tanh x)
     have h_tanh : HasDerivAt tanh (1 - tanh x ^ 2) x := by
       have hd : HasDerivAt tanh (deriv tanh x) x :=
-        ((contDiff_tanh (n := 1)).differentiable le_rfl).differentiableAt.hasDerivAt
+        ((contDiff_tanh (n := 1)).differentiable (by norm_num)).differentiableAt.hasDerivAt
       rwa [show deriv tanh x = 1 - tanh x ^ 2 from congr_fun deriv_tanh x] at hd
     rw [(h_poly.comp x h_tanh).deriv]
     simp [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_C,

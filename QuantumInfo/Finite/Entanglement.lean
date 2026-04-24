@@ -285,6 +285,7 @@ theorem EoF_of_MES : EoF (pure <| Ket.MES d) = Real.log (Finset.card Finset.univ
     exact convex_roof_of_pure (g := gE) (ψ := Ket.MES d) h_phase
   have h_von_neumann : Sᵥₙ (MState.uniform : MState d) = Real.log (Fintype.card d) := by
     rw [MState.uniform, Sᵥₙ_ofClassical ProbDistribution.uniform, Hₛ_uniform, Finset.card_univ]
-  simp only [NNReal.coe_mk]
+  rw [h_eof_pure]
+  change Sᵥₙ (pure (Ket.MES d)).traceRight = Real.log (Finset.card Finset.univ)
   rw [traceRight_pure_MES]
   exact h_von_neumann

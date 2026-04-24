@@ -1,8 +1,8 @@
 -- Auto-generated root import for Mathematics
 import Mathematics.Calculus.AdjFDeriv
 import Mathematics.Calculus.Divergence
-import Mathematics.DataStructures.Topology.Basic
-import Mathematics.DataStructures.Geometry.Basic
+import Mathematics.DataStructures.FourTree.Basic
+import Mathematics.DataStructures.FourTree.UniqueMap
 import Mathematics.Distribution.Basic
 import Mathematics.Distribution.PowMul
 import Mathematics.FDerivCurry

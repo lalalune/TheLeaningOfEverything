@@ -4,6 +4,6 @@ namespace Test.Consumer.Level1
 
 example : True := trivial
 #check Prob
-#check Distribution
+#check ProbDistribution
 
 end Test.Consumer.Level1

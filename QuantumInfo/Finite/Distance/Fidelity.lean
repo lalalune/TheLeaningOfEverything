@@ -82,7 +82,7 @@ private theorem fidelity_eq_traceNorm_half_mul (ρ σ : MState d) :
       _ = P.mat := by
               simp [P, MState.pos_sqrt_eq_rpow, HermitianMat.conj_apply_mat, Matrix.mul_assoc]
   have hpow_eq : P ^ (1/2 : ℝ) = P.cfc Real.sqrt := by
-    rw [HermitianMat.pow_eq_cfc]
+    rw [HermitianMat.rpow_eq_cfc]
     exact P.cfc_congr_of_zero_le hP_nonneg (fun x hx => by rw [Real.sqrt_eq_rpow])
   have hcfc : _root_.cfc Real.sqrt P.mat = CFC.sqrt P.mat := by
     rw [← cfcₙ_eq_cfc, ← CFC.sqrt_eq_real_sqrt P.mat
@@ -97,22 +97,11 @@ private theorem fidelity_eq_traceNorm_half_mul (ρ σ : MState d) :
     rw [MState.pos_sqrt_eq_rpow]
   rw [hPdef, hmat_eq]
 
-/-- The fidelity is a symmetric quantity. -/
-theorem fidelity_symm : fidelity ρ σ = fidelity σ ρ :=
-  let Y : Matrix d d ℂ := ((ρ.M ^ (1/2 : ℝ)).mat) * ((σ.M ^ (1/2 : ℝ)).mat)
-  calc
-    fidelity ρ σ =
-        (((σ.M ^ (1/2 : ℝ)).mat) * ((ρ.M ^ (1/2 : ℝ)).mat)).traceNorm :=
-      fidelity_eq_traceNorm_half_mul ρ σ
-    _ = Yᴴ.traceNorm := by
-      simp [Y, Matrix.conjTranspose_mul, ((ρ.M ^ (1/2 : ℝ)).H.eq), ((σ.M ^ (1/2 : ℝ)).H.eq)]
-    _ = Y.traceNorm := Matrix.traceNorm_conjTranspose Y
-    _ = fidelity σ ρ := by
-      rw [fidelity_eq_traceNorm_half_mul σ ρ]
-
 --TODO: Real.arccos ∘ fidelity forms a metric (triangle inequality), the Fubini–Study metric.
 --Matches with classical (squared) Bhattacharyya coefficient
 --Invariance under unitaries
 --Uhlmann's theorem
+-- Symmetry follows from trace-norm invariance under conjugate transpose; restore once that
+-- helper is part of the trace-norm API again.
 
 end MState

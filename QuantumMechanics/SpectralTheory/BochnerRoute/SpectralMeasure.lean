@@ -140,7 +140,7 @@ noncomputable def spectralDistribution (E : Set ℝ → H →L[ℂ] H) (ψ : H)
     (hE_mul : ∀ B C, MeasurableSet B → MeasurableSet C → E B * E C = E (B ∩ C))
     (hE_sa : ∀ B ψ φ, ⟪E B ψ, φ⟫_ℂ = ⟪ψ, E B φ⟫_ℂ)
     (hE_sot : ∀ t₀, Tendsto (fun t => E (Set.Iic t) ψ) (𝓝[>] t₀) (𝓝 (E (Set.Iic t₀) ψ))) :
-    StieltjesFunction where
+    StieltjesFunction ℝ where
   toFun := fun t => (⟪E (Set.Iic t) ψ, ψ⟫_ℂ).re
 
   mono' := fun s t hst => by
@@ -300,7 +300,8 @@ lemma spectral_inner_measure_eq (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectral
   haveI : IsLocallyFiniteMeasure (spectral_inner_measure E hE ψ) := by
     exact isLocallyFiniteMeasure_of_isFiniteMeasureOnCompacts
   haveI : IsLocallyFiniteMeasure (spectral_scalar_measure E ψ hE) := by
-    apply StieltjesFunction.instIsLocallyFiniteMeasure
+    unfold spectral_scalar_measure
+    infer_instance
   apply MeasureTheory.Measure.ext_of_Ioc
   intro a b hab
   rw [spectral_scalar_measure_apply_Ioc E hE ψ a b hab]

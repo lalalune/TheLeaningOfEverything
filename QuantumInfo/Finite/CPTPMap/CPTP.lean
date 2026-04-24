@@ -529,8 +529,7 @@ private lemma isometry_orthonormal_columns
       rw [← LinearMap.adjoint_inner_right]
       rw [← Matrix.toEuclideanLin_conjTranspose_eq_adjoint]
       simp [Matrix.toEuclideanLin_apply, Matrix.mulVec_mulVec]
-      rw [hV, Matrix.one_mulVec]
-      simp)
+      rw [hV, Matrix.one_mulVec])
   exact ((EuclideanSpace.basisFun n ℂ).orthonormal).comp_linearIsometry f
 
 private theorem exists_unitary_extension_of_isometry
@@ -641,7 +640,8 @@ private theorem embed_mul_mul_embed_conjTranspose_eq_kron_pure
   · simp [Matrix.mul_apply, Matrix.submatrix, Matrix.one_apply, Matrix.kroneckerMap,
       hpure, hi]
 
-Concretely, define the column vectors of V as an orthonormal family in EuclideanSpace ℂ m,
+  /-
+  Concretely, define the column vectors of V as an orthonormal family in EuclideanSpace ℂ m,
 indexed by the range of emb. Then use `Orthonormal.exists_orthonormalBasis_extension_of_card_eq`
 to extend this to a full OrthonormalBasis. The matrix of this basis is unitary.
 
@@ -767,7 +767,8 @@ theorem exists_purify (Λ : CPTPMap dIn dOut) :
     Λ.map ρ.m = MatrixMap.of_kraus K K ρ.m := by rw [hK]
     _ = (Matrix.traceLeft (d := dOut)) ((Matrix.traceLeft (d := dIn)) (V * ρ.m * Vᴴ)) := by
       symm
-      simpa [V] using traceLeft_traceLeft_stinespring_eq_of_kraus (dIn := dIn) (dOut := dOut) K ρ.m
+      simpa [V] using
+        (purify_isometry_condition (dIn := dIn) (dOut := dOut) (X := ρ.m) (K := K) hNorm)
     _ = (Matrix.traceLeft (d := dOut))
           ((Matrix.traceLeft (d := dIn)) (U.1 * (J * ρ.m * Jᴴ) * U.1ᴴ)) := by
         congr 1

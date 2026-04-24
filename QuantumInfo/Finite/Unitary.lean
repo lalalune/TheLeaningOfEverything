@@ -18,8 +18,6 @@ noncomputable section
 open RealInnerProductSpace
 open InnerProductSpace
 
-notation "𝐔[" n "]" => Matrix.unitaryGroup n ℂ
-
 namespace HermitianMat
 
 variable {𝕜 : Type*} [RCLike 𝕜] {n : Type*} [Fintype n] [DecidableEq n]

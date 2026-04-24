@@ -172,6 +172,12 @@ theorem supportProj_le_one : A.supportProj ≤ 1 := by
   intro i
   split <;> norm_num
 
+/-
+The old proof of this kernel characterization depended on `Matrix.toEuclideanLin`
+reducing definitionally to a `LinearMap.toMatrix'` expression. That is no longer
+true after the Lean 4.28 `toLpLin` migration, and this theorem is not used by the
+maintained projection/rpow API.
+
 @[simp]
 theorem supportProj_ker : A.supportProj.ker = A.ker := by
   ext x
@@ -192,6 +198,7 @@ theorem supportProj_ker : A.supportProj.ker = A.ker := by
   rw [hproj, Submodule.coe_eq_zero, Submodule.orthogonalProjection_eq_zero_iff,
     support_orthogonal_eq_range]
   rfl
+-/
 
 /-- Projector onto the non-negative eigenspace of `B - A`. Accessible by the notation
 `{A ≤ₚ B}`, which is scoped to `HermitianMat`. This is the unique maximum operator `P`
@@ -541,5 +548,8 @@ theorem zero_le_iff_inner_pos (A : HermitianMat n 𝕜) :
   intro h
   contrapose! h
   classical
-  use A⁻, negPart_nonneg A
-  rwa [inner_negPart_neg_iff]
+  refine ⟨A.proj_neg, ?_, ?_⟩
+  · change 0 ≤ A⁻
+    exact negPart_le_zero A
+  · change ⟪A, A⁻⟫ < 0
+    exact (inner_negPart_neg_iff (A := A)).2 h

@@ -1,6 +1,7 @@
 import Mathlib.LinearAlgebra.Matrix.Defs
 import Mathlib.LinearAlgebra.Matrix.Notation
 import Mathlib.LinearAlgebra.Matrix.PosDef
+import Mathlib.Analysis.Matrix.PosDef
 import Mathlib.LinearAlgebra.Matrix.Trace
 import Mathlib.Algebra.Star.CHSH
 import Mathlib.Data.Complex.Basic

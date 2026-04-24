@@ -12,7 +12,7 @@ namespace CoursePrelude
 namespace Level1
 
 #check Prob
-#check Distribution
+#check ProbDistribution
 #check UnitChoices
 
 end Level1

@@ -3,7 +3,7 @@ Copyright (c) 2025 Kenny Lau. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Kenny Lau, Joseph Tooby-Smith
 -/
-import Mathlib.Analysis.Distribution.SchwartzSpace
+import Mathlib.Analysis.Distribution.SchwartzSpace.Deriv
 /-!
 
 # Distributions (Generalized Functions)
@@ -38,7 +38,18 @@ abbrev TemperedDistribution (𝕜 E : Type*) [RCLike 𝕜]
 
 /-- The Dirac delta distribution at a point `a`, sending a Schwartz function `φ` to `φ(a)`. -/
 noncomputable def diracDelta (a : E) : TemperedDistribution 𝕜 E :=
-  SchwartzMap.delta (𝕜 := ℝ) (F := 𝕜) a
+  SchwartzMap.mkCLMtoNormedSpace (𝕜 := ℝ) (𝕜' := ℝ) (D := E) (E := 𝕜) (G := 𝕜)
+    (σ := RingHom.id ℝ) (fun f : 𝓢(E, 𝕜) => f a)
+    (by intro f g; rfl)
+    (by intro c f; rfl)
+    (by
+      refine ⟨{(0, 0)}, 1, by norm_num, ?_⟩
+      intro f
+      simpa [SchwartzMap.schwartzSeminormFamily_apply] using
+        SchwartzMap.norm_le_seminorm ℝ f a)
+
+@[simp]
+theorem diracDelta_apply (a : E) (f : 𝓢(E, 𝕜)) : diracDelta (𝕜 := 𝕜) a f = f a := rfl
 
 variable (𝕜' : Type*) [RCLike 𝕜'] {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
 

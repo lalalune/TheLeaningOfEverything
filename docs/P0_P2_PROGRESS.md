@@ -44,6 +44,12 @@ placeholder audits while active.
 - `lake build QuantumInfo.Finite.Qubit.Basic`: **pass**
 - `lake build QuantumInfo.Finite.Entropy.TraceIdentities`: **pass**
 - `lake build QuantumInfo.Finite.CPTPMap.Unbundled`: **pass**
-- Global `lake build`: **blocked by active skip file**
-  (`QuantumInfo/Finite/CPTPMap/CPTP.lean`).
+- Historical global `lake build` result for this pass: blocked by the then-active
+  skip entry `QuantumInfo/Finite/CPTPMap/CPTP.lean`.
 
+## Superseded status note
+
+As of 2026-04-24, `tools/foundation_skip_paths.txt` is empty and
+`tools/foundation_audit.sh --skip-build` passes. The root build is no longer
+blocked by active placeholder skips; the current observed root build failure is
+in `QuantumInfo.ForMathlib.HermitianMat.CFC`.

@@ -139,11 +139,6 @@ theorem PosDef.prod {ρ : MState (H i)} {σ : MState (H j)} (hρ : ρ.m.PosDef) 
 --   · contradiction
 --   · rfl
 
-@[simp]
-theorem qRelEntropy_prodRelabel (ρ₁ ρ₂ : MState (H i)) (σ₁ σ₂ : MState (H j)):
-    𝐃(ρ₁ ⊗ᵣ σ₁‖ρ₂ ⊗ᵣ σ₂) = 𝐃(ρ₁‖ρ₂) + 𝐃(σ₁‖σ₂) := by
-  simp [prodRelabel]
-
 end ResourcePretheory
 
 open ResourcePretheory
@@ -283,15 +278,6 @@ theorem statePow_rw {n m : ℕ} (h : n = m) (ρ : MState (H i)) :
     ρ ⊗ᵣ^[n] = (ρ ⊗ᵣ^[m]).relabel (Equiv.cast (by congr)) := by
   subst n
   simp
-
-@[simp]
-theorem qRelEntropy_statePow (ρ σ : MState (H i)) (n : ℕ) :
-    𝐃(ρ ⊗ᵣ^[n] ‖ σ  ⊗ᵣ^[n]) = n * 𝐃(ρ‖σ) := by
-  induction n
-  · simp
-  · rename_i n ih
-    rw [statePow_succ, statePow_succ, qRelEntropy_prodRelabel]
-    simp [ih, add_mul]
 
 theorem sInf_spectrum_rprod {j : ι} (ρ : MState (H i)) (σ : MState (H j)) :
     sInf (spectrum ℝ (ρ ⊗ᵣ σ).m) = sInf (spectrum ℝ ρ.m) * sInf (spectrum ℝ σ.m) := by

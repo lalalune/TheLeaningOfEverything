@@ -101,7 +101,7 @@ theorem inner_cfc_cross (A B : HermitianMat d ℂ) (f : ℝ → ℝ) :
     ext x y
     simp only [Matrix.sum_apply]
     simp [Matrix.mul_apply, Matrix.diagonal_apply, Matrix.vecMulVec, Algebra.smul_def,
-      mul_comm, mul_left_comm]
+      mul_assoc, mul_comm]
   have hB :
       (B.cfc f).mat =
         ∑ j, f (B.H.eigenvalues j) •
@@ -112,7 +112,7 @@ theorem inner_cfc_cross (A B : HermitianMat d ℂ) (f : ℝ → ℝ) :
     congr 1
     ext x y
     simp only [Matrix.mul_apply, Matrix.conjTranspose_apply, Matrix.single, Matrix.vecMulVec,
-      Matrix.IsHermitian.eigenvectorUnitary_apply, PiLp.ofLp_apply, Finset.sum_mul]
+      Matrix.IsHermitian.eigenvectorUnitary_apply, Finset.sum_mul]
     rw [Finset.sum_eq_single j]
     · simp [mul_comm]
     · intro j' _ hj'
@@ -182,46 +182,7 @@ theorem transition_matrix_self (A : HermitianMat d ℂ) (i j : d) :
 private lemma mulVec_eq_zero_iff_inner_eigenvector_zero_aux
     (A : HermitianMat d ℂ) (x : EuclideanSpace ℂ d) :
     A.mat.mulVec x = 0 ↔ ∀ i, A.H.eigenvalues i ≠ 0 → inner ℂ (A.H.eigenvectorBasis i) x = 0 := by
-  constructor <;> intro h
-  · simp only [ne_eq]
-    intro i hi
-    have := A.2
-    simp_all only [val_eq_coe]
-    have := Matrix.IsHermitian.mulVec_eigenvectorBasis A.2 i
-    replace this := congr_arg (fun y => inner ℂ y x) this
-    simp only [val_eq_coe, CStarModule.inner_smul_left_real, Complex.real_smul] at this
-    rename_i this1
-    simp only [selfAdjoint, AddSubgroup.mem_mk, AddSubmonoid.mem_mk, AddSubsemigroup.mem_mk,
-      Set.mem_setOf_eq] at this1
-    simp only [IsSelfAdjoint] at this1
-    simp only [inner, Matrix.mulVec, dotProduct, mat_apply, PiLp.ofLp_apply, map_sum,
-      map_mul] at this ⊢
-    simp only [funext_iff, Pi.zero_apply, ← Matrix.ext_iff, Matrix.star_apply, mat_apply,
-      RCLike.star_def] at this this1 h
-    simp_all only [Matrix.mulVec, dotProduct, mat_apply, mul_comm, Finset.mul_sum, mul_left_comm]
-    rw [Finset.sum_comm] at this
-    simp_all only [← mul_assoc, ← Finset.sum_mul, zero_mul, Finset.sum_const_zero]
-    rw [eq_comm] at this
-    simp_all only [mul_assoc]
-    rw [← Finset.sum_congr rfl fun _ _ => by rw [mul_left_comm]] at this
-    simp_all [← Finset.mul_sum]
-  · ext i
-    replace this := congr_arg (fun m => m.mulVec x i) A.H.spectral_theorem
-    simp_all only [ne_eq, Matrix.mulVec, mat_apply, Complex.coe_algebraMap,
-      Matrix.mul_assoc, Pi.zero_apply]
-    simp_all only [dotProduct, Matrix.mul_apply, Matrix.IsHermitian.eigenvectorUnitary_apply,
-      PiLp.ofLp_apply, Matrix.star_apply, RCLike.star_def]
-    simp_all only [Matrix.diagonal, Function.comp_apply, Matrix.of_apply, ite_mul,
-      zero_mul, Finset.sum_ite_eq, ↓reduceIte, mul_left_comm, Finset.sum_mul, mul_assoc]
-    rw [Finset.sum_comm]
-    refine Finset.sum_eq_zero fun j hj => ?_
-    by_cases h2 : A.H.eigenvalues j = 0
-    · simp_all only [mul_comm, mul_left_comm, Finset.mem_univ, Complex.ofReal_zero, zero_mul,
-        mul_zero, Finset.sum_const_zero]
-    simp_all only [mul_comm, mul_left_comm, Finset.mem_univ]
-    convert congr_arg (fun y => A.H.eigenvalues j * (A.H.eigenvectorBasis j i) * y) (h j h2) using 1
-    · simp [mul_comm, mul_left_comm, Finset.mul_sum, inner]
-    · ring
+  exact HermitianMat.mulVec_eq_zero_iff_inner_eigenvector_zero A x
 
 private theorem transition_matrix_eq_zero_of_right_eigenvalue_zero
     (A B : HermitianMat d ℂ) (h_ker : B.ker ≤ A.ker) {i j : d}
@@ -230,10 +191,10 @@ private theorem transition_matrix_eq_zero_of_right_eigenvalue_zero
   have hB_mul : B.mat.mulVec (B.H.eigenvectorBasis j) = 0 := by
     simpa [hj] using B.H.mulVec_eigenvectorBasis j
   have hB_ker : B.H.eigenvectorBasis j ∈ B.ker := by
-    simpa [HermitianMat.ker, LinearMap.mem_ker, Matrix.toEuclideanLin_apply] using hB_mul
+    exact (HermitianMat.mem_ker_iff_mulVec_zero B (B.H.eigenvectorBasis j)).mpr hB_mul
   have hA_ker : B.H.eigenvectorBasis j ∈ A.ker := h_ker hB_ker
   have hA_mul : A.mat.mulVec (B.H.eigenvectorBasis j) = 0 := by
-    simpa [HermitianMat.ker, LinearMap.mem_ker, Matrix.toEuclideanLin_apply] using hA_ker
+    exact (HermitianMat.mem_ker_iff_mulVec_zero A (B.H.eigenvectorBasis j)).mp hA_ker
   have hinner :
       inner ℂ (A.H.eigenvectorBasis i) (B.H.eigenvectorBasis j) = 0 :=
     (mulVec_eq_zero_iff_inner_eigenvector_zero_aux A (B.H.eigenvectorBasis j)).1 hA_mul i hi

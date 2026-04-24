@@ -140,7 +140,7 @@ noncomputable def inverseCayleyOp (U : H →L[ℂ] H)
     (_ : ∀ ψ φ, ⟪U ψ, U φ⟫_ℂ = ⟪ψ, φ⟫_ℂ)
     (h_one : ∀ ψ, U ψ = ψ → ψ = 0)
     (_ : ∀ ψ, U ψ = -ψ → ψ = 0) :
-    LinearMap.range (ContinuousLinearMap.id ℂ H - U) →ₗ[ℂ] H where
+    LinearMap.range (ContinuousLinearMap.id ℂ H - U).toLinearMap →ₗ[ℂ] H where
   toFun := fun ⟨φ, hφ⟩ =>
     let ψ := Classical.choose hφ
     I • (U ψ + ψ)
@@ -211,7 +211,7 @@ theorem inverseCayleyOp_symmetric (U : H →L[ℂ] H)
     (hU : ∀ ψ φ, ⟪U ψ, U φ⟫_ℂ = ⟪ψ, φ⟫_ℂ)
     (h_one : ∀ ψ, U ψ = ψ → ψ = 0)
     (h_neg_one : ∀ ψ, U ψ = -ψ → ψ = 0) :
-    ∀ ψ φ : LinearMap.range (ContinuousLinearMap.id ℂ H - U),
+    ∀ ψ φ : LinearMap.range (ContinuousLinearMap.id ℂ H - U).toLinearMap,
       ⟪inverseCayleyOp U hU h_one h_neg_one ψ, (φ : H)⟫_ℂ =
       ⟪(ψ : H), inverseCayleyOp U hU h_one h_neg_one φ⟫_ℂ := by
   intro ⟨φ₁, hφ₁⟩ ⟨φ₂, hφ₂⟩
@@ -223,8 +223,12 @@ theorem inverseCayleyOp_symmetric (U : H →L[ℂ] H)
     rw [← hχ₁]; simp only [ContinuousLinearMap.sub_apply, ContinuousLinearMap.id_apply]
   have hφ₂_eq : φ₂ = χ₂ - U χ₂ := by
     rw [← hχ₂]; simp only [ContinuousLinearMap.sub_apply, ContinuousLinearMap.id_apply]
-  have hcoe₁ : (⟨φ₁, hφ₁⟩ : LinearMap.range (ContinuousLinearMap.id ℂ H - U)).val = φ₁ := rfl
-  have hcoe₂ : (⟨φ₂, hφ₂⟩ : LinearMap.range (ContinuousLinearMap.id ℂ H - U)).val = φ₂ := rfl
+  have hcoe₁ :
+      (⟨φ₁, hφ₁⟩ :
+        LinearMap.range (ContinuousLinearMap.id ℂ H - U).toLinearMap).val = φ₁ := rfl
+  have hcoe₂ :
+      (⟨φ₂, hφ₂⟩ :
+        LinearMap.range (ContinuousLinearMap.id ℂ H - U).toLinearMap).val = φ₂ := rfl
   show ⟪I • (U χ₁ + χ₁), φ₂⟫_ℂ = ⟪φ₁, I • (U χ₂ + χ₂)⟫_ℂ
   rw [hφ₁_eq, hφ₂_eq]
   rw [inner_smul_left, inner_smul_right]
@@ -238,7 +242,8 @@ theorem inverseCayleyOp_symmetric (U : H →L[ℂ] H)
 /-- The domain of `A` equals the range of `I - U`. -/
 theorem generator_domain_eq_range_one_minus_cayley {U_grp : OneParameterUnitaryGroup (H := H)}
     (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint) :
-    (gen.domain : Set H) = LinearMap.range (ContinuousLinearMap.id ℂ H - cayleyTransform gen hsa) := by
+    (gen.domain : Set H) =
+      (LinearMap.range (ContinuousLinearMap.id ℂ H - cayleyTransform gen hsa).toLinearMap : Set H) := by
   set U := cayleyTransform gen hsa with hU_def
   ext ψ
   constructor
@@ -251,16 +256,16 @@ theorem generator_domain_eq_range_one_minus_cayley {U_grp : OneParameterUnitaryG
         Resolvent.resolvent_at_neg_i_left_inverse gen hsa ψ hψ
       rw [h_res]
       module
-    have h_diff : (ContinuousLinearMap.id ℂ H - U) φ = (2 * I) • ψ := by
+    have h_diff : (ContinuousLinearMap.id ℂ H - U).toLinearMap φ = (2 * I) • ψ := by
+      change (ContinuousLinearMap.id ℂ H - U) φ = (2 * I) • ψ
       simp only [ContinuousLinearMap.sub_apply, ContinuousLinearMap.id_apply, h_Uφ]
       simp only [φ]
       module
     rw [@LinearMap.coe_range]
     use (2 * I)⁻¹ • φ
-    simp only [map_smul, h_diff, smul_smul]
+    rw [map_smul, h_diff, smul_smul]
     have h_ne : (2 : ℂ) * I ≠ 0 := by simp
-    field_simp [h_ne]
-    module
+    rw [inv_mul_cancel₀ h_ne, one_smul]
   · intro hψ
     rw [LinearMap.coe_range] at hψ
     obtain ⟨χ, hχ⟩ := hψ
@@ -275,19 +280,15 @@ theorem generator_domain_eq_range_one_minus_cayley {U_grp : OneParameterUnitaryG
         Resolvent.resolvent_at_neg_i_left_inverse gen hsa η hη_mem
       rw [h_res]
       module
-    have h_diff : (ContinuousLinearMap.id ℂ H - U) χ = (2 * I) • η := by
+    have h_diff : (ContinuousLinearMap.id ℂ H - U).toLinearMap χ = (2 * I) • η := by
+      change (ContinuousLinearMap.id ℂ H - U) χ = (2 * I) • η
       calc (ContinuousLinearMap.id ℂ H - U) χ
           = χ - U χ := by simp only [ContinuousLinearMap.sub_apply, ContinuousLinearMap.id_apply]
         _ = χ - (gen.op ⟨η, hη_mem⟩ - I • η) := by rw [h_Uχ]
         _ = (gen.op ⟨η, hη_mem⟩ + I • η) - (gen.op ⟨η, hη_mem⟩ - I • η) := by rw [← hχ_eq]
         _ = (2 * I) • η := by module
-    simp only [ContinuousLinearMap.coe_sub', ContinuousLinearMap.coe_id',
-               Pi.sub_apply, id_eq] at hχ
     rw [← hχ]
-    subst hχ
-    simp_all only [ContinuousLinearMap.coe_sub', ContinuousLinearMap.coe_id',
-                   Pi.sub_apply, id_eq, SetLike.mem_coe, U, η]
-    apply SMulMemClass.smul_mem
-    exact hη_mem
+    rw [h_diff]
+    exact gen.domain.smul_mem (2 * I) hη_mem
 
 end QuantumMechanics.Cayley

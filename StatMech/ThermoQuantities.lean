@@ -89,12 +89,6 @@ require Laplace-transform smoothness results that are not yet formalized in math
 We therefore keep only the definitions in this file and leave the differential identities
 to the concrete ensemble developments that establish the needed regularity hypotheses. -/
 
-open scoped ContDiff in
-example (x : ℝ) (f : ℝ → ℝ) (hf : ContDiffAt ℝ ω f x) : DifferentiableAt ℝ (deriv f) x := by
-  have := (hf.fderiv_right (m := ⊤) (OrderTop.le_top _)).differentiableAt (OrderTop.le_top _)
-  unfold deriv
-  fun_prop
-
 end MicroHamiltonian
 
 --! Specializing to a system of particles in space

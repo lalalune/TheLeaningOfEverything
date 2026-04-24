@@ -211,8 +211,7 @@ def fromL2 : WithLp 2 E →L[𝕜] E where
       · intro x
         have h := Real.sqrt_le_sqrt (h ((WithLp.equiv 2 E) x)).1
         simp [smul_eq_mul] at h
-        apply (le_inv_mul_iff₀' hc).2
-        convert h using 1
+        exact (le_inv_mul_iff₀' hc).2 (by simpa [mul_comm] using h)
 
 lemma fromL2_inner_left (x : WithLp 2 E) (y : E) : ⟪fromL2 𝕜 x, y⟫ = ⟪x, toL2 𝕜 y⟫ := rfl
 
@@ -309,14 +308,21 @@ lemma inner_neg_right' (x y : E) : ⟪x, -y⟫ = -⟪x, y⟫ :=
 
 @[simp]
 lemma inner_self_eq_zero' {x : E} : ⟪x, x⟫ = 0 ↔ x = 0 := by
-  erw [inner_self_eq_zero (E:=WithLp 2 E)]
+  constructor
+  · intro h
+    exact hE.core.definite x h
+  · intro hx
+    simp [hx]
 
 @[simp]
 lemma inner_sum'{ι : Type*} [Fintype ι] (x : E) (g : ι → E) :
     ⟪x, ∑ i, g i⟫ = ∑ i, ⟪x, g i⟫ := by
   have h1 := inner_sum (𝕜 := 𝕜) (E:=WithLp 2 E) (x := WithLp.toLp 2 x)
     (f := fun i => WithLp.toLp 2 (g i))
-  convert h1 (Finset.univ)
+  change ⟪WithLp.toLp 2 x, WithLp.toLp 2 (∑ i, g i)⟫ =
+    ∑ i, ⟪WithLp.toLp 2 x, WithLp.toLp 2 (g i)⟫
+  rw [WithLp.toLp_sum]
+  exact h1 Finset.univ
 
 @[fun_prop]
 lemma Continuous.inner' {α} [TopologicalSpace α] (f g : α → E)
@@ -490,8 +496,6 @@ instance {ι : Type*} [Fintype ι] : InnerProductSpace' 𝕜 (ι → E) where
     simp only [isUnit_iff_ne_zero, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true,
       IsUnit.inv_mul_cancel, Real.rpow_one]
     congr 1
-    funext i
-    exact Real.sq_sqrt (InnerProductSpace.Core.inner_self_nonneg)
 
   inner_top_equiv_norm := by
     obtain ⟨c, d, hc, hd, hcd⟩ := inner_top_equiv_norm (𝕜 := 𝕜) (E := E)

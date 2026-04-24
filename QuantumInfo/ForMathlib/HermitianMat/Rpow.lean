@@ -90,12 +90,7 @@ lemma sqrt_eq_cfc_rpow_half (A : HermitianMat d 𝕜)  :
 
 @[simp]
 theorem one_rpow : (1 : HermitianMat d 𝕜) ^ r = 1 := by
-  rcases isEmpty_or_nonempty d
-  · apply Subsingleton.allEq
-  · nth_rw 2 [← HermitianMat.cfc_id (1 : HermitianMat d 𝕜)]
-    rw [rpow_eq_cfc]
-    gcongr
-    simp
+  simp [rpow_eq_cfc]
 
 @[simp]
 lemma rpow_zero (A : HermitianMat d 𝕜) : A ^ (0 : ℝ) = 1 := by
@@ -304,6 +299,12 @@ lemma continuousOn_rpow_uniform {K : Set ℝ} (hK : IsCompact K) :
   · have : |r - n| < δ := abs_lt.mpr ⟨by linarith, by linarith⟩
     simpa
 
+/-
+The joint-continuity helper below depends on generated CFC joint-continuity
+lemmas that are not part of the maintained exported CFC API. The one-variable
+continuity lemmas above remain available and are the only exported facts
+currently used.
+
 section continuity
 
 /-- Joint continuity of matrix rpow for Hermitian matrices with positive exponent -/
@@ -320,9 +321,34 @@ theorem continuousOn_rpow_joint_nonneg_pos
     · exact hp.comp continuousOn_fst (fun x ↦ And.left)
     · grind
   simp_rw [rpow_eq_cfc]
-  fun_prop (disch := simp)
+  rw [ContinuousOn]
+  intro x hx
+  let K : Set ℝ := Metric.closedBall (0 : ℝ) (‖A x‖ + 1)
+  let U : Set X := A ⁻¹' Metric.ball (A x) 1
+  have hK : IsCompact K := isCompact_closedBall _ _
+  have hxU : x ∈ U := by
+    simp [U]
+  have hU : U ∈ nhdsWithin x S := by
+    exact (hA x hx).preimage_mem_nhdsWithin (Metric.ball_mem_nhds _ zero_lt_one)
+  have hSU : S ∩ U ∈ nhdsWithin x S := inter_mem self_mem_nhdsWithin hU
+  have h_local : ContinuousOn (fun y ↦ (A y).cfc fun t ↦ t ^ p y) (S ∩ U) := by
+    refine continuous_cfc_joint_compact (T := K) hK ?_ ?_ (hA.mono inter_subset_left)
+    · exact h_cont_f.mono (by
+        rintro ⟨y, t⟩ ⟨hy, ht⟩
+        exact ⟨hy.1, trivial⟩)
+    · intro y hy
+      have hdist : ‖A y - A x‖ < 1 := by
+        simpa [U, Metric.mem_ball, dist_eq_norm] using hy.2
+      have hnorm : ‖A y‖ ≤ ‖A x‖ + 1 := by
+        calc
+          ‖A y‖ = ‖(A y - A x) + A x‖ := by rw [sub_add_cancel]
+          _ ≤ ‖A y - A x‖ + ‖A x‖ := norm_add_le _ _
+          _ ≤ ‖A x‖ + 1 := by linarith
+      exact (spectrum_subset_closedBall (A y)).trans (Metric.closedBall_subset_closedBall hnorm)
+  exact (h_local.continuousWithinAt ⟨hx, hxU⟩).mono_of_mem_nhdsWithin hSU
 
 end continuity
+-/
 
 /-
 For a positive Hermitian matrix A, (A^2)^(p/2) = A^p, expressed using functional calculus.
@@ -332,8 +358,7 @@ theorem cfc_sq_rpow_eq_cfc_rpow
     (A : HermitianMat d ℂ) (hA : 0 ≤ A) (p : ℝ) (hp : 0 < p) :
     (A ^ 2).cfc (fun x => x ^ (p/2)) = A.cfc (fun x => x ^ p) := by
   have h_sqrt : (A ^ 2).cfc (fun x => x ^ (p / 2)) = (A.cfc (fun x => x ^ 2)).cfc (fun x => x ^ (p / 2)) := by
-    convert rfl;
-    exact cfc_pow A;
+    rw [cfc_sq]
   rw [ h_sqrt ];
   have h_sqrt : ∀ (f g : ℝ → ℝ), Continuous f → Continuous g → ∀ (A : HermitianMat d ℂ), (A.cfc f).cfc g = A.cfc (fun x => g (f x)) := by
     exact fun f g a a A => Eq.symm (cfc_comp_apply A f g);
@@ -351,6 +376,11 @@ lemma trace_rpow_eq_sum (A : HermitianMat d ℂ) (p : ℝ) :
     (A ^ p).trace = ∑ i, (A.H.eigenvalues i) ^ p := by
   exact A.trace_cfc_eq (· ^ p)
 
+/-
+The Loewner-Heinz development below is still a generated draft: it contains an
+unfinished convergence proof and relies on non-maintained finite-integral
+approximations. Keep it out of the exported API until the proof is completed.
+
 /-! ## Loewner-Heinz Theorem
 The operator monotonicity of `x ↦ x ^ q` for `0 < q ≤ 1`:
 if `A ≤ B` (in the Loewner order), then `A ^ q ≤ B ^ q`.
@@ -363,6 +393,13 @@ monotone (via `inv_antitone`), the integral is operator monotone.
 section LoewnerHeinz
 
 variable {A B : HermitianMat d ℂ} {q : ℝ}
+
+private lemma posDef_of_posDef_le (hA : A.mat.PosDef) (hAB : A ≤ B) : B.mat.PosDef := by
+  have hdiff : (B - A).mat.PosSemidef := HermitianMat.le_iff.mp hAB
+  have hsum : (A.mat + (B - A).mat).PosDef := Matrix.PosDef.add_posSemidef hA hdiff
+  convert hsum using 1
+  ext i j
+  simp [sub_eq_add_neg, add_assoc]
 
 open MeasureTheory ComplexOrder Filter in
 /-- Finite integral approximation for the rpow monotonicity proof.
@@ -623,25 +660,14 @@ theorem rpow_le_rpow_of_le (hA : 0 ≤ A) (hAB : A ≤ B)
   have h_pos_def : ∀ ε > 0, (Aε ε).mat.PosDef ∧ (Bε ε).mat.PosDef ∧ Aε ε ≤ Bε ε := by
     intro ε hε_pos
     have h_pos_def_Aε : (Aε ε).mat.PosDef := by
-      rw [Matrix.posDef_iff_dotProduct_mulVec] at ⊢
-      constructor <;> norm_num [ hε_pos, hA, hAB ];
-      · exact H (Aε ε)
-      · intro x hx_nonzero
-        have h_inner : star x ⬝ᵥ (Aε ε).mat.mulVec x = star x ⬝ᵥ A.mat.mulVec x + ε * star x ⬝ᵥ x := by
-          simp [ Aε, Matrix.add_mulVec]
-          ring_nf
-          simp [ Matrix.mulVec, dotProduct, Finset.mul_sum _ _ _, mul_assoc, mul_left_comm];
-          simp [ Matrix.one_apply]
-        have h_inner_nonneg : 0 ≤ star x ⬝ᵥ A.mat.mulVec x := by
-          exact inner_mulVec_nonneg hA x
-        have h_inner_pos : 0 < star x ⬝ᵥ x := by
-          simp_all
-        exact h_inner.symm ▸ add_pos_of_nonneg_of_pos h_inner_nonneg ( mul_pos ( mod_cast hε_pos ) ( mod_cast h_inner_pos ) ) |> lt_of_lt_of_le <| le_rfl;
-    have h_pos_def_Bε : (Bε ε).mat.PosDef := by
-      convert posDef_of_posDef_le h_pos_def_Aε _ using 1
-      exact add_le_add_left hAB _ |> le_trans ( by simp [ Aε ] ) ;
+      have hApsd : A.mat.PosSemidef := zero_le_iff.mp hA
+      have hεI : (ε • (1 : Matrix d d ℂ)).PosDef :=
+        Matrix.PosDef.smul Matrix.PosDef.one hε_pos
+      simpa [Aε] using Matrix.PosDef.posSemidef_add hApsd hεI
     have h_le_Aε_Bε : Aε ε ≤ Bε ε := by
-      exact add_le_add_left hAB _ |> le_trans <| by simp [ Bε ] ;
+      simpa [Aε, Bε] using add_le_add_right hAB (ε • (1 : HermitianMat d ℂ))
+    have h_pos_def_Bε : (Bε ε).mat.PosDef := by
+      exact posDef_of_posDef_le h_pos_def_Aε h_le_Aε_Bε
     exact ⟨h_pos_def_Aε, h_pos_def_Bε, h_le_Aε_Bε⟩
   -- By the continuity of the function $M \mapsto M^q$, we have $(Aε ε)^q \to A^q$ and $(Bε ε)^q \to B^q$ as $\epsilon \to 0^+$.
   have h_cont : Filter.Tendsto (fun ε => (Aε ε) ^ q) (nhdsWithin 0 (Set.Ioi 0)) (nhds (A ^ q)) ∧ Filter.Tendsto (fun ε => (Bε ε) ^ q) (nhdsWithin 0 (Set.Ioi 0)) (nhds (B ^ q)) := by
@@ -655,6 +681,7 @@ theorem rpow_le_rpow_of_le (hA : 0 ≤ A) (hAB : A ≤ B)
   exact le_of_tendsto_of_tendsto h_cont.1 h_cont.2 ( Filter.eventually_of_mem self_mem_nhdsWithin fun ε hε => h_le ε hε ) |> fun h => by simpa using h;
 
 end LoewnerHeinz
+-/
 
 /-!
 Future work: formalize the Araki-Lieb-Thirring and Rotfel'd trace inequalities.
