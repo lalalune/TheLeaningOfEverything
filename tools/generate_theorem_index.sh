@@ -8,6 +8,7 @@ OUT_FILE="${1:-docs/THEOREM_INDEX.md}"
 TMP_FILE="$(mktemp)"
 TMP_RAW="$(mktemp)"
 trap 'rm -f "$TMP_FILE" "$TMP_RAW"' EXIT
+PATTERN='^[[:space:]]*(theorem|lemma)[[:space:]]+[^[:space:]]+'
 
 {
   echo "# Theorem Index"
@@ -18,18 +19,31 @@ trap 'rm -f "$TMP_FILE" "$TMP_RAW"' EXIT
   echo "|---|---|---|---:|---:|"
 } > "$OUT_FILE"
 
-set +e
-rg -n '^[[:space:]]*(theorem|lemma)[[:space:]]+[A-Za-z0-9_'\''`.]+' . \
-  --glob '*.lean' \
-  --glob '!.lake/**' \
-  --glob '!scratch/**' \
-  --glob '!Meta/**' \
-  > "$TMP_RAW"
-RG_STATUS=$?
-set -e
+if command -v rg >/dev/null 2>&1; then
+  set +e
+  rg -n "$PATTERN" . \
+    --glob '*.lean' \
+    --glob '!.lake/**' \
+    --glob '!scratch/**' \
+    --glob '!Meta/**' \
+    > "$TMP_RAW"
+  SEARCH_STATUS=$?
+  set -e
 
-if [[ "$RG_STATUS" -ne 0 && "$RG_STATUS" -ne 1 ]]; then
-  exit "$RG_STATUS"
+  if [[ "$SEARCH_STATUS" -ne 0 && "$SEARCH_STATUS" -ne 1 ]]; then
+    exit "$SEARCH_STATUS"
+  fi
+else
+  while IFS= read -r file; do
+    set +e
+    grep -nE "$PATTERN" "$file" | sed "s|^|./$file:|"
+    SEARCH_STATUS="${PIPESTATUS[0]}"
+    set -e
+
+    if [[ "$SEARCH_STATUS" -ne 0 && "$SEARCH_STATUS" -ne 1 ]]; then
+      exit "$SEARCH_STATUS"
+    fi
+  done < <(git ls-files '*.lean' | awk '$0 !~ /^scratch\// && $0 !~ /^Meta\//') > "$TMP_RAW"
 fi
 
 LC_ALL=C sort -t ':' -k1,1 -k2,2n "$TMP_RAW" > "$TMP_FILE"
