@@ -401,96 +401,29 @@ theorem diagonal_le_iff {d₁ d₂ : n → 𝕜} : d₁ ≤ d₂ ↔ diagonal d�
 
 theorem le_smul_one_of_eigenvalues_iff (hA : A.IsHermitian) (c : ℝ) :
   (∀ i, hA.eigenvalues i ≤ c) ↔ A ≤ c • (1 : Matrix n n 𝕜) := by
-  let U : Matrix n n 𝕜 := ↑hA.eigenvectorUnitary
-  have hU : U.conjTranspose = star U := by simp only [star]
-  have hU' : U * star U = 1 := by
-    simp only [SetLike.coe_mem, Unitary.mul_star_self_of_mem, U]
-  have hc : c • (1 : Matrix n n 𝕜) = U * (c • 1) * U.conjTranspose := by
-    simp only [Algebra.mul_smul_comm, mul_one, hU, Algebra.smul_mul_assoc, hU']
-  have hc' : c • (1 : Matrix n n 𝕜) = diagonal (RCLike.ofReal ∘ fun _ : n ↦ c) := by
-    ext i j
-    simp only [smul_apply, one_apply, smul_ite, RCLike.real_smul_eq_coe_mul, mul_one, smul_zero,
-      diagonal, Function.comp_apply, of_apply]
-  have hAST : A = U * diagonal (RCLike.ofReal ∘ hA.eigenvalues) * U.conjTranspose := by
-    rw [hU]
-    exact IsHermitian.spectral_theorem hA
+  rw [← Algebra.algebraMap_eq_smul_one c]
+  rw [le_algebraMap_iff_spectrum_le (a := A) (r := c) (ha := hA)]
   constructor
   · intro h
-    exact (posSemidef_diagonal_iff.mpr fun i => by
-      exact_mod_cast sub_nonneg.mpr (h i)).mul_mul_conjTranspose_same U
-  · intro h
-    have hdiag' : (star U * (U * D' * star U) * U).PosSemidef := h.conjTranspose_mul_mul_same U
-    have hEq : star U * (U * D' * star U) * U = D' := by
-      calc
-        star U * (U * D' * star U) * U = (star U * U) * D' * (star U * U) := by
-          simp [Matrix.mul_assoc]
-        _ = D' := by simp [hU']
-    have hdiag : D'.PosSemidef := hEq ▸ hdiag'
-    rw [posSemidef_diagonal_iff] at hdiag
-    intro i
-    simp only [Function.comp_apply, algebraMap_le_algebraMap, h i]
-  intro hAc i
-  replace hAc := conjTranspose_mul_mul_mono U hAc
-  have hU'CT : star U * U = 1 := by
-    simp only [SetLike.coe_mem, Unitary.star_mul_self_of_mem, U]
-  have hcCT : U.conjTranspose * (c • 1) * U = c • (1 : Matrix n n 𝕜) := by
-    simp only [Algebra.mul_smul_comm, mul_one, hU, Algebra.smul_mul_assoc, hU'CT]
-  have hASTCT : U.conjTranspose * A * U = diagonal (RCLike.ofReal ∘ hA.eigenvalues) := by
-    rw [hU]
-    convert IsHermitian.conjStarAlgAut_star_eigenvectorUnitary hA using 1
-    simp +zetaDelta
-  rw [hcCT, hc', hASTCT, ←diagonal_le_iff] at hAc
-  specialize hAc i
-  simp only [Function.comp_apply, algebraMap_le_algebraMap] at hAc
-  exact hAc
+    intro x hx
+    rw [hA.spectrum_real_eq_range_eigenvalues] at hx
+    rcases hx with ⟨i, rfl⟩
+    exact h i
+  · intro h i
+    exact h (hA.eigenvalues i) (hA.eigenvalues_mem_spectrum_real i)
 
 theorem smul_one_le_of_eigenvalues_iff (hA : A.IsHermitian) (c : ℝ) :
   (∀ i, c ≤ hA.eigenvalues i) ↔ c • (1 : Matrix n n 𝕜) ≤ A := by
-  -- I did the lazy thing and just copied the previous proof
-  let U : Matrix n n 𝕜 := ↑hA.eigenvectorUnitary
-  have hU : U.conjTranspose = star U := by simp only [star]
-  have hU' : U * star U = 1 := by
-    simp only [SetLike.coe_mem, Unitary.mul_star_self_of_mem, U]
-  have hc : c • (1 : Matrix n n 𝕜) = U * (c • 1) * U.conjTranspose := by
-    simp only [Algebra.mul_smul_comm, mul_one, hU, Algebra.smul_mul_assoc, hU']
-  have hc' : c • (1 : Matrix n n 𝕜) = diagonal (RCLike.ofReal ∘ fun _ : n ↦ c) := by
-    ext i j
-    simp only [smul_apply, one_apply, smul_ite, RCLike.real_smul_eq_coe_mul, mul_one, smul_zero,
-      diagonal, Function.comp_apply, of_apply]
-  have hAST : A = U * diagonal (RCLike.ofReal ∘ hA.eigenvalues) * U.conjTranspose := by
-    rw [hU]
-    exact IsHermitian.spectral_theorem hA
+  rw [← Algebra.algebraMap_eq_smul_one c]
+  rw [algebraMap_le_iff_le_spectrum (a := A) (r := c) (ha := hA)]
   constructor
   · intro h
-    exact (posSemidef_diagonal_iff.mpr fun i => by
-      exact_mod_cast sub_nonneg.mpr (h i)).mul_mul_conjTranspose_same U
-  · intro h
-    have hdiag' : (star U * (U * D' * star U) * U).PosSemidef := h.conjTranspose_mul_mul_same U
-    have hEq : star U * (U * D' * star U) * U = D' := by
-      calc
-        star U * (U * D' * star U) * U = (star U * U) * D' * (star U * U) := by
-          simp [Matrix.mul_assoc]
-        _ = D' := by simp [hU']
-    have hdiag : D'.PosSemidef := hEq ▸ hdiag'
-    rw [posSemidef_diagonal_iff] at hdiag
-    intro i
-    simp only [Function.comp_apply, algebraMap_le_algebraMap, h i]
-  intro hAc i
-  replace hAc := conjTranspose_mul_mul_mono U hAc
-  have hU'CT : star U * U = 1 := by
-    simp only [SetLike.coe_mem, Unitary.star_mul_self_of_mem, U]
-  have hcCT : U.conjTranspose * (c • 1) * U = c • (1 : Matrix n n 𝕜) := by
-    simp only [Algebra.mul_smul_comm, mul_one, hU, Algebra.smul_mul_assoc, hU'CT]
-  have hASTCT : U.conjTranspose * A * U = diagonal (RCLike.ofReal ∘ hA.eigenvalues) := by
-    rw [hU]
-    convert IsHermitian.conjStarAlgAut_star_eigenvectorUnitary hA using 1
-    simp +zetaDelta
-  rw [hcCT, hc', hASTCT, ←diagonal_le_iff] at hAc
-  specialize hAc i
-  simp only [Function.comp_apply, algebraMap_le_algebraMap] at hAc
-  exact hAc
-
-end partialOrder
+    intro x hx
+    rw [hA.spectrum_real_eq_range_eigenvalues] at hx
+    rcases hx with ⟨i, rfl⟩
+    exact h i
+  · intro h i
+    exact h (hA.eigenvalues i) (hA.eigenvalues_mem_spectrum_real i)
 
 end PosSemidef
 

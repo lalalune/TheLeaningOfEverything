@@ -1,37 +1,65 @@
-# Lean-QuantumInfo
+# The Leaning Of Everything
 
-`Lean-QuantumInfo` is a Lean 4 formalization project centered on finite-dimensional quantum
-information theory, with supporting classical information theory and statistical mechanics modules.
-The repository also contains mathlib-adjacent infrastructure under `QuantumInfo/ForMathlib` for
-matrix, Hermitian, and channel arguments that do not fit cleanly in upstream mathlib yet.
+`TheLeaningOfEverything` is a Lean 4 project for building a checked foundation of mathematics
+and mathematical physics. The goal is to prove the structural results that let major areas of
+mathematics explain each other: algebra, analysis, geometry, probability, information theory,
+quantum theory, relativity, statistical mechanics, field theory, and the connective tissue between
+them.
 
-## Current build surface
+The repository started from finite-dimensional quantum information theory. It is now growing into a
+broader formal library: a place where foundational definitions, theorem statements, and proofs are
+made precise enough that Lean can check them.
 
-The current `lakefile.lean` defines three libraries:
+## What This Is
 
-- `QuantumInfo`
-- `ClassicalInfo`
-- `StatMech`
+This project is not a collection of informal notes. It is a proof engineering effort.
 
-Those are the supported entry points for `lake build`. The repository may contain additional draft
-modules or exploratory trees, but only modules wired into `lakefile.lean` are part of the default
-package build.
+The intended standard is:
 
-## What is in scope
+- state concepts in reusable mathematical language
+- prove the lemmas needed to move between fields
+- keep definitions close to mathlib conventions when possible
+- isolate reusable infrastructure under `ForMathlib` namespaces
+- replace sketchy theorem shells with Lean-checked proofs before treating code as part of the
+  supported surface
 
-The main body of the project currently covers:
+The long-term ambition is a unified formal account of major mathematics: not separate islands of
+formalization, but a network of shared foundations that can support serious theorem proving across
+physics, information, and pure mathematics.
 
-- finite-dimensional quantum states, channels, entropy, capacity, entanglement, and resource theory
-- classical probability, distributions, and entropy
-- supporting matrix/Hermitian/operator lemmas needed by the quantum library
-- early statistical mechanics infrastructure
+## Current Scope
 
-The finite-dimensional quantum information library remains the core of the repository.
+The active library surface includes:
+
+- `QuantumInfo`: finite-dimensional quantum states, channels, entropy, capacity, entanglement,
+  resource theory, and supporting operator facts
+- `ClassicalInfo`: probability distributions, classical channels, entropy, and capacity
+- `StatMech`: statistical mechanics foundations and examples
+- `Mathematics`, `Units`, and `Meta`: shared infrastructure, dimensional analysis, and project
+  tooling
+- physics-oriented libraries including `QuantumMechanics`, `Relativity`, `QFT`, `QEC`,
+  `ClassicalMechanics`, `Electromagnetism`, `Thermodynamics`, `Particles`, `Cosmology`,
+  `CondensedMatter`, `Optics`, `SpaceAndTime`, and `StringTheory`
+
+Some areas are mature enough to serve as dependencies for other files. Others are active
+formalization fronts. The build is the source of truth: code that is imported by `lakefile.lean`
+must elaborate under Lean.
+
+## Repository Layout
+
+- `QuantumInfo/ForMathlib/`: reusable matrix, Hermitian, unitary, convexity, and analysis facts that
+  are candidates for eventual upstreaming or mathlib-style reuse
+- `QuantumInfo/Finite/`: finite-dimensional quantum information theory
+- `ClassicalInfo/`: classical information theory
+- `StatMech/`: statistical mechanics
+- domain folders such as `Relativity/`, `QFT/`, `QuantumMechanics/`, `Units/`, and
+  `Mathematics/`: broader formalization targets
+- `lakefile.lean`: the authoritative list of Lean libraries built by the package
 
 ## Build
 
 ```bash
-lake update
+lake exe cache get
 lake build
 ```
 
@@ -43,36 +71,36 @@ lake build ClassicalInfo
 lake build StatMech
 ```
 
-## Repository layout
+The project tracks Lean through `lean-toolchain` and dependency revisions through
+`lake-manifest.json`.
 
-- `QuantumInfo/`: quantum information theory and supporting mathlib extensions
-- `ClassicalInfo/`: finite classical information theory
-- `StatMech/`: statistical mechanics modules
-- `DOC.md`: high-level documentation of major definitions and conventions
-- `TODO.md`: project task and theorem tracking
+## Direction
 
-## Project direction
+The near-term work is to keep extracting reusable proof infrastructure while tightening the proof
+standard:
 
-The long-term goal is a reusable Lean library for quantum information theory with a clean API
-surface and progressively fewer proof gaps. Recent work has focused on:
+- remove or replace unfinished theorem shells
+- prove the analytic and order-theoretic lemmas needed by entropy and information theory
+- make finite-dimensional quantum information a stable core library
+- connect physics-facing definitions back to shared mathematical foundations
+- upstream broadly useful lemmas when they are clean enough for mathlib
 
-- strengthening the low-level matrix/channel layer
-- isolating reusable finite-dimensional infrastructure
-- replacing local one-off arguments with portable lemmas and reusable APIs
+The long-term goal is simple to state and hard to execute: make the foundations of major
+mathematics and mathematical physics explicit, composable, and checked by Lean.
 
-## License and citation
+## License and Citation
 
 This repository is released under the MIT License; see [LICENSE](./LICENSE).
 
 If you cite the repository, use:
 
 ```bibtex
-@misc{meiburg2024quantuminfo,
-  author = {Meiburg, Alex},
-  title = {Quantum Information in Lean},
-  year = {2024},
+@misc{theleaningofeverything,
+  author = {Meiburg, Alex and contributors},
+  title = {The Leaning Of Everything},
+  year = {2026},
   publisher = {GitHub},
   journal = {GitHub repository},
-  howpublished = {\url{https://github.com/Timeroot/Lean-QuantumInfo}},
+  howpublished = {\url{https://github.com/lalalune/TheLeaningOfEverything}},
 }
 ```

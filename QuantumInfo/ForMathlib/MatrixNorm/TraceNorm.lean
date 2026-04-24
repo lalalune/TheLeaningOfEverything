@@ -58,7 +58,9 @@ theorem traceNorm_Hermitian_eq_sum_abs_eigenvalues {A : Matrix n n R} (hA : A.Is
         rw [habs_sq, cfc_pow_id (R := ℝ) (a := A) 2]
       exact hleft_sq.trans hright_sq.symm
     have htrace_abs : (hA.cfc abs).trace = ∑ i, ((abs (hA.eigenvalues i) : ℝ) : R) := by
-      rw [Matrix.IsHermitian.cfc, Matrix.trace_mul_cycle, hA.eigenvectorUnitary.2.1]
+      rw [Matrix.IsHermitian.cfc]
+      simp only [Unitary.conjStarAlgAut_apply]
+      rw [Matrix.trace_mul_cycle, hA.eigenvectorUnitary.2.1, one_mul]
       simp [Matrix.trace_diagonal]
     rw [traceNorm, hsqrt_eq, htrace_abs]
     simp
@@ -273,9 +275,9 @@ theorem traceNorm_triangleIneq {A B : Matrix n n ℂ} (hA : A.IsHermitian) (hB :
   calc
     (A + B).traceNorm = Complex.re ((Uab.1 * A).trace) + Complex.re ((Uab.1 * B).trace) := h₁.symm
     _ ≤ A.traceNorm + Complex.re ((Uab.1 * B).trace) := by
-          exact add_le_add_right h₂ _
+          exact add_le_add h₂ (le_refl _)
     _ ≤ A.traceNorm + B.traceNorm := by
-          exact add_le_add_left h₃ _
+          exact add_le_add (le_refl _) h₃
 
 theorem traceNorm_triangleIneq' {A B : Matrix n n ℂ} (hA : A.IsHermitian) (hB : B.IsHermitian) :
     (A - B).traceNorm ≤ A.traceNorm + B.traceNorm := by

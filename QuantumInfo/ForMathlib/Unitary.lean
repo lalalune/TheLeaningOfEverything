@@ -106,8 +106,10 @@ noncomputable def conj_unitary_eigenvalue_equiv (U : unitary (E →ₗ[𝕜] E))
     have h' := congrArg (fun x => b1.repr x i) h
     by_cases hij : i = j
     · subst hij
-      simpa [D1, Matrix.diagonal, OrthonormalBasis.repr_self, EuclideanSpace.single_apply] using h'
-    · simpa [D1, Matrix.diagonal, OrthonormalBasis.repr_self, EuclideanSpace.single_apply, hij] using h'
+      simpa [D1, Matrix.diagonal, OrthonormalBasis.repr_self, EuclideanSpace.single_apply,
+        RCLike.real_smul_eq_coe_mul] using h'
+    · simpa [D1, Matrix.diagonal, OrthonormalBasis.repr_self, EuclideanSpace.single_apply, hij,
+        RCLike.real_smul_eq_coe_mul] using h'
   have hb0 : LinearMap.toMatrix b0.toBasis b0.toBasis (U.1 * T * star U.1) = D0 := by
     ext i j
     rw [LinearMap.toMatrix_apply]

@@ -1276,15 +1276,8 @@ theorem qcmi_le_2_log_dim' (ρ : MState (dA × dB × dC)) :
   have := Sᵥₙ_subadditivity ρ.traceLeft
   grind [qcmi, qConditionalEnt, Sᵥₙ_le_log_d, MState.traceRight_left_assoc']
 
-/- The chain rule for quantum conditional mutual information:
-`I(A₁A₂ : C | B) = I(A₁:C|B) + I(A₂:C|BA₁)`.
-
-It should be something like this, but it's hard to track the indices correctly:
-theorem qcmi_chain_rule (ρ : MState ((dA₁ × dA₂) × dB × dC)) :
-    let ρA₁BC := ρ.assoc.SWAP.assoc.traceLeft.SWAP;
-    let ρA₂BA₁C : MState (dA₂ × (dA₁ × dB) × dC) :=
-      ((CPTPMap.id ⊗ₖ CPTPMap.assoc').compose (CPTPMap.assoc.compose (CPTPMap.SWAP ⊗ₖ CPTPMap.id))) ρ;
-    qcmi ρ = qcmi ρA₁BC + qcmi ρA₂BA₁C
-     := by
-  admit
+/-!
+Future work: state and prove the QCMI chain rule
+`I(A₁A₂ : C | B) = I(A₁:C|B) + I(A₂:C|BA₁)` once the index-reassociation
+maps have a stable API.
 -/

@@ -153,7 +153,7 @@ theorem kinetic_energy_dim :
 /-- The ideal gas law `PV = nRT` is dimensionally consistent:
     `[Pressure × Volume] = [Energy]`. -/
 theorem ideal_gas_law_dim :
-    Pressure * (Length.zpow 3) = Energy := by native_decide
+    Pressure * (Length.zpow 3) = Energy := by decide +kernel
 
 /-! ## Verification Tests -/
 
@@ -191,7 +191,7 @@ theorem acceleration_dim : Acceleration = ⟨1, 0, -2, 0, 0, 0, 0⟩ := by
         HDiv.hDiv, Div.div, div]
 
 /-- Pressure: `[M L⁻¹ T⁻²]`. -/
-theorem pressure_dim : Pressure = ⟨-1, 1, -2, 0, 0, 0, 0⟩ := by native_decide
+theorem pressure_dim : Pressure = ⟨-1, 1, -2, 0, 0, 0, 0⟩ := by decide +kernel
 
 /-- Angular momentum: `[M L² T⁻¹]`. -/
 theorem angular_momentum_dim : AngularMomentum = ⟨2, 1, -1, 0, 0, 0, 0⟩ := by

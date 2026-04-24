@@ -656,33 +656,8 @@ theorem rpow_le_rpow_of_le (hA : 0 ≤ A) (hAB : A ≤ B)
 
 end LoewnerHeinz
 
-section ArakiLiebThirring
-
-variable {A B : HermitianMat d ℂ} {q r : ℝ}
-
-/-- An inequality of Lieb-Thirring type. For 0 < r ≤ 1:
-  `Tr[B^r A^r B^r] ≤ Tr[(B A B)^r]`.
+/-!
+Future work: formalize the Araki-Lieb-Thirring and Rotfel'd trace inequalities.
+They require machinery not currently present in this file, so no theorem shells are
+exported here.
 -/
-lemma lieb_thirring_le_one
-    {A B : HermitianMat d ℂ} (hA : 0 ≤ A) (hB : 0 ≤ B)
-    {r : ℝ} (hq0 : 0 < r) (hq1 : q ≤ r) :
-    ((A ^ r).conj (B ^ r).mat).trace ≤ ((A.conj B.mat) ^ r).trace := by
-  sorry
-
-end ArakiLiebThirring
-
-/-
-Trace subadditivity (Rotfel'd inequality): for PSD A, B and 0 < p ≤ 1,
-Tr[(A + B)^p] ≤ Tr[A^p] + Tr[B^p].
-
-This isn't needed for anything else in the repository atm, but it would
-be nice to have as a fact.
-
-A stronger version states it as a majorization theorem. See
-e.g. https://www.math.uwaterloo.ca/~hwolkowi/henry/reports/thesismingmay613.pdf
--/
-lemma trace_rpow_add_le
-    {A B : HermitianMat d ℂ} (hA : 0 ≤ A) (hB : 0 ≤ B)
-    (p : ℝ) (hp : 0 < p) (hp1 : p ≤ 1) :
-    ((A + B) ^ p).trace ≤ (A ^ p).trace + (B ^ p).trace := by
-  sorry

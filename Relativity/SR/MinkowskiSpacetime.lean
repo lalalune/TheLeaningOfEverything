@@ -288,7 +288,7 @@ noncomputable def lorentzBoostX (v : ℝ) (hv : |v| < 1) : LorentzTransform 3 wh
     rw [Finset.sum_fin_eq_sum_range, Finset.sum_fin_eq_sum_range]
     simp only [Finset.sum_range_succ, Finset.sum_range_zero] --unused , add_zero, Fin.succ_zero_eq_one, Fin.succ_one_eq_two
     -- Handle Fin.succ for index 2 → 3
-    have h_succ2 : (⟨2, by omega⟩ : Fin 3).succ = (3 : Fin 4) := by native_decide
+    have h_succ2 : (⟨2, by omega⟩ : Fin 3).succ = (3 : Fin 4) := by decide +kernel
     -- Simplify all the if-then-else conditionals at concrete indices
     simp only [↓reduceIte, Fin.isValue, neg_mul, Nat.ofNat_pos, ↓reduceDIte, Nat.reduceAdd,
       Fin.zero_eta, Fin.succ_zero_eq_one, one_ne_zero, zero_add, Nat.one_lt_ofNat, Fin.mk_one,

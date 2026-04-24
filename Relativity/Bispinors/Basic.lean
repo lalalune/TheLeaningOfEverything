@@ -75,21 +75,11 @@ lemma coBispinorDown_eq_lowerBisp (p : ℂT[.down]) :
 
 -/
 
-/-- `{contrBispinorUp p | α β = εL | α α' ⊗ εR | β β'⊗ contrBispinorDown p | α' β' }ᵀ`.
-
-Proof: expand `contrBispinorDown` and use fact that metrics contract to the identity.
+/-!
+Future work: formalize the metric-contraction identities relating `contrBispinorUp`
+to `contrBispinorDown`, and `coBispinorUp` to `coBispinorDown`, once the tensor
+contraction API exposes the required metric identity lemmas.
 -/
-informal_lemma contrBispinorUp_eq_metric_contr_contrBispinorDown where
-  deps := [``contrBispinorUp, ``contrBispinorDown, ``leftMetric, ``rightMetric]
-  tag := "6V2PV"
-
-/-- `{coBispinorUp p | α β = εL | α α' ⊗ εR | β β'⊗ coBispinorDown p | α' β' }ᵀ`.
-
-proof: expand `coBispinorDown` and use fact that metrics contract to the identity.
--/
-informal_lemma coBispinorUp_eq_metric_contr_coBispinorDown where
-  deps := [``coBispinorUp, ``coBispinorDown, ``leftMetric, ``rightMetric]
-  tag := "6V2P6"
 
 end complexLorentzTensor
 end

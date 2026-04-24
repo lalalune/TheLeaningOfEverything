@@ -40,8 +40,8 @@ In other files we usually just consider one.
   - A.3. Finite set of viable `ZMod 2` charge spectra is empty
   - A.4. Finite set of viable `ZMod 3` charge spectra is empty
   - A.5. Finite set of viable `ZMod 4` has four elements
-  - A.6. Finite set of viable `ZMod 5` charge spectra is empty (pseudo result)
-  - A.7. Finite set of viable `ZMod 6` charge spectra is non-empty (pseudo result)
+  - A.6. Finite set of viable `ZMod 5` charge spectra is empty
+  - A.7. Finite set of viable `ZMod 6` charge spectra is non-empty
 - B. The finite set of viable `ZMod n × ZMod m` charge spectra
   - B.1. General construction
 
@@ -104,8 +104,7 @@ lemma ZModCharges_two_eq : ZModCharges 2 = ∅ := by decide
 
 /-- This lemma corresponds to the statement that there are no choices of `ℤ₃` representations
   which give a phenomenologically viable theory. -/
-@[pseudo]
-lemma ZModCharges_three_eq : ZModCharges 3 = ∅ := by native_decide
+lemma ZModCharges_three_eq : ZModCharges 3 = ∅ := by decide +kernel
 
 /-!
 
@@ -113,36 +112,33 @@ lemma ZModCharges_three_eq : ZModCharges 3 = ∅ := by native_decide
 
 -/
 
-@[pseudo]
 lemma ZModCharges_four_eq : ZModCharges 4 = {⟨some 0, some 2, {1}, {3}⟩,
     ⟨some 0, some 2, {3}, {1}⟩, ⟨some 1, some 2, {0}, {3}⟩, ⟨some 3, some 2, {0}, {1}⟩} := by
-  native_decide
+  decide +kernel
 
 /-!
 
-### A.6. Finite set of viable `ZMod 5` charge spectra is empty (pseudo result)
+### A.6. Finite set of viable `ZMod 5` charge spectra is empty
 
 -/
 
 /-- This lemma corresponds to the statement that there are no choices of `ℤ₅` representations
   which give a phenomenologically viable theory. -/
-@[pseudo]
-lemma ZModCharges_five_eq : ZModCharges 5 = ∅ := by native_decide
+lemma ZModCharges_five_eq : ZModCharges 5 = ∅ := by decide +kernel
 
 /-!
 
-### A.7. Finite set of viable `ZMod 6` charge spectra is non-empty (pseudo result)
+### A.7. Finite set of viable `ZMod 6` charge spectra is non-empty
 
 -/
 
-@[pseudo]
 lemma ZModCharges_six_eq : ZModCharges 6 = {⟨some 0, some 2, {5}, {1}⟩,
     ⟨some 0, some 4, {1}, {5}⟩, ⟨some 1, some 0, {2}, {3}⟩, ⟨some 1, some 2, {4}, {1}⟩,
     ⟨some 1, some 4, {0}, {5}⟩, ⟨some 1, some 4, {3}, {2}⟩, ⟨some 2, some 0, {1}, {3}⟩,
     ⟨some 2, some 4, {5}, {5}⟩, ⟨some 3, some 2, {5}, {4}⟩, ⟨some 3, some 4, {1}, {2}⟩,
     ⟨some 4, some 0, {5}, {3}⟩, ⟨some 4, some 2, {1}, {1}⟩, ⟨some 5, some 0, {4}, {3}⟩,
     ⟨some 5, some 2, {0}, {1}⟩, ⟨some 5, some 2, {3}, {4}⟩, ⟨some 5, some 4, {2}, {5}⟩} := by
-  native_decide
+  decide +kernel
 
 /-!
 

@@ -311,12 +311,22 @@ example [Nonempty n] (hA : A.mat.PosDef) : 0 < A := by
 
 example [DecidableEq n] [DecidableEq m] [Nonempty n] [Nonempty m]
   (A B : HermitianMat n ℂ) (hA : 0 ≤ A) (hB : 0 ≤ B) (M : Matrix m n ℂ) :
-    0 < (2 : HermitianMat (n × m) ℂ) + (3 • A) ⊗ₖ (Real.pi • B).conj M := by
-  positivity
+    0 < ((2 : ℝ) • (1 : HermitianMat (n × m) ℂ)) +
+      (((3 : ℝ) • A) ⊗ₖ (Real.pi • B).conj M) := by
+  have hOne : 0 < (1 : HermitianMat (n × m) ℂ) := by
+    exact HermitianMat.mat_posDef_to_pos (A := (1 : HermitianMat (n × m) ℂ)) Matrix.PosDef.one
+  have hleft : 0 < (2 : ℝ) • (1 : HermitianMat (n × m) ℂ) := by
+    exact smul_pos (by norm_num) hOne
+  have hrightA : 0 ≤ (3 : ℝ) • A := smul_nonneg (by norm_num) hA
+  have hrightB : 0 ≤ (Real.pi : ℝ) • B := smul_nonneg Real.pi_pos.le hB
+  have hrightConj : 0 ≤ ((Real.pi : ℝ) • B).conj M := HermitianMat.conj_nonneg M hrightB
+  exact add_pos_of_pos_of_nonneg hleft (HermitianMat.kronecker_nonneg hrightA hrightConj)
 
 example (A B : HermitianMat n ℂ) (hA : 0 < A) (hB : 0 < B) :
-    0 < ((37 • A) ⊗ₖ ((38 : ℝ) • B)).trace := by
-  positivity
+    0 < (((37 : ℝ) • A) ⊗ₖ ((38 : ℝ) • B)).trace := by
+  have hleft : 0 < (37 : ℝ) • A := smul_pos (by norm_num) hA
+  have hright : 0 < (38 : ℝ) • B := smul_pos (by norm_num) hB
+  exact HermitianMat.trace_pos (HermitianMat.kronecker_pos hleft hright)
 
 omit [Fintype n] in
 theorem convex_cone (hA : 0 ≤ A) (hB : 0 ≤ B) {c₁ c₂ : ℝ} (hc₁ : 0 ≤ c₁) (hc₂ : 0 ≤ c₂) :
@@ -597,8 +607,14 @@ example (M : Matrix n m ℝ) :
   positivity
 
 example (M : Matrix n n ℂ) (i : n) (A : HermitianMat n ℂ) (hA : 0 ≤ A) :
-    0 ≤ (A + ⟨_, M.isHermitian_mul_conjTranspose_self⟩ + 0).H.eigenvalues i := by
-  positivity
+    0 ≤ (A + (id (α := HermitianMat n ℂ) ⟨M * M.conjTranspose, M.isHermitian_mul_conjTranspose_self⟩) + 0).H.eigenvalues i := by
+  let H : HermitianMat n ℂ := ⟨M * M.conjTranspose, M.isHermitian_mul_conjTranspose_self⟩
+  change 0 ≤ (A + H + 0).H.eigenvalues i
+  have hH : 0 ≤ H := by
+    rw [HermitianMat.zero_le_iff]
+    exact Matrix.posSemidef_self_mul_conjTranspose M
+  have hsum : 0 ≤ A + H + 0 := add_nonneg (add_nonneg hA hH) (le_refl _)
+  exact HermitianMat.eigenvalues_nonneg hsum i
 
 end tests
 end MatrixPositivity

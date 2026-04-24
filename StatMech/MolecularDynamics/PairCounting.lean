@@ -126,12 +126,12 @@ theorem pairs_one : pairs 1 = [] := by
 /-- Two particles have exactly one pair. -/
 @[simp]
 theorem pairs_two : pairs 2 = [(0, 1)] := by
-  native_decide
+  decide +kernel
 
 /-- Three particles have exactly three pairs. -/
 @[simp]
 theorem pairs_three : pairs 3 = [(0, 1), (0, 2), (1, 2)] := by
-  native_decide
+  decide +kernel
 
 /-- The number of pairs grows quadratically. -/
 theorem pairs_length_quadratic (n : ℕ) (hn : 2 ≤ n) :
@@ -151,7 +151,7 @@ section Tests
 /-- Four particles have exactly six pairs. -/
 @[simp]
 theorem pairs_four : pairs 4 = [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)] := by
-  native_decide
+  decide +kernel
 
 /-- Verify length formula at n = 4: 4 * 3 / 2 = 6. -/
 example : (pairs 4).length = 6 := by rw [pairs_length_eq]

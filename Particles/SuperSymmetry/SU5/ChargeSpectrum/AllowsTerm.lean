@@ -85,6 +85,14 @@ private theorem multiset_mem_sprod {α β : Type*} {s : Multiset α} {t : Multis
     {p : α × β} : p ∈ s ×ˢ t ↔ p.1 ∈ s ∧ p.2 ∈ t :=
   Multiset.mem_product
 
+private theorem multiset_mem_finset_product {α β : Type*} {s : Finset α} {t : Finset β}
+    {p : α × β} : p ∈ (s.product t).val ↔ p.1 ∈ s ∧ p.2 ∈ t := by
+  constructor
+  · intro hp
+    exact Finset.mem_product.mp (Finset.mem_val.mp hp)
+  · intro hp
+    exact Finset.mem_val.mpr (Finset.mem_product.mpr hp)
+
 /-!
 
 ## A. Charge spectrums allowing potential terms
@@ -340,8 +348,8 @@ lemma allowsTermForm_subset_allowsTerm_of_allowsTerm {T : PotentialTerm} {x : Ch
     exact ⟨a, a, a, by simp [allowsTermForm, subset_def, Finset.singleton_subset_iff,
       Finset.mem_val.mp ha], allowsTermForm_allowsTerm⟩
   case Λ.none.none =>
-    simp only [ofPotentialTerm', Multiset.mem_map, Finset.mem_product, multiset_mem_sprod] at h
-    obtain ⟨⟨a, ⟨b, c⟩⟩, ⟨⟨ha, hb⟩, hc⟩, h0⟩ := h
+    simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
+    obtain ⟨⟨a, ⟨b, c⟩⟩, ⟨ha, hb, hc⟩, h0⟩ := h
     use a, b, c
     constructor
     · simp [allowsTermForm, subset_def]
@@ -349,8 +357,8 @@ lemma allowsTermForm_subset_allowsTerm_of_allowsTerm {T : PotentialTerm} {x : Ch
         Finset.mem_singleton.mpr (by abel; exact h0)⟩
     · exact allowsTermForm_allowsTerm
   case W1.none.none =>
-    simp only [ofPotentialTerm', Multiset.mem_map, Finset.mem_product, multiset_mem_sprod] at h
-    obtain ⟨⟨a, ⟨b, ⟨c, d⟩⟩⟩, ⟨⟨ha, ⟨hb, ⟨hc, hd⟩⟩⟩⟩, h0⟩ := h
+    simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
+    obtain ⟨⟨a, ⟨b, ⟨c, d⟩⟩⟩, ⟨ha, hb, hc, hd⟩, h0⟩ := h
     use a, b, c
     constructor
     · simp [allowsTermForm, subset_def]
@@ -359,8 +367,8 @@ lemma allowsTermForm_subset_allowsTerm_of_allowsTerm {T : PotentialTerm} {x : Ch
         Finset.mem_insert.mpr (Or.inr (Finset.mem_insert.mpr (Or.inr (Finset.mem_singleton.mpr hc))))⟩
     · exact allowsTermForm_allowsTerm
   case W2.some.none qHd =>
-    simp only [ofPotentialTerm', Multiset.mem_map, Finset.mem_product, multiset_mem_sprod] at h
-    obtain ⟨⟨a, ⟨b, c⟩⟩, ⟨⟨ha, hb⟩, hc⟩, h0⟩ := h
+    simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
+    obtain ⟨⟨a, ⟨b, c⟩⟩, ⟨ha, hb, hc⟩, h0⟩ := h
     use a, b, c
     constructor
     · simp [allowsTermForm, subset_def]
@@ -373,8 +381,8 @@ lemma allowsTermForm_subset_allowsTerm_of_allowsTerm {T : PotentialTerm} {x : Ch
   case W2.none qHu =>
     simp only [ofPotentialTerm'] at h
   case W3.none.some qHu =>
-    simp only [ofPotentialTerm', Multiset.mem_map, Finset.mem_product, multiset_mem_sprod] at h
-    obtain ⟨⟨u, v⟩, ⟨⟨hu, hv⟩⟩, h0⟩ := h
+    simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
+    obtain ⟨⟨u, v⟩, ⟨hu, hv⟩, h0⟩ := h
     use -qHu, u, u
     constructor
     · simp [allowsTermForm, subset_def]
@@ -393,18 +401,18 @@ lemma allowsTermForm_subset_allowsTerm_of_allowsTerm {T : PotentialTerm} {x : Ch
   case W4.some.some qHd qHu =>
     simp only [ofPotentialTerm', Multiset.mem_map] at h
     obtain ⟨a, ha, h0⟩ := h
-    use qHd - qHu - qHu, a, a
+    use a, -qHu, a
     constructor
     · simp [allowsTermForm, subset_def]
-      exact ⟨ha, by abel; exact h0⟩
+      exact ⟨by abel at h0 ⊢; exact h0, by simpa using ha⟩
     · exact allowsTermForm_allowsTerm
   case W4.some.none qHd =>
     simp only [ofPotentialTerm'] at h
   case W4.none qHu =>
     simp only [ofPotentialTerm'] at h
   case K1.none.none =>
-    simp only [ofPotentialTerm', Multiset.mem_map, Finset.mem_product, multiset_mem_sprod] at h
-    obtain ⟨⟨a, ⟨b, c⟩⟩, ⟨⟨ha, ⟨hb, hc⟩⟩⟩, h0⟩ := h
+    simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
+    obtain ⟨⟨a, ⟨b, c⟩⟩, ⟨ha, hb, hc⟩, h0⟩ := h
     use a, b, c
     constructor
     · simp [allowsTermForm, subset_def]
@@ -418,15 +426,15 @@ lemma allowsTermForm_subset_allowsTerm_of_allowsTerm {T : PotentialTerm} {x : Ch
     use qHd, qHu, a
     constructor
     · simp [allowsTermForm, subset_def]
-      exact ⟨ha, by abel; exact h0⟩
+      exact ⟨by abel; exact h0, by simpa using ha⟩
     · exact allowsTermForm_allowsTerm
   case K2.some.none qHd =>
     simp only [ofPotentialTerm'] at h
   case K2.none qHu =>
     simp only [ofPotentialTerm'] at h
   case topYukawa.none.some qHu =>
-    simp only [ofPotentialTerm', Multiset.mem_map, Finset.mem_product, multiset_mem_sprod] at h
-    obtain ⟨⟨a, b⟩, ⟨⟨ha, hb⟩⟩, h0⟩ := h
+    simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
+    obtain ⟨⟨a, b⟩, ⟨ha, hb⟩, h0⟩ := h
     use (-qHu), a, b
     constructor
     · simp [allowsTermForm, subset_def]
@@ -438,8 +446,8 @@ lemma allowsTermForm_subset_allowsTerm_of_allowsTerm {T : PotentialTerm} {x : Ch
   case topYukawa.some qHu =>
     simp only [ofPotentialTerm'] at h
   case bottomYukawa.some qHd =>
-    simp only [ofPotentialTerm', Multiset.mem_map, Finset.mem_product, multiset_mem_sprod] at h
-    obtain ⟨⟨a, b⟩, ⟨⟨ha, hb⟩⟩, h0⟩ := h
+    simp only [ofPotentialTerm', Multiset.mem_map, multiset_mem_finset_product] at h
+    obtain ⟨⟨a, b⟩, ⟨ha, hb⟩, h0⟩ := h
     use qHd, a, a
     constructor
     · simp [allowsTermForm, subset_def]
@@ -448,7 +456,9 @@ lemma allowsTermForm_subset_allowsTerm_of_allowsTerm {T : PotentialTerm} {x : Ch
     · exact allowsTermForm_allowsTerm
   case bottomYukawa.none =>
     simp only [ofPotentialTerm'] at h
-  all_goals exact absurd h (Multiset.not_mem_zero _)
+  all_goals
+    exfalso
+    simpa [ofPotentialTerm'] using h
 
 /-!
 
@@ -601,7 +611,7 @@ lemma allowsTermQ5_or_allowsTerm_of_allowsTerm_insertQ5 {qHd qHu : Option 𝓩}
   rw [allowsTerm_iff_zero_mem_ofPotentialTerm'] at h ⊢
   cases T <;> cases qHd <;> cases qHu <;>
     simp_all [AllowsTermQ5, ofPotentialTerm', Finset.mem_insert, Multiset.mem_map,
-      Finset.mem_product, multiset_mem_sprod, Multiset.mem_ndinsert,
+      multiset_mem_finset_product, Multiset.mem_ndinsert,
       neg_add_eq_zero, add_neg_eq_zero, eq_comm] <;>
     aesop (config := { maxRuleApplications := 600 })
       (add norm simp [add_comm, add_left_comm, add_assoc, sub_eq_add_neg,
@@ -624,7 +634,7 @@ lemma allowsTerm_insertQ5_of_allowsTermQ5 {qHd qHu : Option 𝓩}
   rw [allowsTerm_iff_zero_mem_ofPotentialTerm']
   cases T <;> cases qHd <;> cases qHu <;>
     simp_all [AllowsTermQ5, ofPotentialTerm', Finset.mem_insert, Multiset.mem_map,
-      Finset.mem_product, multiset_mem_sprod, Multiset.mem_ndinsert,
+      multiset_mem_finset_product, Multiset.mem_ndinsert,
       neg_add_eq_zero, add_neg_eq_zero, eq_comm, sub_eq_add_neg] <;>
     first
     | aesop (config := { maxRuleApplications := 1500 })
@@ -781,7 +791,7 @@ lemma allowsTermQ10_or_allowsTerm_of_allowsTerm_insertQ10 {qHd qHu : Option 𝓩
   rw [allowsTerm_iff_zero_mem_ofPotentialTerm'] at h ⊢
   cases T <;> cases qHd <;> cases qHu <;>
     simp_all [AllowsTermQ10, ofPotentialTerm', Finset.mem_insert, Multiset.mem_map,
-      Finset.mem_product, multiset_mem_sprod, Multiset.mem_ndinsert,
+      multiset_mem_finset_product, Multiset.mem_ndinsert,
       neg_add_eq_zero, add_neg_eq_zero, eq_comm, sub_eq_add_neg] <;>
     aesop (config := { maxRuleApplications := 1500 })
       (add norm simp [add_comm, add_left_comm, add_assoc, sub_eq_add_neg,
@@ -805,7 +815,7 @@ lemma allowsTerm_insertQ10_of_allowsTermQ10 {qHd qHu : Option 𝓩}
   rw [allowsTerm_iff_zero_mem_ofPotentialTerm']
   cases T <;> cases qHd <;> cases qHu <;>
     simp_all [AllowsTermQ10, ofPotentialTerm', Finset.mem_insert, Multiset.mem_map,
-      Finset.mem_product, multiset_mem_sprod, Multiset.mem_ndinsert,
+      multiset_mem_finset_product, Multiset.mem_ndinsert,
       neg_add_eq_zero, add_neg_eq_zero, eq_comm, sub_eq_add_neg] <;>
     aesop (config := { maxRuleApplications := 1500 })
       (add norm simp [add_comm, add_left_comm, add_assoc, sub_eq_add_neg,

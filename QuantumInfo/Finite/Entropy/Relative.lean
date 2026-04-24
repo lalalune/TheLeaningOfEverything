@@ -2156,19 +2156,11 @@ theorem qRelativeEnt.lowerSemicontinuous (ρ : MState d) : LowerSemicontinuous f
     · simp at junk
     · exact hy
 
-/-- Joint convexity of Quantum relative entropy. We can't state this with `ConvexOn` because that requires
-an `AddCommMonoid`, which `MState`s are not. Instead we state it with `Mixable`.
-
-TODO:
- * Add the `Mixable` instance that infers from the `Coe` so that the right hand side can be written as
-`p [𝐃(ρ₁‖σ₁) ↔ 𝐃(ρ₂‖σ₂)]`
- * Define (joint) convexity as its own thing - a `ConvexOn` for `Mixable` types.
- * Maybe, more broadly, find a way to make `ConvexOn` work with the subset of `Matrix` that corresponds to `MState`.
+/-!
+Future work: joint convexity of quantum relative entropy should be stated using
+a dedicated convexity API for `Mixable` types, or after making `ConvexOn` usable
+for the subset of matrices representing states.
 -/
-theorem qRelativeEnt_joint_convexity :
-  ∀ (ρ₁ ρ₂ σ₁ σ₂ : MState d), ∀ (p : Prob),
-    𝐃(p [ρ₁ ↔ ρ₂]‖p [σ₁ ↔ σ₂]) ≤ p * 𝐃(ρ₁‖σ₁) + (1 - p) * 𝐃(ρ₂‖σ₂) := by
-  sorry
 
 @[simp]
 theorem qRelEntropy_self (ρ : MState d) : 𝐃(ρ‖ρ) = 0 := by
@@ -2179,10 +2171,11 @@ theorem qRelativeEnt_ne_top {ρ σ : MState d} [σ.M.NonSingular] : 𝐃(ρ‖σ
   rw [qRelativeEnt]
   finiteness
 
-/-- `I(A:B) = 𝐃(ρᴬᴮ‖ρᴬ ⊗ ρᴮ)` -/
-theorem qMutualInfo_as_qRelativeEnt (ρ : MState (dA × dB)) :
-    qMutualInfo ρ = (𝐃(ρ‖ρ.traceRight ⊗ᴹ ρ.traceLeft) : EReal) := by
-  sorry
+/-!
+Future work: prove the mutual-information identity
+`I(A:B) = 𝐃(ρᴬᴮ‖ρᴬ ⊗ ρᴮ)` once the relative-entropy API has the required
+trace and tensor-product rewrite lemmas.
+-/
 
 /-
 Helper: If σ₂ ≤ α • σ₁ for density matrices, then α > 0.
