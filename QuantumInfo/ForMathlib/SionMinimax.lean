@@ -729,7 +729,7 @@ theorem sion_minimax
     exact hfc₂ b
   · convert Set.inter_empty _
     by_contra hu
-    simp? [Set.iInter_eq_empty_iff] says simp only [
+    simp only [
       Set.iInter_coe_set, Set.iInter_eq_empty_iff, Set.mem_iInter, Set.mem_setOf_eq,
       Classical.not_imp, not_and, not_le, not_forall, not_exists, not_lt] at hu
     obtain ⟨x, hx⟩ := hu
