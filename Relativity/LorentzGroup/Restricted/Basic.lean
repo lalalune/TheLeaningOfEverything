@@ -3,7 +3,6 @@ Copyright (c) 2024 Joseph Tooby-Smith. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Joseph Tooby-Smith
 -/
-import Meta.Informal.SemiFormal
 import Relativity.LorentzGroup.Orthochronous.Basic
 /-!
 # The Restricted Lorentz Group
@@ -65,11 +64,9 @@ lemma restricted_normal_subgroup {d : ℕ} : (restricted d).Normal := by
   rintro R ⟨R_proper, R_ortho⟩ Λ
   exact ⟨h_proper R_proper, h_ortho R_ortho⟩
 
-open TopologicalSpace
-
-/-- The restricted Lorentz group is connected. -/
-semiformal_result "FXNL5" restricted_isConnected {d : ℕ} :
-  IsConnected (restricted d : Set (LorentzGroup d))
+-- Connectivity of the restricted Lorentz group is proved downstream in
+-- `Relativity.LorentzGroup.Restricted.FromBoostRotation`, once the
+-- boost-rotation homeomorphism is available.
 
 /-- Given the hypothesis that the restricted Lorentz group is connected,
   the proof that the restricted lorentz group is equal to the connected component of the

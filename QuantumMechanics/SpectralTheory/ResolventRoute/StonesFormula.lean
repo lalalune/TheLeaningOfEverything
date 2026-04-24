@@ -82,7 +82,7 @@ theorem resolvent_diff_spectral {U_grp : OneParameterUnitaryGroup (H := H)}
 
 Swaps order of integration for the complex Lorentzian kernel `2iε/((s-t)² + ε²)`. -/
 theorem resolvent_diff_fubini {μ : Measure ℝ} [IsFiniteMeasure μ]
-    (a b ε : ℝ) (hε : ε > 0)
+    (a b ε : ℝ) (_hε : ε > 0)
     (hFubini :
       ∫ t in Set.Icc a b, ∫ s, (2 * ε * I) / ((s - t)^2 + ε^2 : ℂ) ∂μ =
         ∫ s, (∫ t in Set.Icc a b, (2 * ε * I) / ((s - t)^2 + ε^2 : ℂ)) ∂μ) :
@@ -96,7 +96,7 @@ theorem resolvent_diff_fubini {μ : Measure ℝ} [IsFiniteMeasure μ]
 `∫_a^b (2εi)/((s-t)² + ε²) dt = 2i[arctan((b-s)/ε) - arctan((a-s)/ε)]`
 
 This follows from the real arctan integral by pulling out the factor of `2i`. -/
-theorem resolvent_diff_arctan_integral (s a b ε : ℝ) (hε : ε > 0) :
+theorem resolvent_diff_arctan_integral (s a b ε : ℝ) (_hε : ε > 0) :
     (hArctan :
       ∫ t in Set.Icc a b, (2 * ε * I) / ((s - t)^2 + ε^2 : ℂ) =
         2 * I * (Real.arctan ((b - s) / ε) - Real.arctan ((a - s) / ε))) →
@@ -109,7 +109,7 @@ theorem resolvent_diff_arctan_integral (s a b ε : ℝ) (hε : ε > 0) :
 
 The same as `arctan_dominated_convergence` but stated for the full formula. -/
 theorem stones_dominated_convergence {μ : Measure ℝ}
-    [IsFiniteMeasure μ] (a b : ℝ) (hab : a < b)
+    [IsFiniteMeasure μ] (a b : ℝ) (_hab : a < b)
     (hConv :
       Tendsto (fun ε : ℝ => ∫ s, (1 / Real.pi) *
         (Real.arctan ((b - s) / ε) - Real.arctan ((a - s) / ε)) ∂μ)
@@ -127,7 +127,7 @@ theorem stones_dominated_convergence {μ : Measure ℝ}
 This shows that after dividing by `2πi`, the complex factor `2i` cancels to give
 a real integral. -/
 theorem stones_integral_real {μ : Measure ℝ} [IsFiniteMeasure μ]
-    (a b ε : ℝ) (hε : ε > 0)
+    (a b ε : ℝ) (_hε : ε > 0)
     (hReal :
       ∫ s, (1 / (2 * Real.pi * I)) *
         (2 * I * (Real.arctan ((b - s) / ε) - Real.arctan ((a - s) / ε))) ∂μ =
@@ -171,7 +171,7 @@ theorem stones_formula {U_grp : OneParameterUnitaryGroup (H := H)}
         ∫ t in Set.Icc a b, ∫ s, (2 * ε * I) / ((s - t)^2 + ε^2 : ℂ) ∂μ =
           ∫ s, (∫ t in Set.Icc a b, (2 * ε * I) / ((s - t)^2 + ε^2 : ℂ)) ∂μ)
     (hDiffArctan :
-      ∀ s ε : ℝ, ∀ hε : ε > 0,
+      ∀ s ε : ℝ, ∀ _hε : ε > 0,
         ∫ t in Set.Icc a b, (2 * ε * I) / ((s - t)^2 + ε^2 : ℂ) =
           2 * I * (Real.arctan ((b - s) / ε) - Real.arctan ((a - s) / ε)))
     (hDomConv :

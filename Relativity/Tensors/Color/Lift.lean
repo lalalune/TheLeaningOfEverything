@@ -932,12 +932,61 @@ lemma forgetLiftAppCon_naturality_eqToHom_apply (c c1 : C) (h : c = c1)
   rw [forgetLiftAppCon_naturality_eqToHom]
   rfl
 
+/-- Naturality of `forgetLiftApp` with respect to a natural transformation on singleton colors. -/
+lemma forgetLiftApp_naturality {F F' : Discrete C ⥤ Rep k G} (η : F ⟶ F') (c : C) :
+    ((lift.map η).hom.app (incl.obj (Discrete.mk c))) ≫ (forgetLiftApp F' c).hom =
+    (forgetLiftApp F c).hom ≫ η.app (Discrete.mk c) := by
+  ext x
+  refine PiTensorProduct.induction_on' x ?_ (by
+    intro x y hx hy
+    simp only [Action.comp_hom, ModuleCat.hom_comp, map_add]
+    have hx' : (ModuleCat.Hom.hom (forgetLiftApp F' c).hom.hom ∘ₗ
+          ModuleCat.Hom.hom ((lift.map η).hom.app (incl.obj (Discrete.mk c))).hom) x =
+        (ModuleCat.Hom.hom (η.app (Discrete.mk c)).hom ∘ₗ
+          ModuleCat.Hom.hom (forgetLiftApp F c).hom.hom) x := by
+      simpa [Action.comp_hom, ModuleCat.hom_comp] using hx
+    have hy' : (ModuleCat.Hom.hom (forgetLiftApp F' c).hom.hom ∘ₗ
+          ModuleCat.Hom.hom ((lift.map η).hom.app (incl.obj (Discrete.mk c))).hom) y =
+        (ModuleCat.Hom.hom (η.app (Discrete.mk c)).hom ∘ₗ
+          ModuleCat.Hom.hom (forgetLiftApp F c).hom.hom) y := by
+      simpa [Action.comp_hom, ModuleCat.hom_comp] using hy
+    rw [hx', hy']
+    rfl)
+  intro r p
+  simp only [Action.comp_hom, ModuleCat.hom_comp, PiTensorProduct.tprodCoeff_eq_smul_tprod,
+    map_smul]
+  apply congrArg (fun z => r • z)
+  change (forgetLiftApp F' c).hom.hom
+      (((lift.map η).hom.app (incl.obj (Discrete.mk c))).hom.hom ((PiTensorProduct.tprod k) p)) =
+    (η.app (Discrete.mk c)).hom.hom
+      ((forgetLiftApp F c).hom.hom ((PiTensorProduct.tprod k) p))
+  simp only [forgetLiftApp]
+  rw [show ((lift.map η).hom.app (incl.obj (Discrete.mk c))).hom.hom ((PiTensorProduct.tprod k) p) =
+      (lift.repNatTransOfColorApp η (incl.obj (Discrete.mk c))).hom ((PiTensorProduct.tprod k) p) by
+      rfl]
+  rw [lift.repNatTransOfColorApp_tprod]
+  erw [PiTensorProduct.subsingletonEquiv_apply_tprod]
+  erw [PiTensorProduct.subsingletonEquiv_apply_tprod]
+  rfl
+
 /-- The natural isomorphism between `lift (C := C) ⋙ forget` and
 `Functor.id (Discrete C ⥤ Rep k G)`.
 -/
-informal_definition forgetLift where
-  deps := [``forget, ``lift]
-  tag := "6VZWS"
+noncomputable def forgetLift : lift (C := C) ⋙ forget ≅ Functor.id (Discrete C ⥤ Rep k G) :=
+  NatIso.ofComponents
+    (fun F => {
+      hom := Discrete.natTrans fun c => (forgetLiftApp F c.as).hom
+      inv := Discrete.natTrans fun c => (forgetLiftApp F c.as).inv
+      hom_inv_id := by
+        ext c x
+        simp
+      inv_hom_id := by
+        ext c x
+        simp })
+    (by
+      intro F F' η
+      ext c x
+      simpa [forget] using congrArg (fun f => f.hom x) (forgetLiftApp_naturality η c.as))
 
 end
 end OverColor

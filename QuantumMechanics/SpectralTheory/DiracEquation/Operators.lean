@@ -289,13 +289,13 @@ theorem dirac_spectral_gap (H_D : DiracHamiltonian H) (E : ℝ)
     calc ‖(E : ℂ) • (ψ : H)‖^2
       _ = (‖(E : ℂ)‖ * ‖(ψ : H)‖)^2 := by rw [norm_smul]
       _ = ‖(E : ℂ)‖^2 * ‖(ψ : H)‖^2 := by ring
-      _ = |E|^2 * ‖(ψ : H)‖^2 := by rfl
+      _ = |E|^2 * ‖(ψ : H)‖^2 := by simp
       _ = E^2 * ‖(ψ : H)‖^2 := by
         have : |E|^2 = E^2 := sq_abs E
         rw [this]
   have h_gap := H_D.mass_gap ψ
   rw [h_op] at h_gap
-  have h_norm_pos : 0 < ‖(ψ : H)‖^2 := sq_pos_of_ne (norm_ne_zero_iff.mpr hnz)
+  have h_norm_pos : 0 < ‖(ψ : H)‖^2 := sq_pos_of_ne_zero (norm_ne_zero_iff.mpr hnz)
   -- E^2 * ||ψ||^2 >= m^2 c^4 * ||ψ||^2 ==> E^2 >= m^2 c^4
   -- But E^2 < m^2 c^4, contradiction!
   nlinarith [h_gap, h_bound, h_norm_pos]

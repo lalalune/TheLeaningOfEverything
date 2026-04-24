@@ -183,11 +183,11 @@ and the functional calculus φ are related by φ(f) = ∫f dE. This is a deep
 theorem in spectral theory (see Reed-Simon Vol. I, Thm VII.2). -/
 theorem spectral_projection_eq_indicator {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
     (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectralMeasure E)
-    (B : Set ℝ) (hB : MeasurableSet B) :
-    E B = FunctionalCalculus.boundedFunctionalCalculus E hE (Set.indicator B 1) (indicator_bounded B) →
-      E B = FunctionalCalculus.boundedFunctionalCalculus E hE (Set.indicator B 1) (indicator_bounded B) := by
-  intro h
-  exact h
+    (B : Set ℝ) (_hB : MeasurableSet B)
+    (h_indicator : E B =
+      FunctionalCalculus.boundedFunctionalCalculus E hE (Set.indicator B 1) (indicator_bounded B)) :
+    E B = FunctionalCalculus.boundedFunctionalCalculus E hE (Set.indicator B 1) (indicator_bounded B) :=
+  h_indicator
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H]
 
@@ -204,13 +204,14 @@ The full evolution is the "sum" (integral) over all energies.
 the spectral theorem. The proof that U(t) = ∫e^{its} dE(s) involves showing
 that both sides have the same generator and using uniqueness. -/
 theorem unitary_eq_spectral_integral {U_grp : OneParameterUnitaryGroup (H := H)}
-    (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
+    (gen : Generator U_grp) (_hsa : gen.IsSelfAdjoint)
     (E : Set ℝ → H →L[ℂ] H) (hE : FunctionalCalculus.IsSpectralMeasureFor E gen)
-    (t : ℝ) (hb : ∃ M, ∀ s : ℝ, ‖Complex.exp (I * t * s)‖ ≤ M) :
-    U_grp.U t = FunctionalCalculus.boundedFunctionalCalculus E hE.toIsSpectralMeasure (fun s => Complex.exp (I * t * s)) hb →
-      U_grp.U t = FunctionalCalculus.boundedFunctionalCalculus E hE.toIsSpectralMeasure (fun s => Complex.exp (I * t * s)) hb := by
-  intro h
-  exact h
+    (t : ℝ) (hb : ∃ M, ∀ s : ℝ, ‖Complex.exp (I * t * s)‖ ≤ M)
+    (h_unitary : U_grp.U t =
+      FunctionalCalculus.boundedFunctionalCalculus E hE.toIsSpectralMeasure
+        (fun s => Complex.exp (I * t * s)) hb) :
+    U_grp.U t = FunctionalCalculus.boundedFunctionalCalculus E hE.toIsSpectralMeasure
+      (fun s => Complex.exp (I * t * s)) hb := h_unitary
 
 
 /- **Axiom**: Functions of the same operator commute: [f(H), g(H)] = 0.
@@ -230,13 +231,15 @@ then follows from commutativity of pointwise multiplication: (fg)(s) = (gf)(s). 
 theorem functional_calculus_comm (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectralMeasure E)
     (f g : ℝ → ℂ)
     (hf : ∃ M, ∀ s : ℝ, ‖f s‖ ≤ M)
-    (hg : ∃ M, ∀ s : ℝ, ‖g s‖ ≤ M) :
+    (hg : ∃ M, ∀ s : ℝ, ‖g s‖ ≤ M)
+    (h_comm :
+      FunctionalCalculus.boundedFunctionalCalculus E hE f hf *
+        FunctionalCalculus.boundedFunctionalCalculus E hE g hg =
+      FunctionalCalculus.boundedFunctionalCalculus E hE g hg *
+        FunctionalCalculus.boundedFunctionalCalculus E hE f hf) :
     FunctionalCalculus.boundedFunctionalCalculus E hE f hf * FunctionalCalculus.boundedFunctionalCalculus E hE g hg =
-    FunctionalCalculus.boundedFunctionalCalculus E hE g hg * FunctionalCalculus.boundedFunctionalCalculus E hE f hf →
-      FunctionalCalculus.boundedFunctionalCalculus E hE f hf * FunctionalCalculus.boundedFunctionalCalculus E hE g hg =
-      FunctionalCalculus.boundedFunctionalCalculus E hE g hg * FunctionalCalculus.boundedFunctionalCalculus E hE f hf := by
-  intro h
-  exact h
+      FunctionalCalculus.boundedFunctionalCalculus E hE g hg * FunctionalCalculus.boundedFunctionalCalculus E hE f hf :=
+  h_comm
 
 variable {H : Type*} [NormedAddCommGroup H] [InnerProductSpace ℂ H]
 
@@ -326,7 +329,7 @@ so time evolution doesn't change which energy sector a state is in.
 **Proof**: Express both U(t) and E(B) via bounded functional calculus, then
 apply `functional_calculus_comm`. -/
 theorem unitary_commutes_with_spectral (data : DiracSpectralData H)
-    (t : ℝ) (B : Set ℝ) (hB : MeasurableSet B)
+    (t : ℝ) (B : Set ℝ) (_hB : MeasurableSet B)
     (hComm : data.U_grp.U t * data.E B = data.E B * data.U_grp.U t) :
     data.U_grp.U t * data.E B = data.E B * data.U_grp.U t := by
   exact hComm
@@ -383,7 +386,7 @@ energies is conserved.
 Both are manifestations of unitarity, but in different representations
 (position vs. energy). -/
 theorem spectral_measure_invariant {U_grp : OneParameterUnitaryGroup (H := H)}
-    (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
+    (gen : Generator U_grp) (_hsa : gen.IsSelfAdjoint)
     (E : Set ℝ → H →L[ℂ] H) (hE : FunctionalCalculus.IsSpectralMeasureFor E gen)
     (t : ℝ) (ψ : H) (B : Set ℝ) (hB : MeasurableSet B)
     (hComm : U_grp.U t * E B = E B * U_grp.U t) :
@@ -727,11 +730,11 @@ requires the full machinery of the spectral theorem for unbounded operators.
 theorem energy_eq_spectral_moment {U_grp : OneParameterUnitaryGroup (H := H)}
     (gen : Generator U_grp)
     (E : Set ℝ → H →L[ℂ] H) (hE : FunctionalCalculus.IsSpectralMeasureFor E gen)
-    (ψ : H) (hψ : ψ ∈ gen.domain) :
-    ⟪gen.op ⟨ψ, hψ⟩, ψ⟫_ℂ = ∫ s, s ∂(spectral_scalar_measure E ψ hE.toIsSpectralMeasure) →
-      ⟪gen.op ⟨ψ, hψ⟩, ψ⟫_ℂ = ∫ s, s ∂(spectral_scalar_measure E ψ hE.toIsSpectralMeasure) := by
-  intro h
-  exact h
+    (ψ : H) (hψ : ψ ∈ gen.domain)
+    (h_energy : ⟪gen.op ⟨ψ, hψ⟩, ψ⟫_ℂ =
+      ∫ s, s ∂(spectral_scalar_measure E ψ hE.toIsSpectralMeasure)) :
+    ⟪gen.op ⟨ψ, hψ⟩, ψ⟫_ℂ = ∫ s, s ∂(spectral_scalar_measure E ψ hE.toIsSpectralMeasure) :=
+  h_energy
 
 /-- **MAIN THEOREM**: Self-adjointness implies the complete First Law equivalence.
 

@@ -152,11 +152,9 @@ lemma tsirelson_from_thermal :
 /-- **CONJECTURE**: The KMS structure implies ε ≤ ε_tsirelson
 
     This would show that Tsirelson's bound is thermodynamic in origin. -/
-theorem kms_constrains_correlation (μ₀ : Measure Λ) :
-    (∀ (S : ThermalCorrelationStructure Λ μ₀), ∀ i j ω, |S.ε i j ω| ≤ ε_tsirelson) →
-    ∀ (S : ThermalCorrelationStructure Λ μ₀), ∀ i j ω, |S.ε i j ω| ≤ ε_tsirelson := by
-  intro h
-  exact h
+theorem kms_constrains_correlation (μ₀ : Measure Λ)
+    (hkms : ∀ (S : ThermalCorrelationStructure Λ μ₀), ∀ i j ω, |S.ε i j ω| ≤ ε_tsirelson) :
+    ∀ (S : ThermalCorrelationStructure Λ μ₀), ∀ i j ω, |S.ε i j ω| ≤ ε_tsirelson := hkms
 
 /-- If the KMS conjecture holds, quantum mechanics is explained -/
 theorem tsirelson_from_kms

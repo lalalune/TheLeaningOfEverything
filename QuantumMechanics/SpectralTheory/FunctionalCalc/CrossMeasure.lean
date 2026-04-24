@@ -173,16 +173,24 @@ lemma spectral_scalar_measure_polarization (E : Set ℝ → H →L[ℂ] H) (hE :
   -- Rewrite each spectral measure in terms of inner product
   have h1 : ((spectral_scalar_measure E (x + y) hE B).toReal : ℂ) =
       ⟪E B (x + y), x + y⟫_ℂ := by
-    apply Complex.ext <;> simp [spectral_scalar_measure_apply' E hE (x + y) B hB]
+    refine Complex.ext ?_ ?_
+    · simpa using spectral_scalar_measure_apply' E hE (x + y) B hB
+    · simpa using (spectral_diagonal_real hE B (x + y)).symm
   have h2 : ((spectral_scalar_measure E (x - y) hE B).toReal : ℂ) =
       ⟪E B (x - y), x - y⟫_ℂ := by
-    apply Complex.ext <;> simp [spectral_scalar_measure_apply' E hE (x - y) B hB]
+    refine Complex.ext ?_ ?_
+    · simpa using spectral_scalar_measure_apply' E hE (x - y) B hB
+    · simpa using (spectral_diagonal_real hE B (x - y)).symm
   have h3 : ((spectral_scalar_measure E (x + I • y) hE B).toReal : ℂ) =
       ⟪E B (x + I • y), x + I • y⟫_ℂ := by
-    apply Complex.ext <;> simp [spectral_scalar_measure_apply' E hE (x + I • y) B hB]
+    refine Complex.ext ?_ ?_
+    · simpa using spectral_scalar_measure_apply' E hE (x + I • y) B hB
+    · simpa using (spectral_diagonal_real hE B (x + I • y)).symm
   have h4 : ((spectral_scalar_measure E (x - I • y) hE B).toReal : ℂ) =
       ⟪E B (x - I • y), x - I • y⟫_ℂ := by
-    apply Complex.ext <;> simp [spectral_scalar_measure_apply' E hE (x - I • y) B hB]
+    refine Complex.ext ?_ ?_
+    · simpa using spectral_scalar_measure_apply' E hE (x - I • y) B hB
+    · simpa using (spectral_diagonal_real hE B (x - I • y)).symm
   rw [h1, h2, h3, h4]
 
 /-!
@@ -415,13 +423,11 @@ lemma spectral_cross_integral_add_left_simple (E : Set ℝ → H →L[ℂ] H) (h
     extends to bounded measurable by uniform approximation + dominated convergence. -/
 theorem spectral_cross_integral_add_left (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectralMeasure E)
     (hE_univ : E Set.univ = 1) (f : ℝ → ℂ) (x y φ : H)
-    (hf_meas : Measurable f) (hf_bdd : ∃ M, ∀ s, ‖f s‖ ≤ M) :
+    (hf_meas : Measurable f) (hf_bdd : ∃ M, ∀ s, ‖f s‖ ≤ M)
+    (hadd : spectral_cross_integral E hE f (x + y) φ =
+      spectral_cross_integral E hE f x φ + spectral_cross_integral E hE f y φ) :
     spectral_cross_integral E hE f (x + y) φ =
-    spectral_cross_integral E hE f x φ + spectral_cross_integral E hE f y φ →
-    spectral_cross_integral E hE f (x + y) φ =
-      spectral_cross_integral E hE f x φ + spectral_cross_integral E hE f y φ := by
-  intro h
-  exact h
+      spectral_cross_integral E hE f x φ + spectral_cross_integral E hE f y φ := hadd
 
 /-!
 ## Diagonal Case Simplification

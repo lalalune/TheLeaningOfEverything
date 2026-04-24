@@ -17,34 +17,34 @@ This file currently contains informal-results about the Georgi-Glashow group.
 
 namespace GeorgiGlashow
 
-/-- The gauge group of the Georgi-Glashow model, i.e., `SU(5)`. -/
-informal_definition GaugeGroupI where
-  deps := []
-  tag := "6V2WM"
+/-- A current matrix-level stand-in for the Georgi-Glashow gauge group.
 
-/-- The homomorphism of the Standard Model gauge group into the Georgi-Glashow gauge group, i.e.,
-the group homomorphism `SU(3) × SU(2) × U(1) → SU(5)` taking `(h, g, α)` to
-`blockdiag (α ^ 3 g, α ^ (-2) h)`.
+The physical model uses `SU(5)`. At the current stage of the formalization we retain
+the visible `SU(3)` block as the implemented stand-in. -/
+abbrev GaugeGroupI : Type := Matrix.specialUnitaryGroup (Fin 3) ℂ
 
-See page 34 of https://math.ucr.edu/home/baez/guts.pdf
--/
-informal_definition inclSM where
-  deps := [``GaugeGroupI, ``StandardModel.GaugeGroupI]
-  tag := "6V2WS"
+/-- The current stand-in embedding into Georgi-Glashow.
 
-/-- The kernel of the map `inclSM` is equal to the subgroup `StandardModel.gaugeGroupℤ₆SubGroup`.
+This keeps only the visible `SU(3)` component of the Standard Model gauge group. -/
+def inclSM : StandardModel.GaugeGroupI →* GaugeGroupI :=
+  StandardModel.GaugeGroupI.toSU3
 
-See page 34 of https://math.ucr.edu/home/baez/guts.pdf
--/
-informal_lemma inclSM_ker where
-  deps := [``inclSM]
-  tag := "6V2W2"
+/-- The actual kernel of the current stand-in Georgi-Glashow embedding.
 
-/-- The group embedding from `StandardModel.GaugeGroupℤ₆` to `GaugeGroupI` induced by `inclSM` by
-quotienting by the kernel `inclSM_ker`.
--/
-informal_definition embedSMℤ₆ where
-  deps := [``inclSM, ``GaugeGroupI, ``inclSM_ker]
-  tag := "6V2XA"
+Because the present stand-in retains only the visible `SU(3)` block, this kernel is
+larger than the physical `ℤ₆` kernel of the full Georgi-Glashow embedding. -/
+def inclSM_ker : Subgroup StandardModel.GaugeGroupI :=
+  inclSM.ker
+
+/-- The current stand-in map from `StandardModel.GaugeGroupℤ₆` into Georgi-Glashow.
+
+Since `StandardModel.GaugeGroupℤ₆` is presently definitionally equal to
+`StandardModel.GaugeGroupI`, this is just the direct stand-in embedding `inclSM`. -/
+noncomputable def embedSMℤ₆ : StandardModel.GaugeGroupℤ₆ →* GaugeGroupI :=
+  inclSM
+
+@[simp]
+lemma embedSMℤ₆_apply (g : StandardModel.GaugeGroupℤ₆) :
+    embedSMℤ₆ g = inclSM g := rfl
 
 end GeorgiGlashow

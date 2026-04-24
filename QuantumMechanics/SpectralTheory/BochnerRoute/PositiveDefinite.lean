@@ -76,7 +76,7 @@ This is stated as an axiom pending a full proof, which requires either:
 
 ## Future work
 Prove this from first principles using mathlib's Fourier analysis. -/
-theorem bochner_theorem (f : ℝ → ℂ) (hf : PositiveDefiniteContinuous f)
+theorem bochner_theorem (f : ℝ → ℂ) (_hf : PositiveDefiniteContinuous f)
     (hμ : ∃ (μ : Measure ℝ), IsFiniteMeasure μ ∧ ∀ t, f t = ∫ ω, exp (I * ω * t) ∂μ) :
   ∃ (μ : Measure ℝ),
     IsFiniteMeasure μ ∧

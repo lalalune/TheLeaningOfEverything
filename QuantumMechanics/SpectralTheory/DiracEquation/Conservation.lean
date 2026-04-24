@@ -114,7 +114,7 @@ jᵘ = ψ̄γᵘψ is conserved: ∂ᵤjᵘ = 0.
 This axiom would follow from a formalization of distribution theory and
 the calculus of spinor-valued functions. -/
 theorem dirac_current_conserved (Γ : GammaMatrices) (ψ : SpinorField) (m : ℂ)
-    (h_dirac : ∀ x, (∑ μ, I • (Γ.gamma μ).mulVec (partialDeriv' μ ψ.ψ x)) = m • ψ.ψ x)
+    (_h_dirac : ∀ x, (∑ μ, I • (Γ.gamma μ).mulVec (partialDeriv' μ ψ.ψ x)) = m • ψ.ψ x)
     (h_current : ∀ x, fourDivergence (fun x => diracCurrent Γ (ψ.ψ x)) x = 0) :
     ∀ x, fourDivergence (fun x => diracCurrent Γ (ψ.ψ x)) x = 0 :=
   by
@@ -147,7 +147,7 @@ This is the spatial decomposition of ∂ᵤjᵘ = 0:
 
 The axiom states this pointwise for each (t,x). -/
 theorem continuity_equation (Γ : GammaMatrices) (ψ : SpinorField) (m : ℂ)
-    (h_dirac : ∀ x, (∑ μ, I • (Γ.gamma μ).mulVec (partialDeriv' μ ψ.ψ x)) = m • ψ.ψ x)
+    (_h_dirac : ∀ x, (∑ μ, I • (Γ.gamma μ).mulVec (partialDeriv' μ ψ.ψ x)) = m • ψ.ψ x)
     (t : ℝ) (x : Fin 3 → ℝ)
     (h_cont :
       deriv (fun s => probabilityDensity Γ (ψ.ψ (spacetimePoint s x))) t =
@@ -167,7 +167,7 @@ This is the divergence theorem applied to all of ℝ³: the "boundary at infinit
 contributes nothing if the field decays sufficiently fast. Physically, this
 means no probability escapes to infinity. -/
 theorem divergence_integral_vanishes (Γ : GammaMatrices) (ψ : SpinorField) (t : ℝ)
-    (h_vanish : Tendsto (fun x : Fin 3 → ℝ => probabilityDensity Γ (ψ.ψ (spacetimePoint t x)))
+    (_h_vanish : Tendsto (fun x : Fin 3 → ℝ => probabilityDensity Γ (ψ.ψ (spacetimePoint t x)))
                         (cocompact _) (nhds 0))
     (h_div :
       ∫ x : Fin 3 → ℝ, (∑ i : Fin 3, deriv (fun s => (diracCurrent Γ (ψ.ψ (spacetimePoint t (Function.update x i s))) i.succ).re) (x i)) ∂volume = 0) :
@@ -193,7 +193,7 @@ by the free Dirac equation.
 2. Apply the continuity equation ∂ρ/∂t = -∇·j
 3. The integral of ∇·j vanishes by the divergence theorem -/
 theorem probability_conserved (Γ : GammaMatrices) (ψ : SpinorField) (m : ℂ)
-    (h_dirac : ∀ x, (∑ μ, I • (Γ.gamma μ).mulVec (partialDeriv' μ ψ.ψ x)) = m • ψ.ψ x)
+    (_h_dirac : ∀ x, (∑ μ, I • (Γ.gamma μ).mulVec (partialDeriv' μ ψ.ψ x)) = m • ψ.ψ x)
     (h_vanish : ∀ t, Tendsto (fun x : Fin 3 → ℝ => probabilityDensity Γ (ψ.ψ (spacetimePoint t x)))
                               (cocompact _) (nhds 0))
     (h_leibniz :

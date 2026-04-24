@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Joseph Tooby-Smith
 -/
 import Relativity.Tensors.RealTensor.Vector.MinkowskiProduct
+import Relativity.LorentzGroup.Rotations
 import Relativity.SpeedOfLight
 import SpaceAndTime.Time.Basic
 /-!
@@ -223,9 +224,17 @@ open realLorentzTensor
 open Tensor
 
 /-- The function `space` is equivariant with respect to rotations. -/
-informal_lemma space_equivariant where
-  deps := [``space]
-  tag := "7MTYX"
+lemma space_equivariant {d : ℕ} (Λ : LorentzGroup.Rotations d) (x : SpaceTime d) :
+    space (Λ.1 • x) =
+      ⟨fun i => ∑ j, (LorentzGroup.ofSpecialOrthogonal.symm Λ).1 i j * space x j⟩ := by
+  ext i
+  change (Λ.1 • x) (Sum.inr i) = _
+  rw [Lorentz.Vector.smul_eq_mulVec]
+  have hΛ : Matrix.fromBlocks 1 0 0 (LorentzGroup.ofSpecialOrthogonal.symm Λ).1 = Λ.1.1 := by
+    exact congrArg (fun M : LorentzGroup d => M.1)
+      (congrArg Subtype.val (LorentzGroup.ofSpecialOrthogonal.apply_symm_apply Λ))
+  rw [← hΛ]
+  simp [Matrix.mulVec_eq_sum, space, mul_comm]
 
 /-!
 

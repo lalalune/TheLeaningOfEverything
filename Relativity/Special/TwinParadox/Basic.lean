@@ -63,11 +63,120 @@ def ageGap : ℝ := T.properTimeTwinA - T.properTimeTwinB
 
 -- NOTE (`6V2UQ`): Find conditions for which the twin-paradox age gap is zero.
 
+private lemma minkowski_nonneg_of_causallyFollows {d : ℕ} {p q : SpaceTime d}
+    (h : causallyFollows p q) :
+    0 ≤ ⟪q - p, q - p⟫ₘ := by
+  rcases h with h | h
+  · exact le_of_lt ((timeLike_iff_norm_sq_pos _).mp h.1)
+  · rw [(lightLike_iff_norm_sq_zero _).mp h.1]
+
+private lemma timeComponent_nonneg_of_causallyFollows {d : ℕ} {p q : SpaceTime d}
+    (h : causallyFollows p q) :
+    0 ≤ (q - p).timeComponent := by
+  rcases h with h | h
+  · exact le_of_lt h.2
+  · exact h.2
+
+private lemma minkowski_self_eq_time_sq_sub_norm_sq {d : ℕ} {v : SpaceTime d}
+    (hv : 0 ≤ v.timeComponent) :
+    ⟪v, v⟫ₘ = v.timeComponent ^ 2 - ‖v.spatialPart‖ ^ 2 := by
+  rw [minkowskiProduct_self_eq_timeComponent_spatialPart]
+  simp [abs_of_nonneg hv]
+
+private lemma norm_spatialPart_le_timeComponent_of_causal {d : ℕ} {v : SpaceTime d}
+    (hv_time : 0 ≤ v.timeComponent) (hv_norm : 0 ≤ ⟪v, v⟫ₘ) :
+    ‖v.spatialPart‖ ≤ v.timeComponent := by
+  rw [← sq_le_sq₀ (norm_nonneg v.spatialPart) hv_time]
+  have hv_eq := minkowski_self_eq_time_sq_sub_norm_sq hv_time (v := v)
+  linarith
+
+private lemma sqrt_mul_le_minkowski_of_causal {d : ℕ} {u v : SpaceTime d}
+    (hu_time : 0 ≤ u.timeComponent) (hv_time : 0 ≤ v.timeComponent)
+    (hu_norm : 0 ≤ ⟪u, u⟫ₘ) (hv_norm : 0 ≤ ⟪v, v⟫ₘ) :
+    Real.sqrt ⟪u, u⟫ₘ * Real.sqrt ⟪v, v⟫ₘ ≤ ⟪u, v⟫ₘ := by
+  have hu_space : ‖u.spatialPart‖ ≤ u.timeComponent :=
+    norm_spatialPart_le_timeComponent_of_causal hu_time hu_norm
+  have hv_space : ‖v.spatialPart‖ ≤ v.timeComponent :=
+    norm_spatialPart_le_timeComponent_of_causal hv_time hv_norm
+  have hsub_nonneg : 0 ≤
+      u.timeComponent * v.timeComponent - ‖u.spatialPart‖ * ‖v.spatialPart‖ := by
+    exact sub_nonneg.mpr <| mul_le_mul hu_space hv_space (norm_nonneg _) hu_time
+  have hu_eq := minkowski_self_eq_time_sq_sub_norm_sq hu_time (v := u)
+  have hv_eq := minkowski_self_eq_time_sq_sub_norm_sq hv_time (v := v)
+  have hsq_aux : ⟪u, u⟫ₘ * ⟪v, v⟫ₘ ≤
+      (u.timeComponent * v.timeComponent - ‖u.spatialPart‖ * ‖v.spatialPart‖) ^ 2 := by
+    have hsq_nonneg :
+        0 ≤ (u.timeComponent * ‖v.spatialPart‖ - v.timeComponent * ‖u.spatialPart‖) ^ 2 := by
+      positivity
+    nlinarith [hu_eq, hv_eq]
+  have hsq :
+      (Real.sqrt ⟪u, u⟫ₘ * Real.sqrt ⟪v, v⟫ₘ) ^ 2 ≤
+        (u.timeComponent * v.timeComponent - ‖u.spatialPart‖ * ‖v.spatialPart‖) ^ 2 := by
+    nlinarith [hsq_aux, Real.sq_sqrt hu_norm, Real.sq_sqrt hv_norm]
+  have hle :
+      Real.sqrt ⟪u, u⟫ₘ * Real.sqrt ⟪v, v⟫ₘ ≤
+        u.timeComponent * v.timeComponent - ‖u.spatialPart‖ * ‖v.spatialPart‖ := by
+    rw [← sq_le_sq₀ (by positivity) hsub_nonneg]
+    exact hsq
+  rw [minkowskiProduct_eq_timeComponent_spatialPart]
+  have hinner : @Inner.inner ℝ _ _ u.spatialPart v.spatialPart ≤
+      ‖u.spatialPart‖ * ‖v.spatialPart‖ := real_inner_le_norm _ _
+  calc
+    Real.sqrt ⟪u, u⟫ₘ * Real.sqrt ⟪v, v⟫ₘ
+      ≤ u.timeComponent * v.timeComponent - ‖u.spatialPart‖ * ‖v.spatialPart‖ := hle
+    _ ≤ ⟪u, v⟫ₘ := by
+      rw [minkowskiProduct_eq_timeComponent_spatialPart]
+      exact sub_le_sub le_rfl hinner
+
+private lemma properTime_add_ge_of_causal {d : ℕ} {u v : SpaceTime d}
+    (hu_time : 0 ≤ u.timeComponent) (hv_time : 0 ≤ v.timeComponent)
+    (hu_norm : 0 ≤ ⟪u, u⟫ₘ) (hv_norm : 0 ≤ ⟪v, v⟫ₘ) :
+    Real.sqrt ⟪u, u⟫ₘ + Real.sqrt ⟪v, v⟫ₘ ≤ Real.sqrt ⟪u + v, u + v⟫ₘ := by
+  have hcross :
+      Real.sqrt ⟪u, u⟫ₘ * Real.sqrt ⟪v, v⟫ₘ ≤ ⟪u, v⟫ₘ :=
+    sqrt_mul_le_minkowski_of_causal hu_time hv_time hu_norm hv_norm
+  have hadd :
+      ⟪u + v, u + v⟫ₘ = ⟪u, u⟫ₘ + 2 * ⟪u, v⟫ₘ + ⟪v, v⟫ₘ := by
+    calc
+      ⟪u + v, u + v⟫ₘ = ⟪u, u + v⟫ₘ + ⟪v, u + v⟫ₘ := by simp
+      _ = (⟪u, u⟫ₘ + ⟪u, v⟫ₘ) + (⟪v, u⟫ₘ + ⟪v, v⟫ₘ) := by simp
+      _ = ⟪u, u⟫ₘ + 2 * ⟪u, v⟫ₘ + ⟪v, v⟫ₘ := by rw [minkowskiProduct_symm v u] ; ring
+  have hsum_nonneg : 0 ≤ ⟪u + v, u + v⟫ₘ := by
+    have huv_nonneg : 0 ≤ ⟪u, v⟫ₘ := le_trans (by positivity) hcross
+    rw [hadd]
+    nlinarith
+  rw [← sq_le_sq₀ (by positivity) (Real.sqrt_nonneg _)]
+  rw [Real.sq_sqrt hsum_nonneg]
+  nlinarith [hcross, Real.sq_sqrt hu_norm, Real.sq_sqrt hv_norm]
+
 /-- In the twin paradox with instantaneous acceleration, Twin A is always older
   then Twin B. -/
-informal_lemma ageGap_nonneg where
-  deps := [``ageGap]
-  tag := "7ROVE"
+lemma ageGap_nonneg : 0 ≤ T.ageGap := by
+  let u : SpaceTime 3 := T.twinBMid - T.startPoint
+  let v : SpaceTime 3 := T.endPoint - T.twinBMid
+  have hu_time : 0 ≤ u.timeComponent := by
+    simpa [u] using
+      timeComponent_nonneg_of_causallyFollows T.twinBMid_causallyFollows_startPoint
+  have hv_time : 0 ≤ v.timeComponent := by
+    simpa [v] using
+      timeComponent_nonneg_of_causallyFollows T.endPoint_causallyFollows_twinBMid
+  have hu_norm : 0 ≤ ⟪u, u⟫ₘ := by
+    simpa [u] using
+      minkowski_nonneg_of_causallyFollows T.twinBMid_causallyFollows_startPoint
+  have hv_norm : 0 ≤ ⟪v, v⟫ₘ := by
+    simpa [v] using
+      minkowski_nonneg_of_causallyFollows T.endPoint_causallyFollows_twinBMid
+  have htriangle :
+      Real.sqrt ⟪u, u⟫ₘ + Real.sqrt ⟪v, v⟫ₘ ≤ Real.sqrt ⟪u + v, u + v⟫ₘ :=
+    properTime_add_ge_of_causal hu_time hv_time hu_norm hv_norm
+  have huv : u + v = T.endPoint - T.startPoint := by
+    funext i
+    simp [u, v]
+  have hgap :
+      T.properTimeTwinB ≤ T.properTimeTwinA := by
+    simpa [properTimeTwinA, properTimeTwinB, SpaceTime.properTime, u, v, huv] using htriangle
+  unfold ageGap
+  linarith
 
 /-!
 

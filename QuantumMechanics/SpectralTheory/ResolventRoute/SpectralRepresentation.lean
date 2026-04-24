@@ -75,7 +75,7 @@ theorem resolvent_spectral_bilinear {U_grp : OneParameterUnitaryGroup (H := H)}
 This follows from the bound `|(s - z)⁻¹| ≤ 1/|Im(z)|` and finiteness of
 the spectral measure. -/
 theorem resolvent_spectral_integrable {U_grp : OneParameterUnitaryGroup (H := H)}
-    (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
+    (_gen : Generator U_grp) (_hsa : _gen.IsSelfAdjoint)
     (E : Set ℝ → (H →L[ℂ] H)) (hE : IsSpectralMeasure E)
     (z : OffRealAxis) (ψ : H)
     (hint :
@@ -93,7 +93,8 @@ theorem resolvent_spectral_integrable {U_grp : OneParameterUnitaryGroup (H := H)
 This is the Stieltjes integral with respect to a projection-valued measure.
 For bounded measurable `f`, this is well-defined and satisfies
 `⟨∫ f dE ψ, φ⟩ = ∫ f d⟨E(·)ψ, φ⟩`. -/
-noncomputable def resolvent_spectral_integral (E : Set ℝ → (H →L[ℂ] H)) (f : ℝ → ℂ) (ψ : H) : H :=
+noncomputable def resolvent_spectral_integral (_E : Set ℝ → (H →L[ℂ] H))
+    (_f : ℝ → ℂ) (_ψ : H) : H :=
   -- Place holder for Lebesgue-Stieltjes integrability
   0
 

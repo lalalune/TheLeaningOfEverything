@@ -60,13 +60,23 @@ structure SpectralMeasureAgreement
     (E : Set ℝ → H →L[ℂ] H)
     (hE : IsSpectralMeasureFor E gen) : Prop where
   /-- E agrees with Bochner measure from U(t) -/
-  bochner_agreement : ∀ ψ B, MeasurableSet B →
+  bochner_agreement : ∀ ψ
+      (hbochner :
+        ∃ (μ : Measure ℝ),
+          IsFiniteMeasure μ ∧
+            ∀ t, ⟪U_grp.U t ψ, ψ⟫_ℂ = ∫ ω, exp (I * ω * t) ∂μ)
+      B, MeasurableSet B →
     (spectral_scalar_measure E ψ hE.toIsSpectralMeasure B).toReal =
-    (bochner_measure U_grp ψ B).toReal
+    (bochner_measure U_grp ψ hbochner B).toReal
   /-- E agrees with Stieltjes inversion from R(z) -/
-  stieltjes_agreement : ∀ ψ a b, a < b →
+  stieltjes_agreement : ∀ ψ
+      (hbochner :
+        ∃ (μ : Measure ℝ),
+          IsFiniteMeasure μ ∧
+            ∀ t, ⟪U_grp.U t ψ, ψ⟫_ℂ = ∫ ω, exp (I * ω * t) ∂μ)
+      a b, a < b →
     (⟪E (Set.Ioc a b) ψ, ψ⟫_ℂ).re =
-    (bochner_measure U_grp ψ (Set.Ioc a b)).toReal
+    (bochner_measure U_grp ψ hbochner (Set.Ioc a b)).toReal
   /-- E agrees with Cayley-lifted spectral measure -/
   cayley_agreement : ∀ B, MeasurableSet B →
     E B = spectralMeasure_from_cayley gen hsa B
@@ -80,37 +90,42 @@ theorem bochner_route_agreement {U_grp : OneParameterUnitaryGroup (H := H)}
     (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
     (E : Set ℝ → H →L[ℂ] H)
     (hE : IsSpectralMeasureFor E gen)
-    (ψ : H) (B : Set ℝ) (hB : MeasurableSet B) :
+    (hAgreement : SpectralMeasureAgreement gen hsa E hE)
+    (ψ : H)
+    (hbochner :
+      ∃ (μ : Measure ℝ),
+        IsFiniteMeasure μ ∧
+          ∀ t, ⟪U_grp.U t ψ, ψ⟫_ℂ = ∫ ω, exp (I * ω * t) ∂μ)
+    (B : Set ℝ) (hB : MeasurableSet B) :
     (spectral_scalar_measure E ψ hE.toIsSpectralMeasure B).toReal =
-    (bochner_measure U_grp ψ B).toReal →
-    (spectral_scalar_measure E ψ hE.toIsSpectralMeasure B).toReal =
-      (bochner_measure U_grp ψ B).toReal := by
-  intro h
-  exact h
+      (bochner_measure U_grp ψ hbochner B).toReal := by
+  exact hAgreement.bochner_agreement ψ hbochner B hB
 
 /-- Stieltjes inversion produces same measure as E -/
 theorem stieltjes_route_agreement {U_grp : OneParameterUnitaryGroup (H := H)}
     (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
     (E : Set ℝ → H →L[ℂ] H)
     (hE : IsSpectralMeasureFor E gen)
-    (ψ : H) (a b : ℝ) (hab : a < b) :
+    (hAgreement : SpectralMeasureAgreement gen hsa E hE)
+    (ψ : H)
+    (hbochner :
+      ∃ (μ : Measure ℝ),
+        IsFiniteMeasure μ ∧
+          ∀ t, ⟪U_grp.U t ψ, ψ⟫_ℂ = ∫ ω, exp (I * ω * t) ∂μ)
+    (a b : ℝ) (hab : a < b) :
     (⟪E (Set.Ioc a b) ψ, ψ⟫_ℂ).re =
-    (bochner_measure U_grp ψ (Set.Ioc a b)).toReal →
-    (⟪E (Set.Ioc a b) ψ, ψ⟫_ℂ).re =
-      (bochner_measure U_grp ψ (Set.Ioc a b)).toReal := by
-  intro h
-  exact h
+      (bochner_measure U_grp ψ hbochner (Set.Ioc a b)).toReal := by
+  exact hAgreement.stieltjes_agreement ψ hbochner a b hab
 
 /-- Cayley route produces same measure as E -/
 theorem cayley_route_agreement {U_grp : OneParameterUnitaryGroup (H := H)}
     (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
     (E : Set ℝ → H →L[ℂ] H)
     (hE : IsSpectralMeasureFor E gen)
+    (hAgreement : SpectralMeasureAgreement gen hsa E hE)
     (B : Set ℝ) (hB : MeasurableSet B) :
-    E B = spectralMeasure_from_cayley gen hsa B →
     E B = spectralMeasure_from_cayley gen hsa B := by
-  intro h
-  exact h
+  exact hAgreement.cayley_agreement B hB
 
 /-!
 ## Main Theorem
@@ -121,13 +136,23 @@ theorem three_routes_agree {U_grp : OneParameterUnitaryGroup (H := H)}
     (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
     (E : Set ℝ → H →L[ℂ] H)
     (hE : IsSpectralMeasureFor E gen)
-    (h_bochner : ∀ ψ B hB,
+    (h_bochner : ∀ ψ
+      (hbochner :
+        ∃ (μ : Measure ℝ),
+          IsFiniteMeasure μ ∧
+            ∀ t, ⟪U_grp.U t ψ, ψ⟫_ℂ = ∫ ω, exp (I * ω * t) ∂μ)
+      (B : Set ℝ) (hB : MeasurableSet B),
       (spectral_scalar_measure E ψ hE.toIsSpectralMeasure B).toReal =
-        (bochner_measure U_grp ψ B).toReal)
-    (h_stieltjes : ∀ ψ a b hab,
+        (bochner_measure U_grp ψ hbochner B).toReal)
+    (h_stieltjes : ∀ ψ
+      (hbochner :
+        ∃ (μ : Measure ℝ),
+          IsFiniteMeasure μ ∧
+            ∀ t, ⟪U_grp.U t ψ, ψ⟫_ℂ = ∫ ω, exp (I * ω * t) ∂μ)
+      (a b : ℝ) (hab : a < b),
       (⟪E (Set.Ioc a b) ψ, ψ⟫_ℂ).re =
-        (bochner_measure U_grp ψ (Set.Ioc a b)).toReal)
-    (h_cayley : ∀ B hB, E B = spectralMeasure_from_cayley gen hsa B) :
+        (bochner_measure U_grp ψ hbochner (Set.Ioc a b)).toReal)
+    (h_cayley : ∀ (B : Set ℝ) (_hB : MeasurableSet B), E B = spectralMeasure_from_cayley gen hsa B) :
     SpectralMeasureAgreement gen hsa E hE where
   bochner_agreement := h_bochner
   stieltjes_agreement := h_stieltjes

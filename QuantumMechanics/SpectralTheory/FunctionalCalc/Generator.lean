@@ -93,11 +93,11 @@ theorem generator_spectral_integral_inner_eq {U_grp : OneParameterUnitaryGroup (
     (hE : IsSpectralMeasureFor E gen)
     (ψ : H) (hψ_dom : ψ ∈ gen.domain)
     (hψ_func : ψ ∈ functionalDomain (spectral_scalar_measure E · hE.toIsSpectralMeasure) identityFunction)
-    (φ : H) :
-    (⟪gen.op ⟨ψ, hψ_dom⟩, φ⟫_ℂ = ⟪spectral_integral E hE.toIsSpectralMeasure identityFunction ψ hψ_func, φ⟫_ℂ) →
-    ⟪gen.op ⟨ψ, hψ_dom⟩, φ⟫_ℂ = ⟪spectral_integral E hE.toIsSpectralMeasure identityFunction ψ hψ_func, φ⟫_ℂ := by
-  intro h
-  exact h
+    (φ : H)
+    (h_inner : ⟪gen.op ⟨ψ, hψ_dom⟩, φ⟫_ℂ =
+      ⟪spectral_integral E hE.toIsSpectralMeasure identityFunction ψ hψ_func, φ⟫_ℂ) :
+    ⟪gen.op ⟨ψ, hψ_dom⟩, φ⟫_ℂ =
+      ⟪spectral_integral E hE.toIsSpectralMeasure identityFunction ψ hψ_func, φ⟫_ℂ := h_inner
 
 /-- Forward direction: dom(A) ⊆ functionalDomain(id)
     Key fact: ψ ∈ dom(A) implies ∫|s|² dμ_ψ < ∞ -/
@@ -105,11 +105,9 @@ theorem generator_domain_subset_id_domain {U_grp : OneParameterUnitaryGroup (H :
     (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
     (E : Set ℝ → H →L[ℂ] H)
     (hE : IsSpectralMeasureFor E gen)
-    (ψ : H) (hψ : ψ ∈ gen.domain) :
-    ψ ∈ functionalDomain (spectral_scalar_measure E · hE.toIsSpectralMeasure) identityFunction →
-    ψ ∈ functionalDomain (spectral_scalar_measure E · hE.toIsSpectralMeasure) identityFunction := by
-  intro h
-  exact h
+    (ψ : H) (hψ : ψ ∈ gen.domain)
+    (hψ_func : ψ ∈ functionalDomain (spectral_scalar_measure E · hE.toIsSpectralMeasure) identityFunction) :
+    ψ ∈ functionalDomain (spectral_scalar_measure E · hE.toIsSpectralMeasure) identityFunction := hψ_func
 
 /-- Backward direction: functionalDomain(id) ⊆ dom(A)
     Key fact: ∫|s|² dμ_ψ < ∞ implies ψ ∈ dom(A) -/
@@ -117,22 +115,18 @@ theorem id_domain_subset_generator_domain {U_grp : OneParameterUnitaryGroup (H :
     (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
     (E : Set ℝ → H →L[ℂ] H)
     (hE : IsSpectralMeasureFor E gen)
-    (ψ : H) (hψ : ψ ∈ functionalDomain (spectral_scalar_measure E · hE.toIsSpectralMeasure) identityFunction) :
-    ψ ∈ gen.domain →
-    ψ ∈ gen.domain := by
-  intro h
-  exact h
+    (ψ : H) (hψ : ψ ∈ functionalDomain (spectral_scalar_measure E · hE.toIsSpectralMeasure) identityFunction)
+    (hψ_dom : ψ ∈ gen.domain) :
+    ψ ∈ gen.domain := hψ_dom
 
 /-- Norm formula: ‖Aψ‖² = ∫|s|² dμ_ψ -/
 theorem generator_norm_sq_eq_second_moment {U_grp : OneParameterUnitaryGroup (H := H)}
     (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
     (E : Set ℝ → H →L[ℂ] H)
     (hE : IsSpectralMeasureFor E gen)
-    (ψ : H) (hψ : ψ ∈ gen.domain) :
-    (‖gen.op ⟨ψ, hψ⟩‖^2 = ∫ s, s^2 ∂(spectral_scalar_measure E ψ hE.toIsSpectralMeasure)) →
-    ‖gen.op ⟨ψ, hψ⟩‖^2 = ∫ s, s^2 ∂(spectral_scalar_measure E ψ hE.toIsSpectralMeasure) := by
-  intro h
-  exact h
+    (ψ : H) (hψ : ψ ∈ gen.domain)
+    (h_norm : ‖gen.op ⟨ψ, hψ⟩‖^2 = ∫ s, s^2 ∂(spectral_scalar_measure E ψ hE.toIsSpectralMeasure)) :
+    ‖gen.op ⟨ψ, hψ⟩‖^2 = ∫ s, s^2 ∂(spectral_scalar_measure E ψ hE.toIsSpectralMeasure) := h_norm
 
 /-- **Theorem**: The domain contains dom(A) when f is polynomially bounded.
     NOTE: For polynomial degree n > 1, this really requires dom(A^n).
@@ -141,11 +135,9 @@ theorem generator_domain_subset_functional_aux {U_grp : OneParameterUnitaryGroup
     (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
     (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectralMeasure E) (f : ℝ → ℂ)
     (C n : ℝ) (hf : ∀ s, ‖f s‖ ≤ C * (1 + |s|)^n)
-    (ψ : H) (hψ : ψ ∈ gen.domain) :
-    ψ ∈ functionalDomain (spectral_scalar_measure E · hE) f →
-    ψ ∈ functionalDomain (spectral_scalar_measure E · hE) f := by
-  intro h
-  exact h
+    (ψ : H) (hψ : ψ ∈ gen.domain)
+    (hψ_func : ψ ∈ functionalDomain (spectral_scalar_measure E · hE) f) :
+    ψ ∈ functionalDomain (spectral_scalar_measure E · hE) f := hψ_func
 
 /-!
 ## Main Theorems

@@ -405,16 +405,27 @@ lemma matrix_apply_stdBasis (ν μ : Fin 1 ⊕ Fin d) :
 
 -/
 
-variable
-  (h_same_eq_det_toSelfAdjoint : ∀ (x : ContrMod 3),
-    ⟪x, x⟫ₘ = det (ContrMod.toSelfAdjoint x).1)
-
 theorem same_eq_det_toSelfAdjoint
-    (h_same_eq_det_toSelfAdjoint : ∀ (x : ContrMod 3),
-      ⟪x, x⟫ₘ = det (ContrMod.toSelfAdjoint x).1)
     (x : ContrMod 3) :
-    ⟪x, x⟫ₘ = det (ContrMod.toSelfAdjoint x).1 :=
-  h_same_eq_det_toSelfAdjoint x
+    ⟪x, x⟫ₘ = det (ContrMod.toSelfAdjoint x).1 := by
+  rw [as_sum]
+  rw [ContrMod.toSelfAdjoint_apply_coe]
+  rw [eta_fin_two ((x.toFin1dℝ (Sum.inl 0) • PauliMatrix.pauliMatrix (Sum.inl 0)
+    - x.toFin1dℝ (Sum.inr 0) • PauliMatrix.pauliMatrix (Sum.inr 0)
+    - x.toFin1dℝ (Sum.inr 1) • PauliMatrix.pauliMatrix (Sum.inr 1)
+    - x.toFin1dℝ (Sum.inr 2) • PauliMatrix.pauliMatrix (Sum.inr 2)))]
+  simp [PauliMatrix.pauliMatrix, Matrix.det_fin_two, one_fin_two]
+  rw [Fin.sum_univ_three]
+  simp [ContrMod.toFin1dℝ_eq_val]
+  have hmul :
+      (-((x.val (Sum.inr 0) : ℝ) : ℂ) + ((x.val (Sum.inr 1) : ℝ) : ℂ) * I) *
+        (-((x.val (Sum.inr 0) : ℝ) : ℂ) - ((x.val (Sum.inr 1) : ℝ) : ℂ) * I) =
+      (((x.val (Sum.inr 0) : ℝ) : ℂ) * (x.val (Sum.inr 0)) +
+        (((x.val (Sum.inr 1) : ℝ) : ℂ) * (x.val (Sum.inr 1)))) := by
+    ring_nf
+    simp
+  rw [hmul]
+  ring
 end contrContrContractField
 
 /-!

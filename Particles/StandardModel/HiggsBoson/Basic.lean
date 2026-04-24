@@ -336,26 +336,18 @@ lemma mem_orbit_gaugeGroupI_iff (φ : HiggsVec) (ψ : HiggsVec) :
 We find the stability group of a Higgs vector, and the stability group of the set of
 all Higgs vectors.
 
-The items in this section are marked as `informal_lemma` as they are not yet formalized.
+- The representation-theoretic content of these stabilizer computations is documented here,
+  but the corresponding subgroup-identification theorems are not introduced as placeholder
+  constants.
+
+- For a nonzero Higgs vector `![0, Complex.ofReal ‖φ‖]`, the expected stabilizer is the
+  `SU(3) × U(1)` subgroup of `SU(3) × SU(2) × U(1)` with embedding
+  `(g, e^{i θ}) ↦ (g, diag (e ^ {3 * i θ}, e ^ {-3 * i θ}), e^{i θ})`.
+- The subgroup preserving every Higgs vector under `HiggsVec.rep` is expected to be
+  `SU(3) × ℤ₆`, where `ℤ₆` sits inside `SU(2) × U(1)` as
+  `(α^(-3) * I₂, α)` for a sixth root of unity `α`.
 
 -/
-
-/-- The Higgs boson breaks electroweak symmetry down to the electromagnetic force, i.e., the
-stability group of the action of `rep` on `![0, Complex.ofReal ‖φ‖]`, for non-zero `‖φ‖`, is the
-`SU(3) × U(1)` subgroup of `gaugeGroup := SU(3) × SU(2) × U(1)` with the embedding given by
-`(g, e^{i θ}) ↦ (g, diag (e ^ {3 * i θ}, e ^ {- 3 * i θ}), e^{i θ})`.
--/
-informal_lemma stability_group_single where
-  deps := [``StandardModel.HiggsVec]
-  tag := "6V2MD"
-
-/-- The subgroup of `gaugeGroup := SU(3) × SU(2) × U(1)` which preserves every `HiggsVec` by the
-action of `StandardModel.HiggsVec.rep` is given by `SU(3) × ℤ₆` where `ℤ₆` is the subgroup of
-`SU(2) × U(1)` with elements `(α^(-3) * I₂, α)` where `α` is a sixth root of unity.
--/
-informal_lemma stability_group where
-  deps := [``HiggsVec]
-  tag := "6V2MO"
 
 /-!
 
@@ -734,31 +726,16 @@ lemma const_normSq (φ : HiggsVec) (x : SpaceTime) :
 
 ### C.5. The action of the gauge group on Higgs fields
 
-The results in this section are currently informal.
+The results in this section remain mathematical notes.
+- A global gauge action on `HiggsField` is not introduced here because the current
+  `StandardModel.gaugeTransformI` is only a pointwise section type, not a smooth gauge group.
+- The intended orbit statement is:
+  there exists `g : gaugeTransformI` with `g • φ = φ'` exactly when
+  `φ(x)^† φ(x) = φ'(x)^† φ'(x)` pointwise.
+- The intended surjectivity statement is:
+  every smooth positive-semidefinite real field `f` on spacetime should be representable as
+  `f = φ^† φ` for some Higgs field `φ`.
 -/
-
--- NOTE: Define the global gauge action on `HiggsField`.
--- NOTE: Prove `⟪φ1, φ2⟫_H` is invariant under the global gauge action.
--- NOTE: Prove invariance of the Higgs potential under global gauge action.
-
-/-- The action of `gaugeTransformI` on `HiggsField` acting pointwise through `HiggsVec.rep`. -/
-informal_definition gaugeAction where
-  deps := [``gaugeTransformI]
-  tag := "6V2NP"
-
-/-- There exists a `g` in `gaugeTransformI` such that `gaugeAction g φ = φ'` iff
-`φ(x)^† φ(x) = φ'(x)^† φ'(x)`.
--/
-informal_lemma guage_orbit where
-  deps := [``gaugeAction]
-  tag := "6V2NX"
-
-/-- For every smooth map `f` from `SpaceTime` to `ℝ` such that `f` is positive semidefinite, there
-exists a Higgs field `φ` such that `f = φ^† φ`.
--/
-informal_lemma gauge_orbit_surject where
-  deps := [``HiggsField, ``SpaceTime]
-  tag := "6V2OC"
 
 end HiggsField
 

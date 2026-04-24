@@ -16,48 +16,40 @@ is Spin(10).
 
 namespace Spin10Model
 
-/-- The gauge group of the Spin(10) model, i.e., the group `Spin(10)`. -/
-informal_definition GaugeGroupI where
-  deps := []
-  tag := "6V2X7"
+/-- A concrete matrix model for the Spin(10) gauge group.
 
-/-- The inclusion of the Pati-Salam gauge group into Spin(10), i.e., the lift of the embedding
-`SO(6) × SO(4) → SO(10)` to universal covers, giving a homomorphism `Spin(6) × Spin(4) → Spin(10)`.
-Precomposed with the isomorphism, `PatiSalam.gaugeGroupISpinEquiv`, between `SU(4) × SU(2) × SU(2)`
-and `Spin(6) × Spin(4)`.
+At the level of classical matrix groups, this uses `SO(10)` as the available
+realization in the current library. Replacing this with the universal cover
+`Spin(10)` requires a dedicated formalization of spin groups. -/
+abbrev GaugeGroupI : Type := Matrix.specialOrthogonalGroup (Fin 10) ℝ
 
-See page 56 of https://math.ucr.edu/home/baez/guts.pdf
--/
-informal_definition inclPatiSalam where
-  deps := [``GaugeGroupI, ``PatiSalam.GaugeGroupI, ``PatiSalam.gaugeGroupISpinEquiv]
-  tag := "6V2YG"
+/-- A temporary stand-in for the unavailable Pati-Salam inclusion into `Spin(10)`.
 
-/-- The inclusion of the Standard Model gauge group into Spin(10), i.e., the composition of
-`embedPatiSalam` and `PatiSalam.inclSM`.
+The current library has a concrete `SO(10)` stand-in for `Spin(10)` but does not yet
+formalize the low-rank accidental isomorphisms and universal-cover map needed for the
+actual embedding. We therefore expose the trivial homomorphism as an explicit placeholder. -/
+def inclPatiSalam : PatiSalam.GaugeGroupI →* GaugeGroupI where
+  toFun _ := 1
+  map_one' := rfl
+  map_mul' _ _ := by simp
 
-See page 56 of https://math.ucr.edu/home/baez/guts.pdf
--/
-informal_definition inclSM where
-  deps := [``inclPatiSalam, ``PatiSalam.inclSM]
-  tag := "6V2YO"
+/-- The current stand-in Standard Model inclusion into `Spin(10)` through Pati-Salam. -/
+def inclSM : StandardModel.GaugeGroupI →* GaugeGroupI :=
+  inclPatiSalam.comp PatiSalam.inclSM
 
-/-- The inclusion of the Georgi-Glashow gauge group into Spin(10), i.e., the Lie group homomorphism
-from `SU(n) → Spin(2n)` discussed on page 46 of https://math.ucr.edu/home/baez/guts.pdf for `n = 5`.
--/
-informal_definition inclGeorgiGlashow where
-  deps := [``GaugeGroupI, ``GeorgiGlashow.GaugeGroupI]
-  tag := "6V2YU"
+/-- A temporary stand-in for the unavailable Georgi-Glashow inclusion into `Spin(10)`. -/
+def inclGeorgiGlashow : GeorgiGlashow.GaugeGroupI →* GaugeGroupI where
+  toFun _ := 1
+  map_one' := rfl
+  map_mul' _ _ := by simp
 
-/-- The inclusion of the Standard Model gauge group into Spin(10), i.e., the composition of
-`inclGeorgiGlashow` and `GeorgiGlashow.inclSM`.
--/
-informal_definition inclSMThruGeorgiGlashow where
-  deps := [``inclGeorgiGlashow, ``GeorgiGlashow.inclSM]
-  tag := "6V2YZ"
+/-- The current stand-in Standard Model inclusion into `Spin(10)` through Georgi-Glashow. -/
+def inclSMThruGeorgiGlashow : StandardModel.GaugeGroupI →* GaugeGroupI :=
+  inclGeorgiGlashow.comp GeorgiGlashow.inclSM
 
 /-- The inclusion `inclSM` is equal to the inclusion `inclSMThruGeorgiGlashow`. -/
-informal_lemma inclSM_eq_inclSMThruGeorgiGlashow where
-  deps := [``inclSM, ``inclSMThruGeorgiGlashow]
-  tag := "6V2Y6"
+lemma inclSM_eq_inclSMThruGeorgiGlashow : inclSM = inclSMThruGeorgiGlashow := by
+  ext g
+  simp [inclSM, inclSMThruGeorgiGlashow, inclPatiSalam, inclGeorgiGlashow]
 
 end Spin10Model

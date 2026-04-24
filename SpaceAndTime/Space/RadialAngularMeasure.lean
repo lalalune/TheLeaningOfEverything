@@ -188,13 +188,11 @@ private lemma integrable_neg_pow_on_ioi (n : ℕ) :
   · simp
   · simp
 
-theorem radialAngularMeasure_integrable_pow_neg_two {d : ℕ} :
+theorem radialAngularMeasure_integrable_pow_neg_two {d : ℕ}
+    (h_integrable : Integrable (fun x : Space d => (1 + ‖x‖) ^ (- (d + 1) : ℝ))
+      radialAngularMeasure) :
     Integrable (fun x : Space d => (1 + ‖x‖) ^ (- (d + 1) : ℝ))
-      radialAngularMeasure →
-      Integrable (fun x : Space d => (1 + ‖x‖) ^ (- (d + 1) : ℝ))
-      radialAngularMeasure := by
-  intro h
-  exact h
+      radialAngularMeasure := h_integrable
 
 /-!
 

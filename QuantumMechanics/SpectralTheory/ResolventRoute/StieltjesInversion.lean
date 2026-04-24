@@ -58,7 +58,7 @@ The integrability conditions are satisfied because:
 - The spectral measure is finite
 - The integration region `[a,b]` is bounded -/
 theorem lorentzian_fubini {μ : Measure ℝ} [IsFiniteMeasure μ]
-    (a b ε : ℝ) (hε : ε > 0)
+    (a b ε : ℝ) (_hε : ε > 0)
     (hFubini :
       ∫ t in Set.Icc a b, ∫ s, ε / ((s - t)^2 + ε^2) ∂μ =
         ∫ s, (∫ t in Set.Icc a b, ε / ((s - t)^2 + ε^2)) ∂μ) :
@@ -73,7 +73,7 @@ As `ε → 0+`, the arctan kernel converges to the indicator function pointwise,
 and is uniformly bounded by 1. By dominated convergence:
 `∫ (1/π)[arctan((b-s)/ε) - arctan((a-s)/ε)] dμ(s) → μ(a,b]` -/
 theorem arctan_dominated_convergence {μ : Measure ℝ}
-    [IsFiniteMeasure μ] (a b : ℝ) (hab : a < b)
+    [IsFiniteMeasure μ] (a b : ℝ) (_hab : a < b)
     (hConv :
       Tendsto (fun ε : ℝ => ∫ s, (1 / Real.pi) *
         (Real.arctan ((b - s) / ε) - Real.arctan ((a - s) / ε)) ∂μ)
@@ -142,14 +142,13 @@ theorem stieltjes_inversion {U_grp : OneParameterUnitaryGroup (H := H)}
         (⟪resolventFun gen hsa (offRealPoint t ε hε) ψ, ψ⟫_ℂ).im =
           ∫ s, ε / ((s - t)^2 + ε^2) ∂(spectral_scalar_measure E ψ hE)) →
     (hLorentzianArctan :
-      ∀ s ε : ℝ, ∀ hε : ε > 0,
+      ∀ s ε : ℝ, ∀ _hε : ε > 0,
         ∫ t in Set.Icc a b, ε / ((s - t)^2 + ε^2) =
           Real.arctan ((b - s) / ε) - Real.arctan ((a - s) / ε)) →
     ∀ δ > 0, ∃ ε₀ > 0, ∀ ε, ε < ε₀ → ∀ hε : ε > 0,
       ‖⟪E (Set.Ioc a b) ψ, ψ⟫_ℂ - (1 / Real.pi : ℂ) *
         ∫ t in Set.Icc a b, (⟪resolventFun gen hsa (offRealPoint t ε hε) ψ, ψ⟫_ℂ).im‖ < δ := by
-  intro hArctanConv hFubini hResolventIm hLorentzianArctan
-  intro δ hδ
+  intro hArctanConv hFubini hResolventIm hLorentzianArctan δ hδ
 
   -- Set up the spectral measure
   set μ := spectral_scalar_measure E ψ hE with hμ_def
@@ -157,7 +156,7 @@ theorem stieltjes_inversion {U_grp : OneParameterUnitaryGroup (H := H)}
     spectral_scalar_measure_finite E hE hE_univ ψ
 
   -- Get ε₀ from dominated convergence
-  have h_conv := arctan_dominated_convergence (μ := μ) a b hab (hArctanConv (μ := μ) (by infer_instance))
+  have h_conv := arctan_dominated_convergence (μ := μ) a b hab (hArctanConv (μ := μ))
   rw [Metric.tendsto_nhdsWithin_nhds] at h_conv
   obtain ⟨ε₀, hε₀_pos, hε₀_conv⟩ := h_conv δ hδ
 
@@ -188,7 +187,7 @@ theorem stieltjes_inversion {U_grp : OneParameterUnitaryGroup (H := H)}
   -- Apply Fubini
   have h_fubini : ∫ t in Set.Icc a b, ∫ s, ε / ((s - t)^2 + ε^2) ∂μ =
       ∫ s, (∫ t in Set.Icc a b, ε / ((s - t)^2 + ε^2)) ∂μ :=
-    lorentzian_fubini a b ε hε (hFubini (μ := μ) (by infer_instance) ε hε)
+    lorentzian_fubini a b ε hε (hFubini (μ := μ) ε hε)
 
   -- Compute inner integral via arctan
   have h_arctan : ∫ s, (∫ t in Set.Icc a b, ε / ((s - t)^2 + ε^2)) ∂μ =

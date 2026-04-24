@@ -168,7 +168,7 @@ lemma ofSpecialOrthogonal_symm_continuous {d} :
   simp only [ofSpecialOrthogonal, MulEquiv.symm_mk, MulEquiv.coe_mk, Equiv.coe_fn_symm_mk]
   apply Continuous.subtype_mk
   refine Continuous.matrix_submatrix ?_ Sum.inr Sum.inr
-  exact continuous_iff_le_induced.mpr (fun _ a => a)
+  exact continuous_subtype_val.comp continuous_subtype_val
 
 lemma rotations_subset_restricted (d) : Rotations d ≤ LorentzGroup.restricted d := by
   intro Λ h

@@ -109,7 +109,7 @@ def diracGap (κ : DiracConstants) : Set ℝ :=
 For E ∈ (-mc², mc²), the operator (H_D - E) has a bounded inverse.
 This is equivalent to saying E is in the resolvent set ρ(H_D). -/
 theorem dirac_gap_in_resolvent (H : Type*) [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
-    (H_D : DiracHamiltonian H) (hm : H_D.constants.m > 0)
+    (H_D : DiracHamiltonian H) (_hm : H_D.constants.m > 0)
     (h_gap :
       ∀ E ∈ diracGap H_D.constants,
         ∃ (R : H →L[ℂ] H), ∀ (ψ : H_D.domain), R (H_D.op ψ - E • (ψ : H)) = ψ) :
@@ -125,8 +125,8 @@ This is the spectral-theoretic statement that the gap contains no spectrum. -/
 theorem dirac_spectrum_eq (H : Type*) [NormedAddCommGroup H] [InnerProductSpace ℂ H] [CompleteSpace H]
     (H_D : DiracHamiltonian H)
     (U_grp : OneParameterUnitaryGroup (H := H)) (gen : Generator U_grp)
-    (hgen : gen.IsSelfAdjoint)
-    (E : Set ℝ → H →L[ℂ] H) (hE : FunctionalCalculus.IsSpectralMeasureFor E gen)
+    (_hgen : gen.IsSelfAdjoint)
+    (E : Set ℝ → H →L[ℂ] H) (_hE : FunctionalCalculus.IsSpectralMeasureFor E gen)
     (h_spec : ∀ B ⊆ diracGap H_D.constants, MeasurableSet B → E B = 0) :
     ∀ B ⊆ diracGap H_D.constants, MeasurableSet B → E B = 0 :=
   by
@@ -217,11 +217,11 @@ then E(B) = 0. This is the abstract statement that the spectral measure
 "lives on" the spectrum. -/
 theorem spectral_measure_supported_on_spectrum
     {U_grp : OneParameterUnitaryGroup (H := H)}
-    (gen : Generator U_grp) (hsa : gen.IsSelfAdjoint)
+    (gen : Generator U_grp) (_hsa : gen.IsSelfAdjoint)
     (E : Set ℝ → H →L[ℂ] H)
-    (hE : FunctionalCalculus.IsSpectralMeasureFor E gen)
-    (B : Set ℝ) (hB : MeasurableSet B)
-    (h_resolvent : ∀ s ∈ B, ∃ (R : H →L[ℂ] H),
+    (_hE : FunctionalCalculus.IsSpectralMeasureFor E gen)
+    (B : Set ℝ) (_hB : MeasurableSet B)
+    (_h_resolvent : ∀ s ∈ B, ∃ (R : H →L[ℂ] H),
         ∀ (ψ : gen.domain), R (gen.op ψ - s • (ψ : H)) = ψ)
     (h_supported : E B = 0) :
     E B = 0 :=
@@ -233,10 +233,10 @@ theorem spectral_measure_supported_on_spectrum
 This is the detailed version of `dirac_gap_in_resolvent` that works with
 the generator rather than the Hamiltonian directly. -/
 theorem dirac_gap_in_resolvent_set (data : DiracSpectralData H)
-    (hm : data.hamiltonian.constants.m > 0)
+    (_hm : data.hamiltonian.constants.m > 0)
     (s : ℝ)
-    (hs_lower : -data.hamiltonian.constants.restEnergy < s)
-    (hs_upper : s < data.hamiltonian.constants.restEnergy)
+    (_hs_lower : -data.hamiltonian.constants.restEnergy < s)
+    (_hs_upper : s < data.hamiltonian.constants.restEnergy)
     (h_gap_set :
       ∃ (R : H →L[ℂ] H), ∀ (ψ : data.gen.domain),
           R (data.gen.op ψ - s • (ψ : H)) = ψ) :

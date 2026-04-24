@@ -365,9 +365,30 @@ lemma isBounded_of_𝓵_pos (h : 0 < P.𝓵) : P.IsBounded := by
 /-- When there is no quartic coupling, the potential is bounded iff the mass squared is
 non-positive, i.e., for `P : Potential` then `P.IsBounded` iff `P.μ2 ≤ 0`. That is to say
 `- P.μ2 * ‖φ‖_H^2 x` is bounded below iff `P.μ2 ≤ 0`. -/
-informal_lemma isBounded_iff_of_𝓵_zero where
-  deps := [`StandardModel.HiggsField.Potential.IsBounded, `StandardModel.HiggsField.Potential]
-  tag := "6V2K5"
+lemma isBounded_iff_of_𝓵_zero (h𝓵 : P.𝓵 = 0) : P.IsBounded ↔ P.μ2 ≤ 0 := by
+  constructor
+  · intro hB
+    by_contra hμ
+    rw [not_le] at hμ
+    rcases hB with ⟨c, hc⟩
+    let a : ℝ := max 0 ((1 - c) / P.μ2)
+    have ha : 0 ≤ a := le_max_left _ _
+    let φ : HiggsField := const (HiggsVec.ofReal a)
+    have hbound := hc φ 0
+    have hpot : P.toFun φ 0 = -P.μ2 * a := by
+      simp [Potential.toFun, h𝓵, φ, HiggsVec.ofReal_normSq ha]
+    rw [hpot] at hbound
+    have hca : 1 - c ≤ P.μ2 * a := by
+      have hdiv : (1 - c) / P.μ2 ≤ a := le_max_right _ _
+      have hmul := (div_le_iff₀ hμ).mp hdiv
+      simpa [mul_comm] using hmul
+    linarith
+  · intro hμ
+    refine ⟨0, ?_⟩
+    intro φ x
+    have hμ' : 0 ≤ -P.μ2 := by linarith
+    have hnonneg : 0 ≤ (-P.μ2) * ‖φ‖_H^2 x := mul_nonneg hμ' (normSq_nonneg φ x)
+    simpa [Potential.toFun, h𝓵, neg_mul] using hnonneg
 
 /-!
 

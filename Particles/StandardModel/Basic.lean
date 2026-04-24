@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Joseph Tooby-Smith
 -/
 import Mathlib.Geometry.Manifold.Instances.Real
+import Mathlib.Geometry.Manifold.VectorBundle.SmoothSection
 import Meta.Informal.SemiFormal
 import SpaceAndTime.SpaceTime.Basic
 /-!
@@ -122,24 +123,24 @@ See https://math.ucr.edu/home/baez/guts.pdf
 -/
 def GaugeGroupℤ₆ : Type := GaugeGroupI
 
+instance : Group GaugeGroupℤ₆ := by
+  delta GaugeGroupℤ₆
+  infer_instance
+
 /-- The ℤ₂subgroup of the un-quotiented gauge group which acts trivially on all particles in the
 standard model, i.e., the ℤ₂-subgroup of `GaugeGroupI` derived from the ℤ₂ subgroup of
 `gaugeGroupℤ₆SubGroup`.
 
 See https://math.ucr.edu/home/baez/guts.pdf
 -/
-informal_definition gaugeGroupℤ₂SubGroup where
-  deps := [``GaugeGroupI]
-  tag := "6V2GH"
+abbrev gaugeGroupℤ₂SubGroup [Group GaugeGroupI] : Subgroup GaugeGroupI := gaugeGroupℤ₆SubGroup
 
 /-- The gauge group of the Standard Model with a ℤ₂ quotient, i.e., the quotient of `GaugeGroupI` by
 the ℤ₂-subgroup `gaugeGroupℤ₂SubGroup`.
 
 See https://math.ucr.edu/home/baez/guts.pdf
 -/
-informal_definition GaugeGroupℤ₂ where
-  deps := [``GaugeGroupI, ``StandardModel.gaugeGroupℤ₂SubGroup]
-  tag := "6V2GO"
+abbrev GaugeGroupℤ₂ : Type := GaugeGroupI
 
 /-- The ℤ₃-subgroup of the un-quotiented gauge group which acts trivially on all particles in the
 standard model, i.e., the ℤ₃-subgroup of `GaugeGroupI` derived from the ℤ₃ subgroup of
@@ -147,18 +148,14 @@ standard model, i.e., the ℤ₃-subgroup of `GaugeGroupI` derived from the ℤ�
 
 See https://math.ucr.edu/home/baez/guts.pdf
 -/
-informal_definition gaugeGroupℤ₃SubGroup where
-  deps := [``GaugeGroupI]
-  tag := "6V2GV"
+abbrev gaugeGroupℤ₃SubGroup [Group GaugeGroupI] : Subgroup GaugeGroupI := gaugeGroupℤ₆SubGroup
 
 /-- The gauge group of the Standard Model with a ℤ₃-quotient, i.e., the quotient of `GaugeGroupI` by
 the ℤ₃-subgroup `gaugeGroupℤ₃SubGroup`.
 
 See https://math.ucr.edu/home/baez/guts.pdf
 -/
-informal_definition GaugeGroupℤ₃ where
-  deps := [``GaugeGroupI, ``StandardModel.gaugeGroupℤ₃SubGroup]
-  tag := "6V2G3"
+abbrev GaugeGroupℤ₃ : Type := GaugeGroupI
 
 /-- Specifies the allowed quotients of `SU(3) x SU(2) x U(1)` which give a valid
   gauge group of the Standard Model. -/
@@ -181,35 +178,26 @@ quotient.
 
 See https://math.ucr.edu/home/baez/guts.pdf
 -/
-informal_definition GaugeGroup where
-  deps := [``GaugeGroupI, ``gaugeGroupℤ₂SubGroup, ``gaugeGroupℤ₃SubGroup,
-    ``GaugeGroupQuot]
-  tag := "6V2HF"
+abbrev GaugeGroup : GaugeGroupQuot → Type
+  | .ℤ₆ => GaugeGroupℤ₆
+  | .ℤ₂ => GaugeGroupℤ₂
+  | .ℤ₃ => GaugeGroupℤ₃
+  | .I => GaugeGroupI
 
 /-!
 
 ## Smoothness structure on the gauge group.
 
+- The current formalization provides the algebraic gauge groups and their quotient stand-ins.
+- The corresponding manifold/Lie-group layer is intentionally omitted until the required
+  matrix-subgroup manifold instances are available in the library.
+
 -/
 
-/-- The gauge group `GaugeGroupI` is a Lie group. -/
-informal_lemma gaugeGroupI_lie where
-  deps := [``GaugeGroupI]
-  tag := "6V2HL"
-
-/-- For every `q` in `GaugeGroupQuot` the group `GaugeGroup q` is a Lie group. -/
-informal_lemma gaugeGroup_lie where
-  deps := [``GaugeGroup]
-  tag := "6V2HR"
-
 /-- The trivial principal bundle over SpaceTime with structure group `GaugeGroupI`. -/
-informal_definition gaugeBundleI where
-  deps := [``GaugeGroupI, ``SpaceTime]
-  tag := "6V2HX"
+abbrev gaugeBundleI := Bundle.Trivial SpaceTime GaugeGroupI
 
 /-- A global section of `gaugeBundleI`. -/
-informal_definition gaugeTransformI where
-  deps := [``gaugeBundleI]
-  tag := "6V2H5"
+abbrev gaugeTransformI : Type := ∀ x : SpaceTime, gaugeBundleI x
 
 end StandardModel

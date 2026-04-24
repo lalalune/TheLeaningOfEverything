@@ -288,16 +288,114 @@ lemma leftHandedAltEquiv_inv_hom_apply (ψ : altLeftHanded) :
 /-- The linear equivalence between `rightHandedWeyl` and `altRightHandedWeyl` given by multiplying
 an element of `rightHandedWeyl` by the matrix `εᵃ⁰ᵃ¹ = !![0, 1; -1, 0]]`.
 -/
-informal_definition rightHandedWeylAltEquiv where
-  deps := [``rightHanded, ``altRightHanded]
-  tag := "6VZR4"
+def rightHandedToAlt : rightHanded ⟶ altRightHanded where
+  hom := ModuleCat.ofHom {
+    toFun := fun ψ => AltRightHandedModule.toFin2ℂEquiv.symm (!![0, 1; -1, 0] *ᵥ ψ.toFin2ℂ),
+    map_add' := by
+      intro ψ ψ'
+      simp only [mulVec_add, LinearEquiv.map_add]
+    map_smul' := by
+      intro a ψ
+      simp only [mulVec_smul, LinearEquiv.map_smul]
+      rfl}
+  comm := by
+    intro M
+    refine ModuleCat.hom_ext ?_
+    refine LinearMap.ext (fun ψ => ?_)
+    change AltRightHandedModule.toFin2ℂEquiv.symm (!![0, 1; -1, 0] *ᵥ M.1.map star *ᵥ ψ.val) =
+      AltRightHandedModule.toFin2ℂEquiv.symm ((M.1⁻¹).conjTranspose *ᵥ !![0, 1; -1, 0] *ᵥ ψ.val)
+    apply congrArg
+    rw [mulVec_mulVec, mulVec_mulVec]
+    have hMat : !![0, 1; -1, 0] * M.1.map star = (M.1⁻¹).conjTranspose * !![0, 1; -1, 0] := by
+      rw [Lorentz.SL2C.inverse_coe, eta_fin_two M.1]
+      rw [SpecialLinearGroup.coe_inv, Matrix.adjugate_fin_two,
+        eta_fin_two !![M.1 1 1, -M.1 0 1; -M.1 1 0, M.1 0 0]ᴴ]
+      ext i j
+      fin_cases i <;> fin_cases j
+      all_goals simp [Matrix.mul_apply]
+    exact congrArg (fun A : Matrix (Fin 2) (Fin 2) ℂ => A *ᵥ ψ.val) hMat
+
+lemma rightHandedToAlt_hom_apply (ψ : rightHanded) :
+    rightHandedToAlt.hom ψ =
+    AltRightHandedModule.toFin2ℂEquiv.symm (!![0, 1; -1, 0] *ᵥ ψ.toFin2ℂ) := rfl
+
+/-- The morphism from `altRightHanded` to `rightHanded` defined by multiplying an element of
+`altRightHanded` by the matrix `εₐ₁ₐ₂ = !![0, -1; 1, 0]`.
+-/
+def rightHandedAltTo : altRightHanded ⟶ rightHanded where
+  hom := ModuleCat.ofHom {
+    toFun := fun ψ => RightHandedModule.toFin2ℂEquiv.symm (!![0, -1; 1, 0] *ᵥ ψ.toFin2ℂ),
+    map_add' := by
+      intro ψ ψ'
+      simp only [mulVec_add, LinearEquiv.map_add]
+    map_smul' := by
+      intro a ψ
+      simp only [mulVec_smul, LinearEquiv.map_smul]
+      rfl}
+  comm := by
+    intro M
+    refine ModuleCat.hom_ext ?_
+    refine LinearMap.ext (fun ψ => ?_)
+    change RightHandedModule.toFin2ℂEquiv.symm (!![0, -1; 1, 0] *ᵥ (M.1⁻¹).conjTranspose *ᵥ ψ.val) =
+      RightHandedModule.toFin2ℂEquiv.symm (M.1.map star *ᵥ !![0, -1; 1, 0] *ᵥ ψ.val)
+    rw [EquivLike.apply_eq_iff_eq, mulVec_mulVec, mulVec_mulVec]
+    have hMat : !![0, -1; 1, 0] * (M.1⁻¹).conjTranspose =
+        M.1.map star * !![0, -1; 1, 0] := by
+      rw [Lorentz.SL2C.inverse_coe, eta_fin_two M.1]
+      rw [SpecialLinearGroup.coe_inv, Matrix.adjugate_fin_two,
+        eta_fin_two !![M.1 1 1, -M.1 0 1; -M.1 1 0, M.1 0 0]ᴴ]
+      ext i j
+      fin_cases i <;> fin_cases j
+      all_goals simp [Matrix.mul_apply]
+    exact congrArg (fun A : Matrix (Fin 2) (Fin 2) ℂ => A *ᵥ ψ.val) hMat
+
+lemma rightHandedAltTo_hom_apply (ψ : altRightHanded) :
+    rightHandedAltTo.hom ψ =
+    RightHandedModule.toFin2ℂEquiv.symm (!![0, -1; 1, 0] *ᵥ ψ.toFin2ℂ) := rfl
+
+/-- The equivalence between the representations `rightHanded` and `altRightHanded` given by
+raising and lowering Weyl spinor indices with `ε`.
+-/
+def rightHandedAltEquiv : rightHanded ≅ altRightHanded where
+  hom := rightHandedToAlt
+  inv := rightHandedAltTo
+  hom_inv_id := by
+    ext ψ
+    simp only [Action.comp_hom, ModuleCat.hom_comp, LinearMap.coe_comp, Function.comp_apply,
+      Action.id_hom, ModuleCat.hom_id, LinearMap.id_coe, id_eq]
+    rw [rightHandedAltTo_hom_apply, rightHandedToAlt_hom_apply]
+    rw [AltRightHandedModule.toFin2ℂ, LinearEquiv.apply_symm_apply, mulVec_mulVec]
+    rw [show (!![0, -1; (1 : ℂ), 0] * !![0, 1; -1, 0]) = 1 by
+      simpa using Eq.symm one_fin_two]
+    rw [one_mulVec]
+    rfl
+  inv_hom_id := by
+    ext ψ
+    simp only [Action.comp_hom, ModuleCat.hom_comp, LinearMap.coe_comp, Function.comp_apply,
+      Action.id_hom, ModuleCat.hom_id, LinearMap.id_coe, id_eq]
+    rw [rightHandedAltTo_hom_apply, rightHandedToAlt_hom_apply, RightHandedModule.toFin2ℂ,
+      LinearEquiv.apply_symm_apply, mulVec_mulVec]
+    rw [show (!![0, (1 : ℂ); -1, 0] * !![0, -1; 1, 0]) = 1 by
+      simpa using Eq.symm one_fin_two]
+    rw [one_mulVec]
+    rfl
+
+lemma rightHandedAltEquiv_hom_hom_apply (ψ : rightHanded) :
+    rightHandedAltEquiv.hom.hom ψ =
+    AltRightHandedModule.toFin2ℂEquiv.symm (!![0, 1; -1, 0] *ᵥ ψ.toFin2ℂ) := rfl
+
+lemma rightHandedAltEquiv_inv_hom_apply (ψ : altRightHanded) :
+    rightHandedAltEquiv.inv.hom ψ =
+    RightHandedModule.toFin2ℂEquiv.symm (!![0, -1; 1, 0] *ᵥ ψ.toFin2ℂ) := rfl
 
 /-- The linear equivalence `rightHandedWeylAltEquiv` is equivariant with respect to the action of
 `SL(2,C)` on `rightHandedWeyl` and `altRightHandedWeyl`.
 -/
-informal_lemma rightHandedWeylAltEquiv_equivariant where
-  deps := [``rightHandedWeylAltEquiv]
-  tag := "6VZSG"
+lemma rightHandedAltEquiv_equivariant (M : SL(2, ℂ)) (ψ : rightHanded) :
+    rightHandedAltEquiv.hom.hom (rightHanded.ρ M ψ) =
+      altRightHanded.ρ M (rightHandedAltEquiv.hom.hom ψ) := by
+  have h := congrArg ModuleCat.Hom.hom (rightHandedAltEquiv.hom.comm M)
+  simpa [LinearMap.comp_apply] using LinearMap.congr_fun h ψ
 
 end
 

@@ -153,7 +153,7 @@ lemma lorentzian_bound (s t ε : ℝ) (hε : ε > 0) :
 /-- The Lorentzian integrates to π over ℝ.
 
 This is equivalent to the residue theorem for `∫ 1/(x² + 1) dx = π`. -/
-theorem lorentzian_total_integral (t ε : ℝ) (hε : ε > 0) :
+theorem lorentzian_total_integral (t ε : ℝ) (_hε : ε > 0) :
     (h_total : ∫ s, ε / ((s - t)^2 + ε^2) = Real.pi) →
     ∫ s, ε / ((s - t)^2 + ε^2) = Real.pi := by
   intro h_total
@@ -162,7 +162,7 @@ theorem lorentzian_total_integral (t ε : ℝ) (hε : ε > 0) :
 /-- The Lorentzian concentrates near `t` as `ε → 0`.
 
 For any `δ > 0`, the integral outside `(t-δ, t+δ)` vanishes as `ε → 0+`. -/
-theorem lorentzian_concentration (t δ : ℝ) (hδ : δ > 0) :
+theorem lorentzian_concentration (t δ : ℝ) (_hδ : δ > 0) :
     (h_conc :
       Tendsto (fun ε : ℝ => ∫ s in Set.Iic (t - δ) ∪ Set.Ici (t + δ),
         ε / ((s - t)^2 + ε^2)) (𝓝[>] 0) (𝓝 0)) →
@@ -177,12 +177,12 @@ theorem lorentzian_concentration (t δ : ℝ) (hδ : δ > 0) :
 
 If `K(ε, s)` is a family of kernels that are non-negative, integrate to 1,
 and concentrate at `t` as `ε → 0`, then `∫ K(ε, s) f(s) ds → f(t)`. -/
-theorem approx_identity_continuous (f : ℝ → ℂ) (hf_cont : Continuous f)
-    (hf_int : Integrable f) (t : ℝ)
+theorem approx_identity_continuous (f : ℝ → ℂ) (_hf_cont : Continuous f)
+    (_hf_int : Integrable f) (t : ℝ)
     (K : ℝ → ℝ → ℝ)  -- kernel K(ε, s)
-    (hK_nonneg : ∀ ε > 0, ∀ s, K ε s ≥ 0)
-    (hK_total : ∀ ε > 0, ∫ s, K ε s = 1)
-    (hK_conc : ∀ δ > 0, Tendsto (fun ε => ∫ s in Set.Iic (t - δ) ∪ Set.Ici (t + δ), K ε s)
+    (_hK_nonneg : ∀ ε > 0, ∀ s, K ε s ≥ 0)
+    (_hK_total : ∀ ε > 0, ∫ s, K ε s = 1)
+    (_hK_conc : ∀ δ > 0, Tendsto (fun ε => ∫ s in Set.Iic (t - δ) ∪ Set.Ici (t + δ), K ε s)
                                  (𝓝[>] 0) (𝓝 0)) :
     (h_approx : Tendsto (fun ε => ∫ s, (K ε s) • f s) (𝓝[>] 0) (𝓝 (f t))) →
     Tendsto (fun ε => ∫ s, (K ε s) • f s) (𝓝[>] 0) (𝓝 (f t)) := by
@@ -193,8 +193,8 @@ theorem approx_identity_continuous (f : ℝ → ℂ) (hf_cont : Continuous f)
 
 `(1/π) · ε/((s-t)² + ε²) → δ(s-t)` as `ε → 0+` in the sense that
 `(1/π) ∫ ε/((s-t)² + ε²) f(s) ds → f(t)` for continuous integrable `f`. -/
-lemma lorentzian_approx_delta (f : ℝ → ℂ) (hf_cont : Continuous f)
-    (hf_int : Integrable f) (t : ℝ) :
+lemma lorentzian_approx_delta (f : ℝ → ℂ) (_hf_cont : Continuous f)
+    (_hf_int : Integrable f) (t : ℝ) :
     (h_delta :
       Tendsto (fun ε : ℝ => (1 / Real.pi) • ∫ s, (ε / ((s - t)^2 + ε^2)) • f s)
               (𝓝[>] 0) (𝓝 (f t))) →
@@ -252,7 +252,7 @@ lemma resolvent_kernel_diff (s t ε : ℝ) (hε : ε > 0) :
 `∫_a^b ε/((s-t)² + ε²) dt = arctan((b-s)/ε) - arctan((a-s)/ε)`
 
 This is obtained by the substitution `u = (t-s)/ε`. -/
-theorem lorentzian_arctan_integral (s a b ε : ℝ) (hε : ε > 0) :
+theorem lorentzian_arctan_integral (s a b ε : ℝ) (_hε : ε > 0) :
     (h_arctan :
       ∫ t in Set.Icc a b, ε / ((s - t)^2 + ε^2) =
         Real.arctan ((b - s) / ε) - Real.arctan ((a - s) / ε)) →
@@ -266,7 +266,7 @@ theorem lorentzian_arctan_integral (s a b ε : ℝ) (hε : ε > 0) :
 `(1/π)[arctan((b-s)/ε) - arctan((a-s)/ε)] → 𝟙_{(a,b]}(s)` as `ε → 0+`
 
 This is because `arctan(x) → π/2` as `x → +∞` and `arctan(x) → -π/2` as `x → -∞`. -/
-theorem arctan_indicator_limit (a b s : ℝ) (hab : a < b) :
+theorem arctan_indicator_limit (a b s : ℝ) (_hab : a < b) :
     (h_lim :
       Tendsto (fun ε : ℝ => (1 / Real.pi) *
         (Real.arctan ((b - s) / ε) - Real.arctan ((a - s) / ε)))
@@ -282,7 +282,7 @@ theorem arctan_indicator_limit (a b s : ℝ) (hab : a < b) :
 /-- The arctan kernel is uniformly bounded by 1.
 
 Since `|arctan(x)| ≤ π/2` for all `x`, the difference is at most `π`. -/
-theorem arctan_kernel_bound (a b s ε : ℝ) (hε : ε > 0) :
+theorem arctan_kernel_bound (a b s ε : ℝ) (_hε : ε > 0) :
     (h_bound : |(1 / Real.pi) * (Real.arctan ((b - s) / ε) - Real.arctan ((a - s) / ε))| ≤ 1) →
     |(1 / Real.pi) * (Real.arctan ((b - s) / ε) - Real.arctan ((a - s) / ε))| ≤ 1 := by
   intro h_bound

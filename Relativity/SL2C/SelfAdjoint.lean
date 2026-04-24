@@ -5,6 +5,7 @@ Authors: Gordon Hsu
 -/
 import Mathematics.SchurTriangulation
 import Mathlib.LinearAlgebra.Matrix.Hermitian
+import Mathlib.LinearAlgebra.Matrix.SchurComplement
 /-! # Extra lemmas regarding `Lorentz.SL2C.toSelfAdjointMap`
 
 This file redefines `Lorentz.SL2C.toSelfAdjointMap` by dropping the special linear condition for its

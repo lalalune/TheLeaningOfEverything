@@ -80,11 +80,9 @@ lemma toVector_eq_basis_iff_timeComponent_eq_one {d : ℕ} (Λ : LorentzGroup d)
     | Sum.inr j =>
       simp only [Fin.isValue, reduceCtorEq, ↓reduceIte]
       trans (toVector Λ).spatialPart j
-      · simp
-      simp only [toVector_apply, Fin.isValue]
-      change (fun i => Λ.1 (Sum.inr i) (Sum.inl 0)) j = _
-      rw [h1]
-      simp
+      · simp [Vector.spatialPart_apply_eq_toCoord]
+      simp only [Vector.spatialPart_apply_eq_toCoord, toVector_apply, Fin.isValue]
+      exact congrFun h1 j
 
 lemma smul_timeComponent_eq_toVector_minkowskiProduct {d : ℕ} (Λ : LorentzGroup d)
     (v : Lorentz.Vector d) :
@@ -101,8 +99,8 @@ lemma smul_timeComponent_eq_toVector_minkowskiProduct {d : ℕ} (Λ : LorentzGro
     rw [← Finset.sum_neg_distrib]
     congr
     funext i
-    rw [minkowskiMatrix.dual_apply]
-    simp [minkowskiMatrix.inl_0_inl_0, minkowskiMatrix.inr_i_inr_i]
+    simp [Vector.spatialPart_apply_eq_toCoord, minkowskiMatrix.dual_apply,
+      minkowskiMatrix.inl_0_inl_0, minkowskiMatrix.inr_i_inr_i]
     ring
 
 end LorentzGroup

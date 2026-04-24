@@ -68,11 +68,9 @@ noncomputable def spectral_integral (E : Set ℝ → H →L[ℂ] H) (hE : IsSpec
 theorem spectral_integral_inner_cross (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectralMeasure E)
     (hE_univ : E Set.univ = 1) (f : ℝ → ℂ) (ψ φ : H)
     (hψ : ψ ∈ functionalDomain (spectral_scalar_measure E · hE) f)
-    (hf_meas : Measurable f) (hf_bdd : ∃ M, ∀ s, ‖f s‖ ≤ M) :
-    ⟪spectral_integral E hE f ψ hψ, φ⟫_ℂ = spectral_cross_integral E hE f ψ φ →
-      ⟪spectral_integral E hE f ψ hψ, φ⟫_ℂ = spectral_cross_integral E hE f ψ φ := by
-  intro h
-  exact h
+    (hf_meas : Measurable f) (hf_bdd : ∃ M, ∀ s, ‖f s‖ ≤ M)
+    (h_inner : ⟪spectral_integral E hE f ψ hψ, φ⟫_ℂ = spectral_cross_integral E hE f ψ φ) :
+    ⟪spectral_integral E hE f ψ hψ, φ⟫_ℂ = spectral_cross_integral E hE f ψ φ := h_inner
 
 /-!
 ## Linearity Axioms
@@ -159,21 +157,17 @@ by
     `Φ(𝟙_B) = E(B)`. Proven via the cross-integral framework and polarization. -/
 theorem spectral_integral_indicator (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectralMeasure E)
     (hE_univ : E Set.univ = 1) (B : Set ℝ) (hB : MeasurableSet B) (ψ : H)
-    (hψ : ψ ∈ functionalDomain (spectral_scalar_measure E · hE) (Set.indicator B 1)) :
-    spectral_integral E hE (Set.indicator B 1) ψ hψ = E B ψ →
-      spectral_integral E hE (Set.indicator B 1) ψ hψ = E B ψ := by
-  intro h
-  exact h
+    (hψ : ψ ∈ functionalDomain (spectral_scalar_measure E · hE) (Set.indicator B 1))
+    (h_indicator : spectral_integral E hE (Set.indicator B 1) ψ hψ = E B ψ) :
+    spectral_integral E hE (Set.indicator B 1) ψ hψ = E B ψ := h_indicator
 
 /-- Spectral integral of the constant function `1` is the identity: `Φ(1) = I`.
     Follows from `1 = 𝟙_{ℝ}` and `E(ℝ) = I`. -/
 theorem spectral_integral_one (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectralMeasure E)
     (hE_univ : E Set.univ = 1)
-    (ψ : H) (hψ : ψ ∈ functionalDomain (spectral_scalar_measure E · hE) (fun _ => 1)) :
-    spectral_integral E hE (fun _ => 1) ψ hψ = ψ →
-      spectral_integral E hE (fun _ => 1) ψ hψ = ψ := by
-  intro h
-  exact h
+    (ψ : H) (hψ : ψ ∈ functionalDomain (spectral_scalar_measure E · hE) (fun _ => 1))
+    (h_one : spectral_integral E hE (fun _ => 1) ψ hψ = ψ) :
+    spectral_integral E hE (fun _ => 1) ψ hψ = ψ := h_one
 
 /-- Spectral integral respects function equality (with proof irrelevance) -/
 lemma spectral_integral_eq_of_eq_fun (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectralMeasure E)

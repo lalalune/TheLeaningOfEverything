@@ -98,6 +98,30 @@ def toBoostRotation {d} : LorentzGroup.restricted d ≃ₜ Lorentz.Velocity d ×
   continuous_toFun := by fun_prop
   continuous_invFun := by fun_prop
 
+open TopologicalSpace
+
+/-- If the special orthogonal group is connected, then so is the restricted Lorentz group. -/
+lemma restricted_isConnected_of_specialOrthogonal_isConnected {d : ℕ}
+    (hSO : IsConnected (Set.univ : Set (Matrix.specialOrthogonalGroup (Fin d) ℝ))) :
+    IsConnected (LorentzGroup.restricted d : Set (LorentzGroup d)) := by
+  have hVel : IsConnected (Set.univ : Set (Lorentz.Velocity d)) :=
+    Lorentz.Velocity.isPathConnected.isConnected
+  have hProd : IsConnected (Set.univ : Set
+      (Lorentz.Velocity d × Matrix.specialOrthogonalGroup (Fin d) ℝ)) := by
+    simpa using hVel.prod hSO
+  have hSub : IsConnected (Set.univ : Set (LorentzGroup.restricted d)) := by
+    simpa using ((toBoostRotation (d := d)).symm.isConnected_image).2 hProd
+  simpa using hSub.image (Subtype.val : LorentzGroup.restricted d → LorentzGroup d)
+    continuous_subtype_val.continuousOn
+
+/-- If the special orthogonal group is connected, then the restricted Lorentz group is the
+connected component of the identity. -/
+lemma restricted_eq_identity_component_of_specialOrthogonal_isConnected {d : ℕ}
+    (hSO : IsConnected (Set.univ : Set (Matrix.specialOrthogonalGroup (Fin d) ℝ))) :
+    LorentzGroup.restricted d = connectedComponent (1 : LorentzGroup d) :=
+  restricted_eq_identity_component_of_isConnected
+    (restricted_isConnected_of_specialOrthogonal_isConnected (d := d) hSO)
+
 end LorentzGroup
 
 end

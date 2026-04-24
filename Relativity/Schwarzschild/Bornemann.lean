@@ -656,19 +656,18 @@ def thermal_excites_after_positive_time {H : Type*} [NormedAddCommGroup H]
     (L : AngularMomentumOperators H) (bath : ThermalBath)
     (evol : ThermalEvolution H)
     (ψ₀ : H) (h_norm : ‖ψ₀‖ = 1) (h_common : ψ₀ ∈ L.common_domain)
-    (t : ℝ) (h_t_pos : t > 0) :
-    let ψ := evol.evolve ψ₀ t
-    let h_common' := evol.preserves_domain L ψ₀ t h_common
-    ⟪ψ, L.L_x.apply ψ (L.common_in_Lx ψ h_common')⟫_ℂ ≠ 0 ∨
-    ⟪ψ, L.L_y.apply ψ (L.common_in_Ly ψ h_common')⟫_ℂ ≠ 0 ∨
-    ⟪ψ, L.L_z.apply ψ (L.common_in_Lz ψ h_common')⟫_ℂ ≠ 0 →
+    (t : ℝ) (h_t_pos : t > 0)
+    (h_excited :
       let ψ := evol.evolve ψ₀ t
       let h_common' := evol.preserves_domain L ψ₀ t h_common
       ⟪ψ, L.L_x.apply ψ (L.common_in_Lx ψ h_common')⟫_ℂ ≠ 0 ∨
       ⟪ψ, L.L_y.apply ψ (L.common_in_Ly ψ h_common')⟫_ℂ ≠ 0 ∨
-      ⟪ψ, L.L_z.apply ψ (L.common_in_Lz ψ h_common')⟫_ℂ ≠ 0 := by
-  intro h
-  exact h
+      ⟪ψ, L.L_z.apply ψ (L.common_in_Lz ψ h_common')⟫_ℂ ≠ 0) :
+      let ψ := evol.evolve ψ₀ t
+      let h_common' := evol.preserves_domain L ψ₀ t h_common
+      ⟪ψ, L.L_x.apply ψ (L.common_in_Lx ψ h_common')⟫_ℂ ≠ 0 ∨
+      ⟪ψ, L.L_y.apply ψ (L.common_in_Ly ψ h_common')⟫_ℂ ≠ 0 ∨
+      ⟪ψ, L.L_z.apply ψ (L.common_in_Lz ψ h_common')⟫_ℂ ≠ 0 := h_excited
 
 
 /-- **KEY THEOREM**: SdS states have zero uncertainty, contradicting thermal excitation.

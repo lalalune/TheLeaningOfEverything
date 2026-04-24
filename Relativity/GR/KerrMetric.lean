@@ -114,6 +114,7 @@ This prevents the kind of confusion that's plagued black hole physics for 60 yea
 -/
 
 import Relativity.SR.MinkowskiSpacetime
+import Mathlib.Analysis.Real.Pi.Bounds
 import QuantumMechanics.Uncertainty.UnboundedOperators
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Probability.Distributions.Gaussian.Real
@@ -1459,7 +1460,7 @@ theorem proper_time_scales_with_mass' (p : KerrParams) (particle : GeodesicMotio
     properTimeToRing p particle = c * p.M := by
   obtain ⟨c, hc_pos, hc_bound, hc_eq⟩ := proper_time_scales_with_mass p particle
   have h2pi_lt_ten : 2 * Real.pi < 10 := by
-    have hpi : Real.pi < 4 := by norm_num [Real.pi]
+    have hpi : Real.pi < 4 := Real.pi_lt_four
     linarith
   exact ⟨c, hc_pos, lt_of_le_of_lt hc_bound h2pi_lt_ten, hc_eq⟩
 /-!

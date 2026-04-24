@@ -35,20 +35,48 @@ noncomputable def ofRat {n : ℕ} {c : Fin n → complexLorentzTensor.Color} :
     ((j : Fin n) → Fin (complexLorentzTensor.repDim (c j)))).symm <|
     (fun j => toComplexNum (f j))
   map_add' f f1 := by
+    let e := Finsupp.linearEquivFunOnFinite ℂ ℂ
+      ((j : Fin n) → Fin (complexLorentzTensor.repDim (c j)))
     apply (Tensor.basis _).repr.injective
     ext b
-    simp
+    rw [(Tensor.basis c).repr_symm_apply (e.symm fun j => toComplexNum ((f + f1) j)),
+      (Tensor.basis c).repr_linearCombination, map_add,
+      (Tensor.basis c).repr_symm_apply (e.symm fun j => toComplexNum (f j)),
+      (Tensor.basis c).repr_linearCombination,
+      (Tensor.basis c).repr_symm_apply (e.symm fun j => toComplexNum (f1 j)),
+      (Tensor.basis c).repr_linearCombination]
+    trans (e.symm (fun j => toComplexNum (f j) + toComplexNum (f1 j))) b
+    · congr 1
+      ext j
+      simp [map_add]
+    · exact DFunLike.congr_fun
+        (e.symm.map_add (fun j => toComplexNum (f j)) (fun j => toComplexNum (f1 j))) b
   map_smul' r f := by
+    let e := Finsupp.linearEquivFunOnFinite ℂ ℂ
+      ((j : Fin n) → Fin (complexLorentzTensor.repDim (c j)))
     apply (Tensor.basis _).repr.injective
     ext b
-    simp
+    rw [(Tensor.basis c).repr_symm_apply (e.symm fun j => toComplexNum ((r • f) j)),
+      (Tensor.basis c).repr_linearCombination, map_smul,
+      (Tensor.basis c).repr_symm_apply (e.symm fun j => toComplexNum (f j)),
+      (Tensor.basis c).repr_linearCombination]
+    trans (e.symm (fun j => toComplexNum r * toComplexNum (f j))) b
+    · congr 1
+      ext j
+      simp [map_mul]
+    · exact DFunLike.congr_fun
+        (e.symm.map_smul (toComplexNum r) (fun j => toComplexNum (f j))) b
 
 @[simp]
 lemma ofRat_basis_repr_apply {n : ℕ} {c : Fin n → complexLorentzTensor.Color}
     (f : (ComponentIdx c) → RatComplexNum)
     (b :(ComponentIdx c)) :
   (Tensor.basis c).repr (ofRat f) b = toComplexNum (f b) := by
+  let e := Finsupp.linearEquivFunOnFinite ℂ ℂ
+    ((j : Fin n) → Fin (complexLorentzTensor.repDim (c j)))
   simp [ofRat]
+  exact congrArg (fun h : ComponentIdx c → ℂ => h b)
+    (LinearEquiv.apply_symm_apply e (fun j => toComplexNum (f j)))
 
 lemma basis_eq_ofRat {n : ℕ} {c : Fin n → complexLorentzTensor.Color}
     (b : (ComponentIdx c)) :

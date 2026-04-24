@@ -94,8 +94,13 @@ theorem functionalCalculus_inner
     refine ⟨hf_meas.aestronglyMeasurable, ?_⟩
     obtain ⟨M, hM⟩ := hf_bdd
     exact MeasureTheory.HasFiniteIntegral.of_bounded (Filter.Eventually.of_forall hM)
-  rw [spectral_integral_inner_cross E hE hE_univ f ψ ψ hψ hf_meas hf_bdd
-      (hInner f ψ ψ hψ hf_meas hf_bdd)]
+  have h_cross :
+      ⟪functionalCalculus E hE hE_univ f ⟨ψ, hψ⟩, ψ⟫_ℂ =
+        spectral_cross_integral E hE f ψ ψ := by
+    simpa [functionalCalculus] using
+      spectral_integral_inner_cross E hE hE_univ f ψ ψ hψ hf_meas hf_bdd
+        (hInner f ψ ψ hψ hf_meas hf_bdd)
+  rw [h_cross]
   exact spectral_cross_integral_diag E hE hE_univ f ψ hint
 
 /-!
@@ -160,16 +165,17 @@ theorem functionalCalculus_one (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectralM
     (hE_univ : E Set.univ = 1)
     (ψ : H) (h : ψ ∈ functionalDomain (spectral_scalar_measure E · hE) (fun _ => 1))
     (hOne : spectral_integral E hE (fun _ => 1) ψ h = ψ) :
-    functionalCalculus E hE hE_univ (fun _ => 1) ⟨ψ, h⟩ = ψ :=
-  spectral_integral_one E hE hE_univ ψ h hOne
+    functionalCalculus E hE hE_univ (fun _ => 1) ⟨ψ, h⟩ = ψ := by
+  simpa [functionalCalculus] using spectral_integral_one E hE hE_univ ψ h hOne
 
 /-- **Spectral mapping for indicator**: 𝟙_B(A) = E(B) -/
 theorem functionalCalculus_indicator (E : Set ℝ → H →L[ℂ] H) (hE : IsSpectralMeasure E)
     (hE_univ : E Set.univ = 1) (B : Set ℝ) (hB : MeasurableSet B)
     (ψ : H) (h : ψ ∈ functionalDomain (spectral_scalar_measure E · hE) (Set.indicator B 1))
     (hIndicator : spectral_integral E hE (Set.indicator B 1) ψ h = E B ψ) :
-    functionalCalculus E hE hE_univ (Set.indicator B 1) ⟨ψ, h⟩ = E B ψ :=
-  spectral_integral_indicator E hE hE_univ B hB ψ h hIndicator
+    functionalCalculus E hE hE_univ (Set.indicator B 1) ⟨ψ, h⟩ = E B ψ := by
+  simpa [functionalCalculus] using
+    spectral_integral_indicator E hE hE_univ B hB ψ h hIndicator
 
 /-!
 ## Bounded Functional Calculus Properties
@@ -341,8 +347,12 @@ lemma boundedFunctionalCalculus_nonneg (E : Set ℝ → H →L[ℂ] H) (hE : IsS
   have hψf : ψ ∈ functionalDomain (spectral_scalar_measure E · hE) f' :=
     functionalDomain_of_bounded E hE hE_univ f' hf'_meas hf' ψ
   rw [← spectral_integral_bounded_eq E hE f' hf' ψ hψf]
-  rw [spectral_integral_inner_cross E hE hE_univ f' ψ ψ hψf hf'_meas hf'
-      (hInner f' ψ ψ hψf hf'_meas hf')]
+  have h_cross :
+      ⟪spectral_integral E hE f' ψ hψf, ψ⟫_ℂ =
+        spectral_cross_integral E hE f' ψ ψ :=
+    spectral_integral_inner_cross E hE hE_univ f' ψ ψ hψf hf'_meas hf'
+      (hInner f' ψ ψ hψf hf'_meas hf')
+  rw [h_cross]
   have hint : Integrable f' (spectral_scalar_measure E ψ hE) := by
     haveI : IsFiniteMeasure (spectral_scalar_measure E ψ hE) :=
       spectral_scalar_measure_finite E hE hE_univ ψ
@@ -408,10 +418,17 @@ lemma boundedFunctionalCalculus_mono (E : Set ℝ → H →L[ℂ] H) (hE : IsSpe
     refine ⟨hg'_meas.aestronglyMeasurable, ?_⟩
     obtain ⟨M, hM⟩ := hg'
     exact MeasureTheory.HasFiniteIntegral.of_bounded (Filter.Eventually.of_forall hM)
-  rw [spectral_integral_inner_cross E hE hE_univ f' ψ ψ hψf hf'_meas hf'
-      (hInner f' ψ ψ hψf hf'_meas hf')]
-  rw [spectral_integral_inner_cross E hE hE_univ g' ψ ψ hψg hg'_meas hg'
-      (hInner g' ψ ψ hψg hg'_meas hg')]
+  have h_cross_f :
+      ⟪spectral_integral E hE f' ψ hψf, ψ⟫_ℂ =
+        spectral_cross_integral E hE f' ψ ψ :=
+    spectral_integral_inner_cross E hE hE_univ f' ψ ψ hψf hf'_meas hf'
+      (hInner f' ψ ψ hψf hf'_meas hf')
+  have h_cross_g :
+      ⟪spectral_integral E hE g' ψ hψg, ψ⟫_ℂ =
+        spectral_cross_integral E hE g' ψ ψ :=
+    spectral_integral_inner_cross E hE hE_univ g' ψ ψ hψg hg'_meas hg'
+      (hInner g' ψ ψ hψg hg'_meas hg')
+  rw [h_cross_f, h_cross_g]
   rw [spectral_cross_integral_diag E hE hE_univ f' ψ hf_int]
   rw [spectral_cross_integral_diag E hE hE_univ g' ψ hg_int]
   -- Now have: 0 ≤ (∫ (g' - f') dμ).re and goal: (∫ f' dμ).re ≤ (∫ g' dμ).re
@@ -426,8 +443,12 @@ lemma boundedFunctionalCalculus_mono (E : Set ℝ → H →L[ℂ] H) (hE : IsSpe
   have hψgf : ψ ∈ functionalDomain (spectral_scalar_measure E · hE) (fun s => g' s - f' s) :=
     functionalDomain_of_bounded E hE hE_univ _ (hg'_meas.sub hf'_meas) h_gf_bdd ψ
   rw [← spectral_integral_bounded_eq E hE _ h_gf_bdd ψ hψgf] at h_nonneg
-  rw [spectral_integral_inner_cross E hE hE_univ _ ψ ψ hψgf (hg'_meas.sub hf'_meas) h_gf_bdd
-      (hInner _ ψ ψ hψgf (hg'_meas.sub hf'_meas) h_gf_bdd)] at h_nonneg
+  have h_cross_gf :
+      ⟪spectral_integral E hE (fun s => g' s - f' s) ψ hψgf, ψ⟫_ℂ =
+        spectral_cross_integral E hE (fun s => g' s - f' s) ψ ψ :=
+    spectral_integral_inner_cross E hE hE_univ _ ψ ψ hψgf (hg'_meas.sub hf'_meas) h_gf_bdd
+      (hInner _ ψ ψ hψgf (hg'_meas.sub hf'_meas) h_gf_bdd)
+  rw [h_cross_gf] at h_nonneg
   rw [spectral_cross_integral_diag E hE hE_univ _ ψ hgf_int] at h_nonneg
   -- Now h_nonneg : 0 ≤ (∫ (g' - f') dμ).re
   have h_sub : ∫ s, (g' s - f' s) ∂spectral_scalar_measure E ψ hE =
